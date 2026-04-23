@@ -97,3 +97,49 @@ pnpm dev                       # http://localhost:3000
 
 - **Identiques à J1** : clés API IA + Service Account Google Drive à provisionner avant J3. Validation framework appel avant J5.
 
+---
+
+## J3 — 23 avril 2026 (suite)
+
+### Fait
+
+- **Google Drive Service Account** : créé (`clinic-os-drive-reader@clinic-os-494219.iam.gserviceaccount.com`), Drive API activée, dossier `Originaux/` partagé en Lecteur, ID récupéré. Credentials en `.env.local`.
+- **`scripts/test-drive.ts`** : vérification live de la connexion + arbre de 3 niveaux de profondeur. Inventaire : 147 fichiers (97 PDF + 47 vidéos + 3 DOCX + 4 .key skippés).
+- **10 programmes seedés** : 4 actifs (Reference, Personnel accueil, Convaincre téléphone, Audio Vente) + 6 "Bientôt disponible" pour le catalogue J4. Slugs, catégories, icônes lucide, descriptions courtes.
+- **Pipeline ingestion complet** livré en `lib/drive/` + `lib/ingest/` + `scripts/ingest.ts` :
+  - Authentification JWT Google Service Account
+  - Crawler récursif (NFC normalization, skip .DS_Store/.key/affiches, dédup vidéos par name+size, parsing module depuis `SBL_*_module_N` / `[Module N]` / `#N`)
+  - Extracteurs : `pdf-parse` v1 (v2 a été réécrite en classe, pas ce qu'on veut), `mammoth` pour DOCX, `@deepgram/sdk` v4 (v5 a réorganisé la namespace et cassé `listen.prerecorded.transcribeFile`) avec `nova-3-general` FR pour les vidéos
+  - Chunking : 650 tokens cible / 800 max / 100 overlap par paragraphes→phrases (PDF/DOCX), fenêtres 30 s par paragraphes Deepgram (vidéos)
+  - Embeddings : `voyageai` batché à 128 chunks/call, pacing 350 ms, exponential backoff sur 429 (6 retries max)
+  - Upsert idempotent : `replaceChunksForFile()` en transaction, keyed sur `drive_file_id`
+  - Ingestion_runs tracé avec status + counts + errors jsonb
+- **CLI `pnpm ingest`** : flags `--pdfs-only`, `--videos-only`, `--docx-only`, `--program <slug>`, `--limit N`, `--force`. Exposé aussi comme `pnpm seed:programs`, `pnpm db:check`.
+- **Admin UI `/admin/knowledge`** : KPIs (chunks par type), breakdown par programme avec barres de progression, 10 derniers runs avec status pills, widget de test de retrieval (useActionState + 4 exemples cliquables).
+- **`lib/retrieval/search.ts`** : `semanticSearch()` avec pgvector top-K + collapse near-dup à 0,92 cosine.
+- **Ingestion live** : 97 PDFs + 3 DOCX = **100 chunks ingérés**, 0 erreur. Répartition : convaincre-telephone 37, personnel-accueil 25, reference 20, audio-vente 18.
+- **Qualité retrieval validée** : 6/7 requêtes d'or sortent le bon document en top-1, similarités 0,44-0,59.
+
+### Décisions / corrections techniques
+
+- **Voyage-3-lite produit 512 dims nativement** (pas de Matryoshka sur la lite). Migration 0001 : `vector(1024)` → `vector(512)`. PRD disait 1024 mais c'était basé sur une mauvaise hypothèse — 512 reste SOTA pour la taille du modèle.
+- **ivfflat → HNSW** : avec 100 clusters sur 91 vecteurs, ivfflat probait des clusters vides → 0 résultat sur la plupart des requêtes. HNSW n'a pas ce problème de cold-start. Migration 0002 idempotente.
+- **`next.config.ts` `serverExternalPackages`** : ajouté `voyageai`, `googleapis`, `google-auth-library`, `pdf-parse`, `mammoth`, `@deepgram/sdk` — sinon le bundler Next 16 bute sur les imports relatifs cassés du SDK voyageai@0.2.1.
+- **Voyage free tier = 3 RPM** (propagation du paiement ~5-10 min). Résolu : l'utilisateur a ajouté sa CB mid-J3, on est repassé sur PAYG à 2000 RPM.
+
+### En attente
+
+- **47 vidéos MP4** pas encore ingérées. Coût Deepgram nova-3 batch ≈ 3 € total, temps estimé ≈ 5-8 h (séquentiel, peut être parallélisé mais Deepgram applique ses propres limits). **À lancer une nuit quand on peut laisser tourner** ou à décider si on veut vraiment toutes les transcrire pour la démo.
+- Validation du framework "Appel entrant" avec Jonathan avant J5.
+- Clés `ANTHROPIC_API_KEY` (faite), `DEEPGRAM_API_KEY` (faite), `VOYAGE_API_KEY` (faite). `ELEVENLABS_API_KEY` à provisionner avant J7 (génération des 3 audios de démo).
+
+### Reste à faire
+
+- **J4** : page catalogue 10 cartes, page programme, branchement Cmd+K sur le vrai retrieval avec synthèse Claude Haiku streaming.
+- J5-J10 inchangé.
+
+### Ce qui est maintenant jouable en démo
+- Admin : http://localhost:3000/admin/knowledge — voir les KPIs, tester le retrieval en live.
+- Toggle rôle + nav sidebar + pages placeholder.
+- Base de connaissance prête pour la recherche J4.
+

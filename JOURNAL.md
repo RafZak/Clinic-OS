@@ -143,3 +143,50 @@ pnpm dev                       # http://localhost:3000
 - Toggle rôle + nav sidebar + pages placeholder.
 - Base de connaissance prête pour la recherche J4.
 
+---
+
+## J4 — 23 avril 2026 (suite)
+
+### Fait
+
+- **4 masters Keynote exportés et ingérés en local** (via `pnpm ingest:local`, le user n'ayant pas de droits d'édition sur le Drive partagé) :
+  - Master Reference (6,7 Mo) → 424 chunks
+  - Mater Personnel Acceuil (5,1 Mo) → 260 chunks
+  - Master Audio Vente (4,8 Mo) → 220 chunks
+  - Convaincre au téléphone (2,0 Mo) → 120 chunks
+- **Volume final** : **1 168 chunks** sur 90 fichiers (avant ajout des vidéos). Reference 452, Personnel accueil 298, Audio Vente 248, Convaincre téléphone 170.
+- **Script `pnpm ingest:local <path>`** : pipeline identique à Drive mais pour un fichier local. `drive_file_id = 'local:' + sha1(path|mtime|size)` pour rester idempotent. Métadonnées `origin: 'local-upload'`.
+- **Recherche Cmd+K réelle** livrée :
+  - `lib/claude.ts` + `lib/retrieval/synthesize.ts` : async generator qui émet `{type:'sources'}` puis `{type:'text', delta}` pour chaque token streamé par Claude Haiku, puis `{type:'done'}`.
+  - `app/api/search/route.ts` : POST endpoint qui wrap le generator dans un ReadableStream SSE (`data: {...}\n\n`).
+  - `components/layout/search-trigger.tsx` : dialog qui stream la réponse en direct + sources `[N]` cliquables + 4 questions d'exemple.
+  - Prompt système français tuné : factuel, 120-250 mots, citations obligatoires, pas de préambule.
+- **Catalogue formation** (`/catalogue`) : grille 10 cartes groupées par catégorie (Acquisition / Points de contact / Appareillage / Fidélisation). Compteurs chunks + fichiers live sur les cartes actives. Cartes "Bientôt disponible" en dashed + opacity-60.
+- **Page programme** (`/catalogue/[slug]`) : header + badge actif/inactif, 3 stats (fichiers / chunks / vidéos transcrites), puis liste des fichiers groupée par type (PDF / vidéo / DOCX). notFound() si slug inexistant.
+- **Ingestion vidéos lancée** en background via Deepgram nova-3-general batch (37 vidéos après dédup). ~8-11 chunks par vidéo de module, tourne encore au moment où ce journal est écrit.
+
+### Performances mesurées
+
+- **Latence Cmd+K** end-to-end : ~300 ms retrieval + 100-200 ms de TTFT Haiku + streaming des ~200-250 mots en ~2-3 s. **Total perçu utilisateur : 3-4 s** du Enter au dernier token.
+- **Retrieval top-12 avec dédup** : 250-350 ms contre une base de 1 168 chunks avec HNSW.
+- **Exemple de réponse générée** sur "comment demander une recommandation en cabine" : Claude synthétise les 3 moments (identification besoins, bilan auditif, suivi) avec un exemple de script verbatim et 6 sources citées `[1][3][6]` en 220 mots.
+
+### Ce qui marche en démo maintenant
+
+- **Toggle rôle** (header) + sidebar adaptée + pages vides cohérentes.
+- **Admin Knowledge** : KPIs, barres par programme, liste des 90 fichiers ingérés, test de retrieval inline.
+- **Cmd+K partout** (ou clic sur la barre de recherche dans le header) : question en langage naturel → réponse IA streamée + sources.
+- **Catalogue** : 10 programmes, 4 actifs cliquables vers leur page détail, 6 en "Bientôt disponible".
+- **Page programme** : breakdown des fichiers ingérés par type.
+
+### Reste à faire
+
+- **J5** : coaching consultation live (micro + Deepgram streaming + scoring 10 étapes). Nécessite validation framework "Appel entrant" avant J5 si on veut le couvrir aussi.
+- **J6** : analyse Claude + insights + page résultats.
+- **J7-J10** : replay, artefacts, vault, timeline, dashboard, polish.
+
+### Blockers
+
+- Validation framework appel entrant avec Jonathan avant J5.
+- Ingestion vidéos finira probablement dans 30-45 min. Pas bloquant pour l'instant (le retrieval marche déjà sur les 1 168 chunks PDF+DOCX).
+

@@ -14,7 +14,8 @@
     "db:push": "drizzle-kit push",
     "db:check": "tsx db/check.ts",
     "seed:programs": "tsx scripts/seed-programs.ts",
-    "ingest": "tsx scripts/ingest.ts"
+    "ingest": "tsx scripts/ingest.ts",
+    "ingest:local": "tsx scripts/ingest-local.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.90.0",

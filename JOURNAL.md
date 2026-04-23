@@ -56,3 +56,44 @@ pnpm db:studio                 # UI Drizzle locale sur les tables Supabase
 - Ajout du token `--muted-foreground` shadcn mappé sur `#6B7280` (le `--gray` du PRD). Permet d'utiliser les primitives shadcn sans réécriture.
 - Utilisation du **Session pooler Supabase** (port 5432) au lieu de la Direct connection (IPv6 only, incompatible avec la majorité des box FR et Vercel).
 - Choix de `postgres-js` comme driver Drizzle (préférence pour l'edge, compatible Supabase pooler).
+
+---
+
+## J2 — 23 avril 2026 (suite)
+
+### Fait
+
+- **Rôle persisté en cookie** : `clinic_os_role=audioprothesiste|assistant`, lu via `lib/role.ts::getRole()` (Server Component), écrit via Server Action `app/actions/set-role.ts` avec `revalidatePath("/", "layout")`. Pas d'auth, juste simulation.
+- **AppShell** : sidebar 220 px à gauche (logo + nav filtrée par rôle + bloc Admin en bas), header 60 px sticky en haut (toggle rôle + search trigger + CTA nouvelle session), main centré max-w-1280 px-8 py-8. Composant `app/layout.tsx` wrappé.
+- **Nav adaptée au rôle** :
+  - Commun : Tableau de bord, Patients, Catalogue, Admin Knowledge, Admin Vault
+  - Audioprothésiste : Consultations
+  - Assistant : Appels entrants
+- **Header widgets (client components)** :
+  - `RoleToggle` : tabs pastel style iOS, `useTransition` + server action, pas de reload visible
+  - `SearchTrigger` : bouton + kbd `⌘K`, shortcut keyboard global (⌘K / Ctrl+K) branché, ouvre un dialog placeholder avec message "Bientôt disponible (J4)"
+  - `NewSessionButton` : label adaptatif ("Nouvelle consultation" / "Nouvel appel"), idem placeholder dialog
+- **10 pages placeholder** avec `<PageHeader/>` + `<PlaceholderBlock/>` :
+  `/`, `/consultations`, `/consultations/[id]`, `/appels`, `/appels/[id]`, `/patients`, `/patients/[id]`, `/catalogue`, `/catalogue/[slug]`, `/admin/knowledge`, `/admin/vault`.
+  Le dashboard home affiche 4 cartes KPI adaptées au rôle (valeurs `—` en attendant J9).
+- **Tous les routes testés via curl** : 10/10 HTTP 200. Toggle rôle vérifié : le home title et la sidebar changent bien selon le cookie.
+- **Bug React 19 rencontré et corrigé** : au 1er build, toutes les pages répondaient HTTP 500 avec `Functions cannot be passed directly to Client Components`. Cause : `NavLink` (Client) recevait `icon: LucideIcon` (une fonction composant) depuis `Sidebar` (Server). Fix : rendu de l'icône côté serveur dans `Sidebar` et passage en `React.ReactNode`. Styling actif/inactif déplacé sur le parent via `[&_svg]:text-brand` Tailwind 4.
+
+### Comment vérifier
+
+```bash
+pnpm dev                       # http://localhost:3000
+# Cliquer le toggle du header → home title + sidebar changent
+# ⌘K (ou Ctrl+K) → dialog recherche placeholder
+# Bouton "Nouvelle consultation" → dialog placeholder
+```
+
+### Reste à faire (roadmap restante)
+
+- **J3** (prochaine étape) : ingestion Google Drive (Layer A), chunking PDF/vidéo, embeddings voyage-3-lite, admin `/admin/knowledge` fonctionnel avec test de retrieval.
+- J4–J10 inchangé par rapport à J1.
+
+### Blockers
+
+- **Identiques à J1** : clés API IA + Service Account Google Drive à provisionner avant J3. Validation framework appel avant J5.
+

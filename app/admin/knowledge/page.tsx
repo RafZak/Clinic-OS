@@ -2,6 +2,7 @@ import { desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { ingestionRuns, knowledgeChunks, programs } from "@/db/schema";
 import { PageHeader } from "@/components/layout/page-header";
+import { FilesTable } from "@/components/admin/files-table";
 import { RetrievalTest } from "@/components/admin/retrieval-test";
 
 export const dynamic = "force-dynamic";
@@ -160,6 +161,8 @@ export default async function AdminKnowledgePage() {
       </div>
 
       <RetrievalTest />
+
+      <FilesTable />
     </div>
   );
 }

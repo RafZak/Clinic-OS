@@ -50,9 +50,9 @@ export async function extractPdf(
   const buf = await downloadBuffer(drive, file.id);
   const parsed = await pdfParse(buf);
   const texts = chunkByTokens(parsed.text, {
-    targetTokens: 650,
-    maxTokens: 800,
-    overlapTokens: 100,
+    targetTokens: 300,
+    maxTokens: 450,
+    overlapTokens: 60,
   });
   return {
     sourceType: "pdf",
@@ -71,9 +71,9 @@ export async function extractDocx(
   const buf = await downloadBuffer(drive, file.id);
   const { value } = await mammoth.extractRawText({ buffer: buf });
   const texts = chunkByTokens(value, {
-    targetTokens: 500,
-    maxTokens: 700,
-    overlapTokens: 80,
+    targetTokens: 300,
+    maxTokens: 450,
+    overlapTokens: 60,
   });
   return {
     sourceType: "docx",

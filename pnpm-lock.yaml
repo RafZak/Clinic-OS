@@ -83,9 +83,6 @@ importers:
       tw-animate-css:
         specifier: ^1.4.0
         version: 1.4.0
-      voyageai:
-        specifier: ^0.2.1
-        version: 0.2.1
       zod:
         specifier: ^4.3.6
         version: 4.3.6
@@ -3474,18 +3471,6 @@ packages:
 
   vfile@6.0.3:
     resolution: {integrity: sha512-KzIbH/9tXat2u30jf+smMwFCsno4wHVdNmzFyL+T/L3UGqqk6JKfVqOFOZEpZSHADH1k40ab6NUIXZq422ov3Q==}
-
-  voyageai@0.2.1:
-    resolution: {integrity: sha512-ym7Dk6p8Si6lR9wDh58EzxwT0ziD/pqXjzzzceOSySO3Ic3uosHZLOTAsb3Gq+1OaKdEMnni/p8TohKUNvLTkg==}
-    engines: {node: '>=18.0.0'}
-    peerDependencies:
-      '@huggingface/transformers': ^3.8.0
-      onnxruntime-node: '>=1.17.0'
-    peerDependenciesMeta:
-      '@huggingface/transformers':
-        optional: true
-      onnxruntime-node:
-        optional: true
 
   web-streams-polyfill@3.3.3:
     resolution: {integrity: sha512-d2JWLCivmZYTSIoge9MsgFCZrt571BikcWGYkjC1khllbTeDlGqZ2D8vD8E/lJa8WGWbb7Plm8/XJYV7IJHZZw==}
@@ -7124,12 +7109,6 @@ snapshots:
     dependencies:
       '@types/unist': 3.0.3
       vfile-message: 4.0.3
-
-  voyageai@0.2.1:
-    dependencies:
-      node-fetch: 2.7.0
-    transitivePeerDependencies:
-      - encoding
 
   web-streams-polyfill@3.3.3: {}
 

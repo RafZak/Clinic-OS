@@ -1,0 +1,46 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build output
+.next
+out
+dist
+build
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode
+.idea
+*.swp
+
+# Vercel
+.vercel
+
+# Next
+next-env.d.ts
+
+# Drizzle
+drizzle/meta
+
+# Coverage
+coverage
+
+# Temp
+tmp
+*.tmp

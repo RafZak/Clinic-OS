@@ -34,6 +34,10 @@ yarn-error.log*
 
 # Next
 next-env.d.ts
+*.tsbuildinfo
+
+# Certs
+*.pem
 
 # Drizzle
 drizzle/meta

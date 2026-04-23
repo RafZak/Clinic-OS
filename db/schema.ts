@@ -311,7 +311,7 @@ export const knowledgeChunks = pgTable(
     chunkIndex: integer("chunk_index").notNull(),
     content: text("content").notNull(),
     metadata: jsonb("metadata"),
-    embedding: vector("embedding", { dimensions: 1024 }),
+    embedding: vector("embedding", { dimensions: 512 }),
     driveFileId: text("drive_file_id"),
     driveModifiedAt: timestamp("drive_modified_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),

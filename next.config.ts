@@ -1,7 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  serverExternalPackages: [
+    "voyageai",
+    "googleapis",
+    "google-auth-library",
+    "pdf-parse",
+    "mammoth",
+    "@deepgram/sdk",
+  ],
 };
 
 export default nextConfig;

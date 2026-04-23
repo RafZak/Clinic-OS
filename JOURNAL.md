@@ -190,3 +190,29 @@ pnpm dev                       # http://localhost:3000
 - Validation framework appel entrant avec Jonathan avant J5.
 - Ingestion vidéos finira probablement dans 30-45 min. Pas bloquant pour l'instant (le retrieval marche déjà sur les 1 168 chunks PDF+DOCX).
 
+---
+
+## Fin de journée J4 — 23 avril 2026 tard
+
+### Ajouts de fin de session
+
+- **Ingestion vidéos terminée** : 37 vidéos Deepgram nova-3 FR → 237 chunks de transcription avec timestamps. 0 erreur.
+- **Base finale** : **1 405 chunks** — 1152 PDF + 237 vidéo + 16 DOCX. Reference 485, Personnel accueil 377, Audio Vente 326, Convaincre téléphone 217.
+- **Recherche externe poussée sur le framework "Appel entrant"** : 7 pages fetched (Walter Learning, Youschool, Keona Health, Phonak Practice Forward, Health Catalyst MI, CitizenCall, CRMA Idf, Hamilton CapTel). Méthodologies confirmées : CRAC, entretien motivationnel, 6 steps consensus côté médical FR + US.
+- **Framework v2 écrit dans `lib/frameworks.ts`** — 6 étapes (Accueil, Découverte, Reformulation, Proposition RDV, Traitement objection, Ancrage & Clôture) avec **22 critères scorables** documentés. Différences vs v1 :
+  - Reformulation promue en étape dédiée (consensus médical FR)
+  - Objection APRÈS proposition RDV (CRAC, CitizenCall)
+  - Détection ordonnance/ORL ajoutée (spécificité audio FR)
+  - Ancrage séparé de la clôture (senior-specific)
+- **Framework "Consultation" aussi enrichi** de critères scorables (30 critères au total sur les 10 étapes) pour préparer l'analyseur IA J6.
+
+### En attente utilisateur / Jonathan
+
+- **Validation du framework appel v2 par Jonathan** — c'est une version solide backed par la littérature mais Jonathan a le dernier mot sur les spécificités du réseau Amplifon. Changement ultérieur = modifier `lib/frameworks.ts` uniquement, le reste du code est découplé.
+- **Ingestion `Master Personnel Acceuil` / Audio Vente / Convaincre téléphone** depuis Drive : Jonathan doit upgrade le user en Editor sur le partage Drive, OU l'utilisateur continue de passer par `pnpm ingest:local` (on a 3 masters locaux = 600 chunks supplémentaires déjà ingérés via cette voie).
+
+### Non commencé
+
+- **J5** : coaching consultation live (micro browser + Deepgram WS streaming + UI 3 colonnes + scoring en direct).
+- J6, J7, J8, J9, J10 (cf. PRD section 16).
+

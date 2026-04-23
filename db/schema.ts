@@ -322,8 +322,7 @@ export const knowledgeChunks = pgTable(
       sql`${t.sourceType} in ('pdf', 'video_transcript', 'docx')`
     ),
     index("knowledge_chunks_embedding_idx")
-      .using("ivfflat", t.embedding.op("vector_cosine_ops"))
-      .with({ lists: 100 }),
+      .using("hnsw", t.embedding.op("vector_cosine_ops")),
     index("knowledge_chunks_program_idx").on(t.programSlug),
     index("knowledge_chunks_drive_idx").on(t.driveFileId),
   ]

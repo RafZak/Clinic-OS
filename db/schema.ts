@@ -144,6 +144,9 @@ export const sessions = pgTable(
     status: text("status").default("in_progress"),
     globalScore: integer("global_score"),
     summary: text("summary"),
+    analysisStatus: text("analysis_status").default("pending"),
+    analysisError: text("analysis_error"),
+    analyzedAt: timestamp("analyzed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   },
   (t) => [
@@ -158,6 +161,10 @@ export const sessions = pgTable(
     check(
       "sessions_status_check",
       sql`${t.status} in ('in_progress', 'completed', 'aborted')`
+    ),
+    check(
+      "sessions_analysis_status_check",
+      sql`${t.analysisStatus} in ('pending', 'transcribing', 'transcribed', 'analyzing', 'done', 'failed')`
     ),
   ]
 );

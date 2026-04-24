@@ -4,11 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { FrameworkKind } from "@/lib/frameworks";
 import { useDeepgramLive } from "@/hooks/use-deepgram-live";
+import { useLiveCoach } from "@/hooks/use-live-coach";
 import { finishLiveSession, abortLiveSession } from "@/app/actions/sessions";
 import { LiveHeader } from "./live-header";
 import { LiveTranscript } from "./live-transcript";
 import { LiveFramework } from "./live-framework";
-import { LiveInsights } from "./live-insights";
+import { CoachPanel } from "./coach-panel";
 
 export function LiveConsole({
   sessionId,
@@ -19,6 +20,12 @@ export function LiveConsole({
 }) {
   const router = useRouter();
   const { state, lines, interim, latencyMs, start, stop } = useDeepgramLive({ sessionId });
+  const { bubbles, pending: coachPending } = useLiveCoach({
+    sessionId,
+    kind,
+    lines,
+    enabled: state.phase === "recording",
+  });
   const [elapsedMs, setElapsedMs] = useState(0);
   const [finalizing, setFinalizing] = useState(false);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -89,7 +96,11 @@ export function LiveConsole({
           <LiveFramework kind={kind} />
         </div>
         <div className="col-span-3 min-w-0">
-          <LiveInsights latencyMs={latencyMs} />
+          <CoachPanel
+            bubbles={bubbles}
+            pending={coachPending}
+            enabled={state.phase === "recording"}
+          />
         </div>
       </div>
     </div>

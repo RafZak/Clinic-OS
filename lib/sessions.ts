@@ -1,5 +1,5 @@
 import "server-only";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { sessions } from "@/db/schema";
 
@@ -23,22 +23,23 @@ export async function insertSession(input: { kind: SessionKind; source: "live" |
 
 export async function markSessionCompleted(
   id: string,
-  patch: { audioUrl?: string | null; durationSeconds?: number }
+  patch: { audioUrl?: string | null; durationSeconds: number }
 ): Promise<void> {
+  const set: Partial<typeof sessions.$inferInsert> = {
+    status: "completed",
+    endedAt: new Date(),
+    durationSeconds: patch.durationSeconds,
+  };
+  if ("audioUrl" in patch) set.audioUrl = patch.audioUrl ?? null;
   await db
     .update(sessions)
-    .set({
-      status: "completed",
-      endedAt: new Date(),
-      audioUrl: patch.audioUrl ?? null,
-      durationSeconds: patch.durationSeconds ?? null,
-    })
-    .where(eq(sessions.id, id));
+    .set(set)
+    .where(and(eq(sessions.id, id), eq(sessions.status, "in_progress")));
 }
 
 export async function markSessionAborted(id: string): Promise<void> {
   await db
     .update(sessions)
     .set({ status: "aborted", endedAt: new Date() })
-    .where(eq(sessions.id, id));
+    .where(and(eq(sessions.id, id), eq(sessions.status, "in_progress")));
 }

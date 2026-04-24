@@ -1,18 +1,30 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { FRAMEWORK_LABEL, type FrameworkKind } from "@/lib/frameworks";
+import { loadResultsBundle, sumEstimatedImpact } from "@/lib/results";
+import { formatDuration, formatEur } from "@/lib/format";
 import type { SessionRow } from "@/lib/sessions";
+import { AnalysisLoading } from "@/components/results/analysis-loading";
+import { AnalysisFailed } from "@/components/results/analysis-failed";
+import { ResultsView } from "@/components/results/results-view";
 
-function formatDuration(sec: number | null | undefined): string {
-  if (!sec) return "—";
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}m ${s.toString().padStart(2, "0")}s`;
-}
+type AnalysisStatus =
+  | "pending"
+  | "transcribing"
+  | "transcribed"
+  | "analyzing"
+  | "done"
+  | "failed";
 
-export function ResultsShell({ session }: { session: SessionRow }) {
+export async function ResultsShell({ session }: { session: SessionRow }) {
   const kind = (session.kind as FrameworkKind) ?? "consultation";
   const backHref = kind === "consultation" ? "/consultations" : "/appels";
+  const bundle = await loadResultsBundle(session.id);
+  if (!bundle) return null;
+
+  const status = (bundle.session.analysisStatus ?? "pending") as AnalysisStatus;
+  const impact = sumEstimatedImpact(bundle.insights);
+  const globalScore = bundle.session.globalScore;
 
   return (
     <div className="flex flex-col gap-6">
@@ -25,39 +37,83 @@ export function ResultsShell({ session }: { session: SessionRow }) {
           Retour
         </Link>
         <span className="rounded-full bg-surface-muted px-3 py-1 text-xs uppercase tracking-wide text-muted-foreground">
-          Session terminée
+          {statusLabel(status)}
         </span>
       </div>
 
       <div className="rounded-lg border border-border bg-surface px-6 py-6">
-        <h1 className="text-2xl font-semibold text-ink">
-          Résultats — {FRAMEWORK_LABEL[kind]}
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Session <span className="font-mono">{session.id.slice(0, 8)}…</span> ·
-          durée {formatDuration(session.durationSeconds)}
-        </p>
-
-        <div className="mt-6 grid grid-cols-3 gap-4">
-          <div className="rounded-md border border-border bg-light/40 px-4 py-3">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">Score global</p>
-            <p className="mt-1 text-2xl font-semibold text-ink">—</p>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold text-ink">
+              {bundle.patient?.label ?? `Session ${bundle.session.id.slice(0, 8)}…`}
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {FRAMEWORK_LABEL[kind]} · durée {formatDuration(bundle.session.durationSeconds)}
+            </p>
           </div>
-          <div className="rounded-md border border-border bg-light/40 px-4 py-3">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">Insights détectés</p>
-            <p className="mt-1 text-2xl font-semibold text-ink">—</p>
-          </div>
-          <div className="rounded-md border border-border bg-light/40 px-4 py-3">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">Impact estimé</p>
-            <p className="mt-1 text-2xl font-semibold text-ink">—</p>
-          </div>
-        </div>
-
-        <div className="mt-6 rounded-md border border-dashed border-border bg-surface-muted px-4 py-6 text-center text-sm text-muted-foreground">
-          L&apos;analyseur IA (scoring par étape, insights chiffrés €, 4 artefacts) sera livré en J6-J8.
-          L&apos;audio et la transcription sont déjà en base pour cette session.
+          {status === "done" && (
+            <div className="flex flex-wrap items-center gap-3">
+              <Badge label="Score global" value={globalScore !== null ? `${globalScore}/100` : "—"} tone="brand" />
+              <Badge label="Insights" value={String(bundle.insights.length)} />
+              <Badge
+                label="Impact estimé"
+                value={impact > 0 ? formatEur(impact) : "—"}
+                tone={impact > 0 ? "brand" : "default"}
+              />
+            </div>
+          )}
         </div>
       </div>
+
+      {status === "failed" ? (
+        <AnalysisFailed sessionId={bundle.session.id} error={bundle.session.analysisError} />
+      ) : status !== "done" ? (
+        <AnalysisLoading sessionId={bundle.session.id} initialStatus={status} />
+      ) : (
+        <ResultsView bundle={bundle} />
+      )}
     </div>
   );
+}
+
+function Badge({
+  label,
+  value,
+  tone = "default",
+}: {
+  label: string;
+  value: string;
+  tone?: "default" | "brand";
+}) {
+  return (
+    <div
+      className={`rounded-md border px-4 py-2 ${
+        tone === "brand"
+          ? "border-brand/30 bg-brand/5"
+          : "border-border bg-light/40"
+      }`}
+    >
+      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className={`mt-0.5 text-lg font-semibold ${tone === "brand" ? "text-brand" : "text-ink"}`}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function statusLabel(status: AnalysisStatus): string {
+  switch (status) {
+    case "pending":
+      return "Analyse en attente";
+    case "transcribing":
+      return "Re-transcription";
+    case "transcribed":
+      return "Transcription prête";
+    case "analyzing":
+      return "Analyse IA";
+    case "done":
+      return "Session analysée";
+    case "failed":
+      return "Analyse échouée";
+  }
 }

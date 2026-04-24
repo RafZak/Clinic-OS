@@ -216,3 +216,55 @@ pnpm dev                       # http://localhost:3000
 - **J5** : coaching consultation live (micro browser + Deepgram WS streaming + UI 3 colonnes + scoring en direct).
 - J6, J7, J8, J9, J10 (cf. PRD section 16).
 
+---
+
+## J5 — 24 avril 2026
+
+### Fait
+
+- **Plan écrit** dans `docs/superpowers/plans/2026-04-24-j5-live-coaching.md` puis exécuté en subagent-driven avec review spec + code-quality sur les tâches critiques.
+- **Server Actions** (`app/actions/sessions.ts`) : `startLiveSession(kind)` insert + redirect, `finishLiveSession(id, patch)` update vers completed, `abortLiveSession(id)`. Helpers Drizzle dans `lib/sessions.ts`. Review code-quality du 1er commit a remonté 3 issues "Important" (patch-semantics sur `markSessionCompleted`, guard terminal-state, type mismatch) — toutes durcies en un 2e commit avec guards `and(id, status='in_progress')`.
+- **Deepgram token endpoint** (`POST /api/deepgram/token`) livré mais **non utilisable** : la clé Admin sur le compte Deepgram revient `"Insufficient permissions"` sur `/v1/auth/grant` malgré le rôle admin UI. Probable feature-gating Deepgram. Endpoint gardé pour rebascule future.
+- **Pivot auth browser** : le hook lit `NEXT_PUBLIC_DEEPGRAM_API_KEY` directement et l'injecte comme subprotocol WebSocket `["token", key]`. La clé fuite dans devtools — acceptable pour démo locale sur la machine de Jonathan, à re-hardener en prod.
+- **Transcript persistence** (`POST /api/sessions/[id]/transcript`) : zod-validé, batch 1-50 lignes, mapping confidence number→`numeric(4,3)`. Verify curl OK.
+- **Audio upload** (`POST /api/sessions/[id]/audio`) + bucket privé Supabase Storage `sessions/` : helper admin service-role, bootstrap idempotent (`pnpm storage:bootstrap`), upsert activé, limite 200 MB. webm (Chrome) et mp4 (Safari) gérés via extension mime-detectée.
+- **Hook `useDeepgramLive`** (`hooks/use-deepgram-live.ts`) : `getUserMedia` 16 kHz mono, `MediaRecorder` timeslice 250 ms (webm/opus avec fallback mp4/aac Safari), WebSocket `wss://api.deepgram.com/v1/listen` avec `nova-3-general` FR + `punctuate` + `smart_format` + `interim_results` + `endpointing=300`, batching toutes les 2 s ou tous les 5 finals vers `/transcript`, concat audio chunks pour upload end-of-session.
+- **UI 3 colonnes** (`components/live/`) : `LiveTranscript` (timestamps MM:SS + texte, interim italique, auto-scroll, footer "attribution en post-analyse J6"), `LiveFramework` (10/6 étapes du framework `lib/frameworks.ts` avec badge "À évaluer" stub J5), `LiveInsights` (latence en ms + placeholder "IA en veille, livré J6"), `LiveHeader` (timer HH:MM:SS, boutons "Démarrer", "Arrêter et analyser", "Abandonner"), `LiveConsole` orchestrateur (tick 500 ms, stop flow upload→action→`router.refresh`).
+- **Routes branchent sur status** : `/consultations/[id]` et `/appels/[id]` fetchent la session, 404 si manquant ou mauvais kind, rendent `LiveConsole` si `in_progress` sinon `ResultsShell` (shell J5 vide, rempli J6-J8).
+- **NewSessionButton** transformé en dialog Live/Replay : "Démarrer en direct" invoque la Server Action (redirect interne), "Rejouer une session" disabled avec message J7.
+
+### Testé en Chrome — observations
+
+- **Flow complet bout-en-bout fonctionne** sur une session réelle : session `845bf2ca-8a3e-47c8-9437-f45591965047`, durée 136 s, audio uploadé (`sessions/845bf2ca….webm`, 2 m 16 s), 4 transcript_lines persistées avec confidence 0.93-0.98, statut `completed`, redirect vers `/consultations/[id]` qui rend le ResultsShell.
+- **Latence Deepgram** : **400-405 ms** sur les tests successifs — largement sous la cible 800 ms du PRD §18.
+- **Qualité transcription FR** : excellente (`nova-3-general` + `smart_format`), ponctuation correcte, accents préservés, quelques coupures mi-phrase liées à `endpointing=300` (Deepgram coupe dès 300 ms de silence ; si on voulait des lignes plus longues il faudrait pousser à 500-700 ms, compromis latence).
+
+### Décision majeure du J5 : **abandon de la diarization live**
+
+Après 3 configurations Deepgram différentes testées en live avec 2 speakers humains distincts, **impossible d'obtenir un label speaker différent de `0`** :
+1. `nova-3-general` + `diarize=true` → `speaker: 0` sur toutes les utterances
+2. `nova-2-general` + `diarize=true` + `utterances=true` → idem, tout `speaker: 0`
+3. `nova-2` + `diarize=true` + `diarize_version=2023-10-04` → champ `speaker` totalement absent
+
+Le live diarization de Deepgram n'est pas fiable dans notre setup (un seul micro laptop, 2 voix proches acoustiquement). Confirmation externe croisée : le projet CoCo a tranché pareil en avril 2026 — ils utilisent CAM++ via ONNX client-side (2-3 jours de dev, 50 MB de modèle, enrollment UX 30-60 s par speaker) ou pyannoteAI en batch pour leur cas.
+
+**Trois pivots envisagés** :
+- A. CAM++ client-side : out of scope (2-3 jours)
+- B. Heuristique silence-gap (toggle speaker si gap > 1 s entre 2 utterances) : implémentée puis désactivée — gap typique en stream time < 500 ms à cause d'`endpointing=300`, trop instable
+- C. **Retenu** : live view sans labels speaker, vraie attribution différée à J6 via **Deepgram batch prerecorded** (pipeline déjà éprouvé sur les 37 vidéos ingérées en J3, diarization batch >> live)
+
+Le hook continue de calculer un speaker via l'heuristique silence-gap et le persiste en DB (schéma exige un enum `practitioner|patient`), mais l'UI ne l'affiche pas. Le footer de la colonne transcription indique honnêtement "L'attribution des voix sera faite en post-analyse (J6, diarization batch Deepgram)".
+
+### Reste à faire
+
+- **J6** : analyseur Claude streaming (scoring par étape ré-évalué toutes les 20 s, insights événementiels chiffrés €, citations Layer A) + **re-transcription batch Deepgram** de l'audio uploadé pour réécrire `transcript_lines.speaker` avec de la vraie diarization. Page résultats réelle — radar, insights triés, transcription attribuée + annotée.
+- **J7** : 3 audios TTS ElevenLabs + mode replay.
+- J8-J10 inchangé.
+
+### Blockers / points d'attention
+
+- **Clé Deepgram `NEXT_PUBLIC_DEEPGRAM_API_KEY` exposée au browser** — dette de sécurité acceptée pour la démo. À remplacer par `/api/deepgram/token` dès que Deepgram débloque le grant endpoint sur le compte.
+- **Safari pas testé** — à faire si on veut assurer le bouton "Nouvelle consultation" sur Safari. Le code prévoit le fallback webm→mp4 mais n'a pas été vérifié en conditions réelles.
+- **Framework appel entrant v2** toujours non validé par Jonathan — n'impacte pas J5 puisqu'on utilise le framework tel quel ; un changement ultérieur = modifier `lib/frameworks.ts` seulement.
+- **Abort flow** : le bouton "Abandonner" passe `sessions.status='aborted'` mais ne supprime ni l'audio uploadé ni les transcript_lines déjà insérées. Nettoyage à prévoir en admin roadmap.
+

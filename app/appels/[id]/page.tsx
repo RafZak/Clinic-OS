@@ -1,4 +1,7 @@
-import { PageHeader, PlaceholderBlock } from "@/components/layout/page-header";
+import { notFound } from "next/navigation";
+import { getSessionById } from "@/lib/sessions";
+import { LiveConsole } from "@/components/live/live-console";
+import { ResultsShell } from "@/components/live/results-shell";
 
 export default async function AppelDetailPage({
   params,
@@ -6,14 +9,12 @@ export default async function AppelDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const session = await getSessionById(id);
+  if (!session) notFound();
+  if (session.kind !== "phone_call") notFound();
 
-  return (
-    <div className="flex flex-col gap-6">
-      <PageHeader
-        title={`Appel ${id}`}
-        description="Transcription + scoring 5 étapes téléphone + insights. Identique à la page consultation, framework adapté."
-      />
-      <PlaceholderBlock>Stretch goal J9.</PlaceholderBlock>
-    </div>
-  );
+  if (session.status === "in_progress") {
+    return <LiveConsole sessionId={id} kind="phone_call" />;
+  }
+  return <ResultsShell session={session} />;
 }

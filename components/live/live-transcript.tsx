@@ -10,12 +10,21 @@ function formatMs(ms: number): string {
   return `${m}:${s}`;
 }
 
+const DEFAULT_FOOTER_NOTE =
+  "L'attribution des voix sera faite en post-analyse (J6, diarization batch Deepgram).";
+
 export function LiveTranscript({
   lines,
   interim,
+  showSpeaker = false,
+  footerNote = DEFAULT_FOOTER_NOTE,
+  title = "Transcription en direct",
 }: {
   lines: LiveLine[];
   interim: string;
+  showSpeaker?: boolean;
+  footerNote?: string | null;
+  title?: string;
 }) {
   const endRef = useRef<HTMLDivElement | null>(null);
 
@@ -26,7 +35,7 @@ export function LiveTranscript({
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-lg border border-border bg-surface">
       <div className="flex items-center justify-between border-b border-border px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        <span>Transcription en direct</span>
+        <span>{title}</span>
         <span>{lines.length} lignes</span>
       </div>
       <div className="flex-1 overflow-y-auto px-4 py-3">
@@ -41,6 +50,17 @@ export function LiveTranscript({
               <span className="mt-0.5 shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
                 {formatMs(l.startMs)}
               </span>
+              {showSpeaker && (
+                <span
+                  className={`mt-0.5 inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                    l.speaker === "practitioner"
+                      ? "bg-brand/10 text-brand"
+                      : "bg-surface-muted text-muted-foreground"
+                  }`}
+                >
+                  {l.speaker === "practitioner" ? "Pro" : "Patient"}
+                </span>
+              )}
               <p className="text-sm leading-relaxed text-ink">{l.text}</p>
             </li>
           ))}
@@ -55,9 +75,11 @@ export function LiveTranscript({
         </ul>
         <div ref={endRef} />
       </div>
-      <div className="border-t border-border px-4 py-2 text-[11px] text-muted-foreground">
-        L&apos;attribution des voix sera faite en post-analyse (J6, diarization batch Deepgram).
-      </div>
+      {footerNote && (
+        <div className="border-t border-border px-4 py-2 text-[11px] text-muted-foreground">
+          {footerNote}
+        </div>
+      )}
     </div>
   );
 }

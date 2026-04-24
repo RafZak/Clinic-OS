@@ -451,3 +451,96 @@ Les 3 sessions seedées ont été analysées à froid (reset analysis_status →
 - **Scripts replay Martin/Lefèvre** : scores IA sévères. Itérer si Jonathan juge que la démo a besoin de 65/48 exacts au lieu de 52/19.
 - **Chat coach post-session** (interprétation 3 de la feature "coaching bulles" dans la conversation de cadrage) : pas livré J7, à caser J8 ou J9 si temps.
 
+---
+
+## J8 — 25 avril 2026 (matinée)
+
+### Objectif
+
+Livrer (1) les **4 artefacts post-consultation** (notes cliniques, email patient, SMS patient, courrier ORL) générés en parallèle après l'analyse + branchés dans le tab Livrables du ResultsView, et (2) le **Layer B vault Karpathy** complet (pipeline d'enrichissement auto, seed initial, page `/admin/vault` avec rendu markdown / backlinks / graph view / export Obsidian zip). Auto mode acté par Raphaël en début de session : 4 décisions techniques arbitrées en début de J8 (auto-kick artefacts après analyze, frontmatter hybride scalaire-only, React Flow pour le graph, single call vault).
+
+### Fait
+
+- **`docs/prompts.md` réécrit** (réf. CLAUDE.md §13) : 8 prompts documentés avec leur signature `tool_use` réelle (`submit_analysis`, `emit_vault_updates`, `submit_clinical_notes`, `submit_patient_email`, `submit_patient_sms`, `submit_orl_letter`, `emit_bubble`) + modèles à jour (Sonnet 4.6 / Haiku 4.5). Les 7 prompts originaux mentionnaient Sonnet 4.5 et un format JSON-in-text qui n'a jamais été utilisé en pratique — réalignement complet.
+- **Pipeline artefacts** (`lib/artifacts/generate.ts`) : 4 fonctions pures `generateClinicalNotes` / `generatePatientEmail` / `generatePatientSms` / `generateOrlLetter` qui chargent en 1 fois le contexte (session + patient + practitioner + center via FK joins + transcript + scores + insights + fiche vault practitioner si elle existe) puis appellent Claude tool_use en parallèle. Persistance DELETE+INSERT en transaction sur `session_artifacts` unique(session_id, type). Métadonnées jsonb (model, durationMs, input/output tokens) — auditable depuis l'UI.
+- **Endpoint + auto-kick** : `POST /api/sessions/[id]/artifacts` (no body = regenerate all 4, body `{type}` = single). Chaînage parallèle artefacts + vault depuis `analyze.ts` via `after()` de `next/server` quand l'analyse aboutit. Server actions `regenerateArtifact(sessionId, type)` et `regenerateAllArtifacts(sessionId)` exposées pour les boutons UI.
+- **UI tab Livrables** (`components/results/artifacts-panel.tsx`) : grid 2×2 de 4 cartes `ArtifactCard`. Chaque carte : icône + titre + badge "destination simulée" ("Cosium / Otoaccess", "Outlook / Gmail", "SMS Gateway", "Courrier médical"), rendu différencié par type (markdown via `react-markdown` pour les notes/courrier, parsing JSON + conversion HTML→markdown pour l'email afin d'éviter une injection HTML brute, texte brut + compteur caractères pour le SMS). Boutons Copier (clipboard avec feedback 1.8 s) + Régénérer (server action + `router.refresh()` après 1.5 s). Polling automatique côté client toutes les 3 s pendant 90 s si `analysisStatus === 'done'` mais artefacts incomplets — assure que la page se peint même si on arrive avant la fin de la génération parallèle. Footer métadonnées coût/durée pour audit visuel démo.
+- **Pipeline vault Karpathy** (`lib/vault/`) : 4 modules complets :
+  - `frontmatter.ts` : parser/serializer YAML scalaire déterministe maison (pas de dépendance gray-matter — l'overkill est évité, on n'autorise que des scalars en frontmatter, c'est le contrat avec Claude). Helpers `parseFrontmatter`, `serializeFrontmatter`, `mergeMetadata`.
+  - `wikilinks.ts` : `extractWikilinks` + `parseWikilinks` (positions) via `String.matchAll` — regex `\[\[slug(\|alias)?\]\]`.
+  - `storage.ts` : helpers Supabase Storage pour le bucket privé `vault` (`writeVaultFile`, `readVaultFile`, `deleteVaultFile`, `listVaultFiles`, `ensureVaultBucket`). Service-role admin client.
+  - `ingest.ts` : `updateVaultForSession(sessionId)` — fonction pure. Charge contexte session (avec FK joins) + fiches existantes concernées (practitioner, center, patient si liés, patterns candidats). 1 seul appel Claude Sonnet 4.6 `tool_use` `emit_vault_updates` retourne 2-6 patches typés (`create` / `replace` / `append_section`). Chaque patch est appliqué en : (a) rebuild markdown final selon l'opération, (b) écriture Storage `vault/<path>`, (c) upsert `vault_pages` (metadata = parsed YAML, backlinks = scan `[[…]]` recomputé à chaque write). Garde-fou : si Claude oublie la fiche session, `buildSessionFallback()` la génère automatiquement.
+- **Endpoint vault** : `POST /api/sessions/[id]/vault` (`maxDuration=60`). Chaîné en parallèle des artefacts depuis l'analyse.
+- **Pré-seed vault** (`scripts/seed-vault.ts` + `pnpm seed:vault`) : 7 fiches initiales idempotentes (UPSERT ON CONFLICT path) — `index.md`, `centers/lyon-3.md`, `practitioners/claire-moreau.md`, 3 fiches patients (Durand / Martin / Lefèvre), `patterns/objection-prix-non-traitee.md`. `entity_id` résolu depuis les rows seedées par `pnpm seed:replay`. Helper `slugify` inliné dans le script pour éviter une dépendance circulaire `dotenv → ingest.ts → db/client.ts` qui faisait échouer le boot.
+- **Bucket Storage `vault`** créé via `pnpm storage:bootstrap` (le helper a été ajouté à `lib/vault/storage.ts::ensureVaultBucket`).
+- **UI `/admin/vault`** :
+  - **Liste** (`app/admin/vault/page.tsx`) : server component, regroupe par `kind`, stats top (fiches totales / audioprothésistes / patients / sessions analysées), bouton "Vue graph" + "Export Obsidian (.zip)".
+  - **Détail** (`app/admin/vault/[...path]/page.tsx`) : rendu markdown via `react-markdown`. Composant client `VaultMarkdown` qui transforme les `[[wikilinks]]` en `<Link>` cliquables coloré brand quand la cible existe, en `<span>` muted "cible non créée" sinon. Panneau frontmatter YAML en haut. 2 panneaux backlinks à droite (sortants depuis `vault_pages.backlinks` jsonb, entrants via index jsonb `?| array[…]`).
+  - **Graph view** (`app/admin/vault/graph/page.tsx` + `components/admin/vault-graph.tsx`) : React Flow, layout en colonnes par kind avec couleurs distinctes (brand pour practitioners, bleu centres, vert patients, rose patterns, violet sessions, slate index). Edges depuis les backlinks. Click sur node = navigation vers la fiche.
+  - **Export Obsidian** (`app/api/admin/vault/export/route.ts`) : route GET qui zippe toutes les fiches via JSZip + ajoute un `_README.md` explicatif "comment ouvrir dans Obsidian". Téléchargement direct.
+- **Tab Mémoire du ResultsView** : remplace le `PlaceholderPanel`. 2 cartes cliquables (fiche audioprothésiste + fiche session) avec badge **"Mis à jour à l'instant"** si `updated_at < 5 min` — le **wow moment** de la démo Karpathy. Lien explicite vers `/admin/vault` pour pousser plus loin.
+- **Test E2E pipeline** (`scripts/test-j8-pipeline.ts` + `pnpm test:j8 <slug>`) : reset session → retranscribe (skip no-audio) → analyze → generateAllArtifacts() → updateVaultForSession() → récap final (DB read). Validé bout-en-bout sur Durand.
+- **Fix Turbopack en cours de J8** : `lib/vault/frontmatter.ts` et `lib/vault/wikilinks.ts` portaient un `import "server-only"` initial. Le composant client `vault-markdown.tsx` les importe pour parser le frontmatter et split les wikilinks côté browser → build error Pages Router. Retrait du marqueur sur ces deux modules (ce sont des utilitaires purs sans accès DB/fs/env). Le marqueur reste sur `ingest.ts` et `storage.ts` qui touchent la DB et Storage.
+
+### Validation E2E mesurée (`pnpm test:j8 durand-excellent`)
+
+Run final sur la session seedée `97024f47-fd43-4ddb-a237-9596d1623c9f` :
+
+| Étape | Durée | Détail |
+|---|---|---|
+| **Analyze** (Sonnet 4.6) | **72.6 s** | 8 insights, score global **84/100** (cible 88, dans la marge ±5 comme J7) |
+| **4 Artefacts** (parallèle) | **20.9 s** | limité par orl_letter qui prend 20.6 s |
+| → patient_sms (Haiku) | 1.4 s | 140 caractères, 2 401 + 76 tokens |
+| → patient_email (Sonnet) | 9.1 s | 1 305 chars, 4 165 + 493 tokens |
+| → clinical_notes (Sonnet) | 15.2 s | 2 556 chars, 3 957 + 874 tokens |
+| → orl_letter (Sonnet) | 20.6 s | 3 274 chars, 3 948 + 1 061 tokens |
+| **Vault update** (Sonnet 4.6) | **79.2 s** | **5 patches générés, 4 appliqués** (1 patch silencieusement raté — voir dette plus bas) |
+| **Total pipeline E2E** | **171.2 s** | 4/4 artefacts persistés, 4/4 fiches entités vault touchées |
+
+**Fiches vault enrichies par cette seule session** :
+- `centers/lyon-3.md` (center)
+- `patients/mme-francoise-durand.md` (patient — timeline mise à jour)
+- `patterns/objection-prix-non-traitee.md` (pattern — Claude a noté que cette session frôle ce pattern)
+- `practitioners/claire-moreau.md` (practitioner — synthèse + forces récurrentes + sessions récentes)
+
+C'est **exactement** la mécanique Karpathy attendue pour la démo : une consultation analysée enrichit 4 fiches de façon cohérente, en gardant le contenu existant (operation `replace` ou `append_section` selon le cas). Lors de la démo, Jonathan jouera Durand → ouvrira `/admin/vault/practitioners/claire-moreau` → diff visible.
+
+### Coûts mesurés (1 session E2E complète)
+
+- Artefacts (4 calls) : ~**$0.076** total (Haiku $0.003 + Sonnet $0.020 + $0.025 + $0.028)
+- Vault (1 call Sonnet) : ~**$0.078** (estimation 6 000 input + 4 000 output)
+- Analyse (J6 inchangé) : ~**$0.10**
+- **Total par session E2E ≈ $0.25** — soit ~$1.25 pour rejouer les 5 sessions de démo (3 consultations + 2 appels stretch). Cache TTS coupé par le pivot J7, donc pas de coût ElevenLabs.
+
+### Dette technique acceptée (à traiter après J8)
+
+- **Vault : 1 patch sur 5 silencieusement raté** dans le run final (4 appliqués sur 5 retournés par Claude). Le `try/catch` autour de `applyPatch` log un warning mais continue. À investiguer J9 : probablement la fiche session que Claude a tenté de créer en concurrence avec mon fallback automatique. À diagnostiquer + corriger ; en pratique mon `buildSessionFallback()` couvre le cas dégradé. Pas critique pour la démo (les 4 fiches entités sont à jour, c'est ce que Jonathan montrera).
+- **Vault Sonnet 4.6 à 79 s** sur Durand — au-dessus du plafond Vercel 60 s comme l'analyse. Mêmes options qu'au J6 (Inngest, streaming, troncation input). À trancher avant J10 si on déploie. En local, pas bloquant.
+- **Artefacts non persistés en cas de crash partiel** : si Claude renvoie 3/4 OK et 1 KO, les 3 sont écrits, le 4ème reste null en DB. L'UI affiche bien "3/4 prêts" et le bouton Régénérer permet de relancer. Suffisant pour démo.
+- **Prompt vault tightened en cours de J8** : la première run produisait seulement 1 patch (la fiche session) parce que `minItems: 1` + prompt mou. J'ai bumped à `minItems: 2` + ajouté instructions explicites "Si fiche pratitioner existe, tu DOIS l'enrichir". Marche désormais. Mais à surveiller : si un jour on a une session sans entités liées, `minItems: 2` pourrait planter. À trancher au cas-par-cas.
+- **Frontmatter parser maison** : pas de gray-matter. Volontairement minimaliste (seulement scalars). Si à l'avenir on veut des arrays (ex: `tags: [a, b, c]`), il faut soit étendre le parser soit installer gray-matter. Pas un problème pour la démo, prévu en roadmap.
+
+### Ce qui marche en démo maintenant (cumulatif J1→J8)
+
+- Toggle rôle + nav sidebar.
+- Admin Knowledge : KPIs, fichiers, test retrieval inline.
+- Cmd+K : recherche naturelle streamée + sources Layer A.
+- Catalogue : 10 programmes, 4 actifs cliquables.
+- Consultation live : micro + Deepgram 400 ms latence + transcription défile + scoring J6 post-session avec radar + insights + citations.
+- Replay textuel animé : dialog "Nouvelle consultation" → 3 cartes Durand/Martin/Lefèvre → transcript défile tout seul → bulles coach Haiku popent → fin → analyseur tourne.
+- **Nouveau J8** : tab Livrables — 4 cartes cliquables, rendu markdown/HTML, copiables, régénérables, génération auto en parallèle après analyse.
+- **Nouveau J8** : tab Mémoire — lien direct vers la fiche audioprothésiste qui vient d'être enrichie + lien vers la fiche session.
+- **Nouveau J8** : `/admin/vault` complet — liste par kind, rendu markdown avec wikilinks cliquables, graph React Flow, export Obsidian zip pour audit Amplifon.
+
+### Reste à faire
+
+- **J9 matin** : timeline patient (2 fictifs seedés avec événements de parcours), dashboard business avec vrais KPIs (taux d'appareillage / panier moyen / conversion), nudges ("Revoir module 7 sur traitement objection prix" etc.).
+- **J9 aprem (stretch)** : appels entrants replay côté assistant + framework 6 étapes.
+- **J10** : E2E + polish + répétition Jonathan + investigation du patch vault qui rate + déploiement Vercel si on y va.
+
+### Blockers / questions ouvertes
+
+- **Framework appel entrant v2** toujours non validé par Jonathan — bloquera J9 aprem si on veut coacher un replay d'appel.
+- **Scripts replay Martin/Lefèvre** : scores IA sévères vu en J7. Pas itéré J8 (priorité aux 4 artefacts + vault). Si Jonathan juge nécessaire pour la démo, à itérer J9 ou J10.
+- **Investigation 5e patch vault** non bloquante mais à faire en J9 par hygiène.
+

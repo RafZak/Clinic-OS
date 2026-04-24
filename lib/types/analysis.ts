@@ -4,6 +4,7 @@ import type {
   transcriptLines,
   sessionScores,
   coachingInsights,
+  sessionArtifacts,
 } from "@/db/schema";
 
 export type InsightCitation = {
@@ -20,10 +21,19 @@ export type InsightRow = Omit<typeof coachingInsights.$inferSelect, "citationChu
   citationChunks: InsightCitation[] | null;
 };
 
+export type ArtifactType =
+  | "clinical_notes"
+  | "patient_email"
+  | "patient_sms"
+  | "orl_letter";
+
+export type ArtifactRow = typeof sessionArtifacts.$inferSelect & { type: ArtifactType };
+
 export type ResultsBundle = {
   session: typeof sessions.$inferSelect;
   patient: typeof patients.$inferSelect | null;
   lines: (typeof transcriptLines.$inferSelect)[];
   scores: (typeof sessionScores.$inferSelect)[];
   insights: InsightRow[];
+  artifacts: ArtifactRow[];
 };

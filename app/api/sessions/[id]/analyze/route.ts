@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { analyzeSession } from "@/lib/analysis/analyze";
+import { getSiteUrl } from "@/lib/site-url";
 
 // Vercel Pro : 60 s max. Claude Sonnet 4.6 sur un transcript 5-10 min = 15-25 s.
 export const maxDuration = 60;
@@ -12,6 +13,29 @@ export async function POST(
   const { id } = await params;
   try {
     const outcome = await analyzeSession(id);
+
+    // Si l'analyse a abouti, on enchaîne sur la génération des 4 artefacts +
+    // l'update du vault Layer B. Le chaînage est fire-and-forget : on ne
+    // bloque pas la réponse au client (qui poll /status pour suivre l'état
+    // analyse).
+    if ("ok" in outcome && outcome.ok) {
+      after(async () => {
+        try {
+          const res = await fetch(`${getSiteUrl()}/api/sessions/${id}/artifacts`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+          });
+          if (!res.ok) {
+            console.warn(
+              `artifacts kick non-OK for ${id}: ${res.status} ${await res.text().catch(() => "")}`
+            );
+          }
+        } catch (err) {
+          console.warn(`artifacts kick failed for ${id}`, err);
+        }
+      });
+    }
+
     return NextResponse.json({ ok: true, sessionId: id, outcome }, { status: 200 });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

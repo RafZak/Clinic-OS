@@ -7,8 +7,11 @@ import {
   transcriptLines,
   sessionScores,
   coachingInsights,
+  sessionArtifacts,
 } from "@/db/schema";
 import type {
+  ArtifactRow,
+  ArtifactType,
   InsightCitation,
   InsightRow,
   ResultsBundle,
@@ -24,7 +27,7 @@ export async function loadResultsBundle(sessionId: string): Promise<ResultsBundl
   if (rows.length === 0) return null;
   const { sessions: sessionRow, patients: patientRow } = rows[0];
 
-  const [lines, scores, insightsRaw] = await Promise.all([
+  const [lines, scores, insightsRaw, artifactsRaw] = await Promise.all([
     db
       .select()
       .from(transcriptLines)
@@ -40,6 +43,10 @@ export async function loadResultsBundle(sessionId: string): Promise<ResultsBundl
       .from(coachingInsights)
       .where(eq(coachingInsights.sessionId, sessionId))
       .orderBy(asc(coachingInsights.relatedStep)),
+    db
+      .select()
+      .from(sessionArtifacts)
+      .where(eq(sessionArtifacts.sessionId, sessionId)),
   ]);
 
   const insights: InsightRow[] = insightsRaw.map((i) => ({
@@ -49,7 +56,12 @@ export async function loadResultsBundle(sessionId: string): Promise<ResultsBundl
       : null,
   }));
 
-  return { session: sessionRow, patient: patientRow, lines, scores, insights };
+  const artifacts: ArtifactRow[] = artifactsRaw.map((a) => ({
+    ...a,
+    type: a.type as ArtifactType,
+  }));
+
+  return { session: sessionRow, patient: patientRow, lines, scores, insights, artifacts };
 }
 
 export function sumEstimatedImpact(insights: InsightRow[]): number {

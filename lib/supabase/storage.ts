@@ -33,3 +33,22 @@ export async function uploadSessionAudio(
   if (error) throw error;
   return `${BUCKET}/${path}`;
 }
+
+/**
+ * Génère une signed URL (lecture) sur l'audio stocké. TTL 10 min par défaut.
+ * Utilisé pour passer le fichier à Deepgram prerecorded sans télécharger dans
+ * le runtime serverless. L'URL doit être fetchable publiquement pendant le TTL.
+ */
+export async function createSignedAudioUrl(
+  audioUrl: string,
+  ttlSec: number = 600
+): Promise<string> {
+  const s = admin();
+  const path = audioUrl.startsWith(`${BUCKET}/`)
+    ? audioUrl.slice(BUCKET.length + 1)
+    : audioUrl;
+  const { data, error } = await s.storage.from(BUCKET).createSignedUrl(path, ttlSec);
+  if (error) throw error;
+  if (!data?.signedUrl) throw new Error("signed url missing");
+  return data.signedUrl;
+}

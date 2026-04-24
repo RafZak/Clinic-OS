@@ -15,24 +15,25 @@ export async function POST(
     const outcome = await analyzeSession(id);
 
     // Si l'analyse a abouti, on enchaîne sur la génération des 4 artefacts +
-    // l'update du vault Layer B. Le chaînage est fire-and-forget : on ne
+    // l'update du vault Layer B EN PARALLÈLE. Fire-and-forget : on ne
     // bloque pas la réponse au client (qui poll /status pour suivre l'état
     // analyse).
     if ("ok" in outcome && outcome.ok) {
       after(async () => {
-        try {
-          const res = await fetch(`${getSiteUrl()}/api/sessions/${id}/artifacts`, {
+        const base = getSiteUrl();
+        const kick = (path: string) =>
+          fetch(`${base}/api/sessions/${id}/${path}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-          });
-          if (!res.ok) {
-            console.warn(
-              `artifacts kick non-OK for ${id}: ${res.status} ${await res.text().catch(() => "")}`
-            );
-          }
-        } catch (err) {
-          console.warn(`artifacts kick failed for ${id}`, err);
-        }
+          }).then(
+            (res) => {
+              if (!res.ok) {
+                console.warn(`${path} kick non-OK for ${id}: ${res.status}`);
+              }
+            },
+            (err) => console.warn(`${path} kick failed for ${id}`, err)
+          );
+        await Promise.all([kick("artifacts"), kick("vault")]);
       });
     }
 

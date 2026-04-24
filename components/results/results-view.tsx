@@ -221,11 +221,7 @@ export function ResultsView({ bundle }: { bundle: Bundle }) {
       </TabsContent>
 
       <TabsContent value="memory">
-        <PlaceholderPanel
-          icon={<NotebookPen className="size-5 text-muted-foreground" aria-hidden />}
-          title="Mémoire organisationnelle (J8)"
-          description="Cette session nourrira la fiche Karpathy de l'audioprothésiste à partir de J8. Le lien vers la fiche mise à jour apparaîtra ici."
-        />
+        <MemoryPanel bundle={bundle} />
       </TabsContent>
     </Tabs>
   );
@@ -341,23 +337,93 @@ function InlineAnnotation({
   );
 }
 
-function PlaceholderPanel({
-  icon,
+function MemoryPanel({ bundle }: { bundle: Bundle }) {
+  const recentlyUpdated = (link: { updatedAt: Date | null } | null) => {
+    if (!link?.updatedAt) return false;
+    const ageMs = Date.now() - new Date(link.updatedAt).getTime();
+    return ageMs < 5 * 60 * 1000;
+  };
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="rounded-lg border border-border bg-surface px-5 py-4">
+        <div className="flex items-start gap-3">
+          <NotebookPen className="mt-0.5 size-5 text-brand" aria-hidden />
+          <div>
+            <h3 className="text-sm font-medium text-ink">Mémoire organisationnelle (Layer B)</h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Cette session a enrichi automatiquement le vault Karpathy. Chaque interaction
+              construit la mémoire vivante du réseau — patterns détectés, forces récurrentes,
+              points d&apos;amélioration.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-2">
+        <VaultLinkCard
+          title="Fiche audioprothésiste"
+          description="Karpathy mémoire — synthèse, forces, points d'amélioration, sessions récentes."
+          link={bundle.practitionerVault}
+          recent={recentlyUpdated(bundle.practitionerVault)}
+        />
+        <VaultLinkCard
+          title="Fiche session"
+          description="Snapshot complet de cette consultation, traçable et auditable."
+          link={bundle.sessionVault}
+          recent={recentlyUpdated(bundle.sessionVault)}
+        />
+      </div>
+
+      <div className="rounded-lg border border-dashed border-border bg-surface-muted px-5 py-3 text-xs text-muted-foreground">
+        Tout le vault est consultable dans <a href="/admin/vault" className="text-brand hover:underline">/admin/vault</a>{" "}
+        — graph view + export Obsidian (.zip) pour audit Amplifon.
+      </div>
+    </div>
+  );
+}
+
+function VaultLinkCard({
   title,
   description,
+  link,
+  recent,
 }: {
-  icon: React.ReactNode;
   title: string;
   description: string;
+  link: { path: string; title: string; updatedAt: Date | null } | null;
+  recent: boolean;
 }) {
-  return (
-    <div className="rounded-lg border border-dashed border-border bg-surface-muted px-6 py-10 text-center">
-      <div className="mx-auto flex size-10 items-center justify-center rounded-full bg-surface">
-        {icon}
+  if (!link) {
+    return (
+      <div className="rounded-lg border border-dashed border-border bg-surface-muted px-4 py-4">
+        <h4 className="text-sm font-medium text-ink">{title}</h4>
+        <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+        <p className="mt-3 text-xs italic text-muted-foreground">
+          Génération en cours — la fiche sera créée quelques secondes après l&apos;analyse.
+        </p>
       </div>
-      <h3 className="mt-3 text-sm font-medium text-ink">{title}</h3>
-      <p className="mx-auto mt-1 max-w-md text-xs text-muted-foreground">{description}</p>
-    </div>
+    );
+  }
+  const href = `/admin/vault/${link.path.replace(/\.md$/, "")}`;
+  return (
+    <a
+      href={href}
+      className="group rounded-lg border border-border bg-surface px-4 py-4 transition hover:border-brand/40 hover:bg-brand/5"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <h4 className="text-sm font-semibold text-ink">{title}</h4>
+        {recent && (
+          <span className="rounded-full bg-brand/10 px-2 py-0.5 text-[10px] font-medium text-brand">
+            Mis à jour à l&apos;instant
+          </span>
+        )}
+      </div>
+      <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+      <p className="mt-3 truncate text-xs font-mono text-brand group-hover:underline">
+        {link.path}
+      </p>
+    </a>
   );
 }
 

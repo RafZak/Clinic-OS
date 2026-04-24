@@ -1,13 +1,15 @@
 import "server-only";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import {
   sessions,
   patients,
+  practitioners,
   transcriptLines,
   sessionScores,
   coachingInsights,
   sessionArtifacts,
+  vaultPages,
 } from "@/db/schema";
 import type {
   ArtifactRow,
@@ -22,32 +24,59 @@ export async function loadResultsBundle(sessionId: string): Promise<ResultsBundl
     .select()
     .from(sessions)
     .leftJoin(patients, eq(sessions.patientId, patients.id))
+    .leftJoin(practitioners, eq(sessions.practitionerId, practitioners.id))
     .where(eq(sessions.id, sessionId))
     .limit(1);
   if (rows.length === 0) return null;
-  const { sessions: sessionRow, patients: patientRow } = rows[0];
+  const { sessions: sessionRow, patients: patientRow, practitioners: practitionerRow } = rows[0];
 
-  const [lines, scores, insightsRaw, artifactsRaw] = await Promise.all([
-    db
-      .select()
-      .from(transcriptLines)
-      .where(eq(transcriptLines.sessionId, sessionId))
-      .orderBy(asc(transcriptLines.startMs)),
-    db
-      .select()
-      .from(sessionScores)
-      .where(eq(sessionScores.sessionId, sessionId))
-      .orderBy(asc(sessionScores.stepNumber)),
-    db
-      .select()
-      .from(coachingInsights)
-      .where(eq(coachingInsights.sessionId, sessionId))
-      .orderBy(asc(coachingInsights.relatedStep)),
-    db
-      .select()
-      .from(sessionArtifacts)
-      .where(eq(sessionArtifacts.sessionId, sessionId)),
-  ]);
+  const [lines, scores, insightsRaw, artifactsRaw, practitionerVault, sessionVault] =
+    await Promise.all([
+      db
+        .select()
+        .from(transcriptLines)
+        .where(eq(transcriptLines.sessionId, sessionId))
+        .orderBy(asc(transcriptLines.startMs)),
+      db
+        .select()
+        .from(sessionScores)
+        .where(eq(sessionScores.sessionId, sessionId))
+        .orderBy(asc(sessionScores.stepNumber)),
+      db
+        .select()
+        .from(coachingInsights)
+        .where(eq(coachingInsights.sessionId, sessionId))
+        .orderBy(asc(coachingInsights.relatedStep)),
+      db
+        .select()
+        .from(sessionArtifacts)
+        .where(eq(sessionArtifacts.sessionId, sessionId)),
+      practitionerRow
+        ? db
+            .select({
+              path: vaultPages.path,
+              title: vaultPages.title,
+              updatedAt: vaultPages.updatedAt,
+            })
+            .from(vaultPages)
+            .where(
+              and(
+                eq(vaultPages.kind, "practitioner"),
+                eq(vaultPages.entityId, practitionerRow.id)
+              )
+            )
+            .limit(1)
+        : Promise.resolve([] as { path: string; title: string; updatedAt: Date | null }[]),
+      db
+        .select({
+          path: vaultPages.path,
+          title: vaultPages.title,
+          updatedAt: vaultPages.updatedAt,
+        })
+        .from(vaultPages)
+        .where(and(eq(vaultPages.kind, "session"), eq(vaultPages.entityId, sessionId)))
+        .limit(1),
+    ]);
 
   const insights: InsightRow[] = insightsRaw.map((i) => ({
     ...i,
@@ -61,7 +90,16 @@ export async function loadResultsBundle(sessionId: string): Promise<ResultsBundl
     type: a.type as ArtifactType,
   }));
 
-  return { session: sessionRow, patient: patientRow, lines, scores, insights, artifacts };
+  return {
+    session: sessionRow,
+    patient: patientRow,
+    lines,
+    scores,
+    insights,
+    artifacts,
+    practitionerVault: practitionerVault[0] ?? null,
+    sessionVault: sessionVault[0] ?? null,
+  };
 }
 
 export function sumEstimatedImpact(insights: InsightRow[]): number {

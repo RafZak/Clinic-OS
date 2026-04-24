@@ -29,6 +29,12 @@ export type ArtifactType =
 
 export type ArtifactRow = typeof sessionArtifacts.$inferSelect & { type: ArtifactType };
 
+export type VaultLink = {
+  path: string;
+  title: string;
+  updatedAt: Date | null;
+};
+
 export type ResultsBundle = {
   session: typeof sessions.$inferSelect;
   patient: typeof patients.$inferSelect | null;
@@ -36,4 +42,6 @@ export type ResultsBundle = {
   scores: (typeof sessionScores.$inferSelect)[];
   insights: InsightRow[];
   artifacts: ArtifactRow[];
+  practitionerVault: VaultLink | null;
+  sessionVault: VaultLink | null;
 };

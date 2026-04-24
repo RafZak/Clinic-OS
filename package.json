@@ -15,7 +15,8 @@
     "db:check": "tsx db/check.ts",
     "seed:programs": "tsx scripts/seed-programs.ts",
     "ingest": "tsx scripts/ingest.ts",
-    "ingest:local": "tsx scripts/ingest-local.ts"
+    "ingest:local": "tsx scripts/ingest-local.ts",
+    "storage:bootstrap": "tsx --conditions react-server scripts/bootstrap-storage.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.90.0",

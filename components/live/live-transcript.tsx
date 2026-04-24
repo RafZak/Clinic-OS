@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { cn } from "@/lib/utils";
 import type { LiveLine } from "@/hooks/use-deepgram-live";
 
 function formatMs(ms: number): string {
@@ -42,19 +41,7 @@ export function LiveTranscript({
               <span className="mt-0.5 shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
                 {formatMs(l.startMs)}
               </span>
-              <div className="flex flex-col gap-1">
-                <span
-                  className={cn(
-                    "inline-flex w-fit items-center rounded-full px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide",
-                    l.speaker === "practitioner"
-                      ? "bg-brand/10 text-brand"
-                      : "bg-surface-muted text-muted-foreground"
-                  )}
-                >
-                  {l.speaker === "practitioner" ? "Professionnel" : "Patient"}
-                </span>
-                <p className="text-sm leading-relaxed text-ink">{l.text}</p>
-              </div>
+              <p className="text-sm leading-relaxed text-ink">{l.text}</p>
             </li>
           ))}
           {interim && (
@@ -67,6 +54,9 @@ export function LiveTranscript({
           )}
         </ul>
         <div ref={endRef} />
+      </div>
+      <div className="border-t border-border px-4 py-2 text-[11px] text-muted-foreground">
+        L&apos;attribution des voix sera faite en post-analyse (J6, diarization batch Deepgram).
       </div>
     </div>
   );

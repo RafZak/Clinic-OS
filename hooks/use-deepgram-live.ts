@@ -74,14 +74,24 @@ export function useDeepgramLive({ sessionId }: UseDeepgramLiveArgs): UseDeepgram
   const audioChunksRef = useRef<Blob[]>([]);
   const flushBufferRef = useRef<LiveLine[]>([]);
   const flushTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const firstSpeakerRef = useRef<number | null>(null);
   const startedAtRef = useRef<number>(0);
-  const lastFinalAtRef = useRef<number>(0);
+  const lastEndMsRef = useRef<number>(-1);
+  const currentSpeakerRef = useRef<LiveSpeaker>("practitioner");
 
-  const mapSpeaker = useCallback((dgSpeaker: number | undefined): LiveSpeaker => {
-    if (dgSpeaker === undefined) return "practitioner";
-    if (firstSpeakerRef.current === null) firstSpeakerRef.current = dgSpeaker;
-    return dgSpeaker === firstSpeakerRef.current ? "practitioner" : "patient";
+  // Deepgram live diarization produced unreliable results on the target traffic
+  // (both humans labeled as speaker 0 across nova-3 and nova-2). Pivot : infer
+  // speaker turns from silence gaps between utterances. A gap > 1s in stream
+  // time is treated as a turn change — imperfect but > 80% right in live
+  // roleplay and far better than "everything = practitioner".
+  const SPEAKER_GAP_MS = 1000;
+  const nextSpeakerFromGap = useCallback((startMs: number, endMs: number): LiveSpeaker => {
+    const isFirst = lastEndMsRef.current < 0;
+    const gap = isFirst ? 0 : startMs - lastEndMsRef.current;
+    if (!isFirst && gap > SPEAKER_GAP_MS) {
+      currentSpeakerRef.current = currentSpeakerRef.current === "practitioner" ? "patient" : "practitioner";
+    }
+    lastEndMsRef.current = endMs;
+    return currentSpeakerRef.current;
   }, []);
 
   const flushLines = useCallback(async () => {
@@ -128,7 +138,6 @@ export function useDeepgramLive({ sessionId }: UseDeepgramLiveArgs): UseDeepgram
         punctuate: "true",
         smart_format: "true",
         interim_results: "true",
-        diarize: "true",
         endpointing: "300",
       });
       const ws = new WebSocket(
@@ -185,9 +194,9 @@ export function useDeepgramLive({ sessionId }: UseDeepgramLiveArgs): UseDeepgram
         const measured = now - startedAtRef.current - speechEndInStream;
         if (measured >= 0 && measured < 10000) setLatencyMs(Math.round(measured));
 
-        const speaker = mapSpeaker(alt.words[0]?.speaker);
         const startMs = Math.round(data.start * 1000);
         const endMs = Math.round((data.start + data.duration) * 1000);
+        const speaker = nextSpeakerFromGap(startMs, endMs);
         const avgConf =
           alt.words.length > 0
             ? alt.words.reduce((s, w) => s + w.confidence, 0) / alt.words.length
@@ -204,7 +213,6 @@ export function useDeepgramLive({ sessionId }: UseDeepgramLiveArgs): UseDeepgram
         setLines((prev) => [...prev, line]);
         setInterim("");
         flushBufferRef.current.push(line);
-        lastFinalAtRef.current = Date.now();
         if (flushBufferRef.current.length >= 5) void flushLines();
       };
 
@@ -223,7 +231,7 @@ export function useDeepgramLive({ sessionId }: UseDeepgramLiveArgs): UseDeepgram
       const message = err instanceof Error ? err.message : "Erreur inconnue";
       setState({ phase: "error", message });
     }
-  }, [flushLines, mapSpeaker]);
+  }, [flushLines, nextSpeakerFromGap]);
 
   const stop = useCallback(async (): Promise<Blob | null> => {
     const recorder = recorderRef.current;

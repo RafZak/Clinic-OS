@@ -64,6 +64,43 @@ export function ResultsView({ bundle }: { bundle: Bundle }) {
 
   const topInsights = sortedInsights.slice(0, 4);
 
+  const annotations = useMemo(() => {
+    const byLineId = new Map<string, Bundle["insights"][number][]>();
+    const unattached: Bundle["insights"][number][] = [];
+    if (lines.length === 0) {
+      return { byLineId, unattached: insights };
+    }
+    for (const i of insights) {
+      if (i.timestampMs == null) {
+        unattached.push(i);
+        continue;
+      }
+      const ts = i.timestampMs;
+      let bestId: string | null = null;
+      let bestDist = Infinity;
+      for (const l of lines) {
+        if (l.startMs <= ts && ts < l.endMs) {
+          bestId = l.id;
+          bestDist = 0;
+          break;
+        }
+        const dist = Math.min(Math.abs(ts - l.startMs), Math.abs(ts - l.endMs));
+        if (dist < bestDist) {
+          bestId = l.id;
+          bestDist = dist;
+        }
+      }
+      if (bestId && bestDist < 30_000) {
+        const arr = byLineId.get(bestId) ?? [];
+        arr.push(i);
+        byLineId.set(bestId, arr);
+      } else {
+        unattached.push(i);
+      }
+    }
+    return { byLineId, unattached };
+  }, [lines, insights]);
+
   return (
     <Tabs defaultValue="overview" className="w-full">
       <TabsList className="flex w-full justify-start gap-1 bg-surface-muted">
@@ -104,32 +141,61 @@ export function ResultsView({ bundle }: { bundle: Bundle }) {
 
       <TabsContent value="transcript">
         <div className="rounded-lg border border-border bg-surface px-5 py-5">
-          <h3 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-            Transcription ({lines.length} lignes)
-          </h3>
-          <div className="mt-4 flex max-h-[600px] flex-col gap-2 overflow-y-auto pr-2">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+              Transcription ({lines.length} lignes)
+            </h3>
+            {insights.length > 0 && (
+              <span className="text-xs text-muted-foreground">
+                {insights.length} annotation{insights.length > 1 ? "s" : ""} IA en marge
+              </span>
+            )}
+          </div>
+          <div className="mt-4 flex max-h-[600px] flex-col gap-3 overflow-y-auto pr-2">
             {lines.length === 0 && (
               <p className="text-sm text-muted-foreground">Aucune transcription disponible.</p>
             )}
-            {lines.map((l) => (
-              <div key={l.id} className="flex gap-3 text-sm">
-                <span className="w-14 shrink-0 font-mono text-xs text-muted-foreground">
-                  {formatTimestampMs(l.startMs)}
-                </span>
-                <span
-                  className={cn(
-                    "w-16 shrink-0 rounded-full px-2 py-0.5 text-center text-[10px] uppercase tracking-wide",
-                    l.speaker === "practitioner"
-                      ? "bg-brand/10 text-brand"
-                      : "bg-surface-muted text-muted-foreground"
-                  )}
-                >
-                  {l.speaker === "practitioner" ? "Pro" : "Patient"}
-                </span>
-                <span className="flex-1 text-ink leading-relaxed">{l.text}</span>
-              </div>
-            ))}
+            {lines.map((l) => {
+              const lineAnnotations = annotations.byLineId.get(l.id) ?? [];
+              return (
+                <div key={l.id} className="grid grid-cols-12 gap-3 text-sm">
+                  <div className="col-span-12 flex gap-3 lg:col-span-8">
+                    <span className="w-14 shrink-0 font-mono text-xs text-muted-foreground">
+                      {formatTimestampMs(l.startMs)}
+                    </span>
+                    <span
+                      className={cn(
+                        "w-16 shrink-0 rounded-full px-2 py-0.5 text-center text-[10px] uppercase tracking-wide",
+                        l.speaker === "practitioner"
+                          ? "bg-brand/10 text-brand"
+                          : "bg-surface-muted text-muted-foreground"
+                      )}
+                    >
+                      {l.speaker === "practitioner" ? "Pro" : "Patient"}
+                    </span>
+                    <span className="flex-1 text-ink leading-relaxed">{l.text}</span>
+                  </div>
+                  <div className="col-span-12 flex flex-col gap-1.5 lg:col-span-4">
+                    {lineAnnotations.map((a) => (
+                      <InlineAnnotation key={a.id} insight={a} />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
+          {annotations.unattached.length > 0 && (
+            <div className="mt-6 border-t border-border pt-4">
+              <h4 className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                Annotations générales (non rattachées à un moment précis)
+              </h4>
+              <div className="mt-2 flex flex-col gap-1.5">
+                {annotations.unattached.map((a) => (
+                  <InlineAnnotation key={a.id} insight={a} />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </TabsContent>
 
@@ -238,6 +304,39 @@ function Citations({ citations }: { citations: InsightCitation[] }) {
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+function InlineAnnotation({
+  insight,
+}: {
+  insight: Bundle["insights"][number];
+}) {
+  const Icon = INSIGHT_ICON[insight.type] ?? Sparkles;
+  const typeLabel = INSIGHT_TYPE_LABEL[insight.type] ?? insight.type;
+  const tone =
+    insight.severity === "critical"
+      ? "border-brand/60 bg-brand/5 text-brand"
+      : insight.severity === "warning"
+        ? "border-amber-400/50 bg-amber-50 text-amber-800"
+        : "border-border bg-surface-muted text-muted-foreground";
+
+  return (
+    <div className={cn("rounded-md border px-2.5 py-1.5 text-[11px]", tone)}>
+      <div className="flex items-start gap-1.5">
+        <Icon className="mt-0.5 size-3 shrink-0" aria-hidden />
+        <div className="flex flex-1 flex-col gap-0.5">
+          <span className="text-[9px] uppercase tracking-wide opacity-80">{typeLabel}</span>
+          <span className="font-medium leading-tight text-ink">{insight.title}</span>
+          <span className="text-[11px] leading-snug text-ink/75">{insight.description}</span>
+          {insight.estimatedImpactEur ? (
+            <span className="mt-0.5 inline-flex w-fit items-center rounded-full bg-brand/10 px-1.5 py-0.5 text-[10px] font-medium text-brand">
+              {formatEur(insight.estimatedImpactEur)}
+            </span>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }

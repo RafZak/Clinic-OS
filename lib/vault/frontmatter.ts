@@ -1,5 +1,3 @@
-import "server-only";
-
 export type VaultMetadata = {
   type?: string;
   entity_id?: string;

@@ -1,5 +1,3 @@
-import "server-only";
-
 const WIKILINK_RE = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
 
 /**

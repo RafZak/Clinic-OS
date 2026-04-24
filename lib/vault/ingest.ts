@@ -260,8 +260,6 @@ PRINCIPES NON NÉGOCIABLES :
 - Le frontmatter YAML reste minimaliste et déterministe (champs scalaires : type, entity_id, sessions_analyzed, avg_score, trend, updated_at). Tu ne mets PAS d'arrays narratifs en frontmatter (forces, weaknesses, etc.) — ces listes vivent en markdown.
 - Tu utilises [[wikilinks]] pour relier fiches (ex: [[lyon-3]], [[session-abc123]], [[objection-prix-non-traitee]]).
 - Tu écris du français professionnel factuel, sans jugement.
-- Si un pattern (ex: même erreur sur 3 sessions consécutives) se confirme, tu proposes une fiche pattern. Slug en kebab-case, kind='pattern'.
-- Tu DOIS créer une fiche session pour la session analysée (path: sessions/<sessionShort>.md, kind='session').
 - Tu ne supprimes jamais de contenu. Tu marques au pire "à revoir" ou similaire.
 
 OPÉRATIONS :
@@ -269,7 +267,13 @@ OPÉRATIONS :
 - replace : remplace l'intégralité de la fiche (utiliser quand le frontmatter bouge ou la synthèse est réécrite)
 - append_section : ajoute du contenu sous une section existante (préciser section_heading)
 
-Tu DOIS produire entre 2 et 6 patches au total. Au minimum la fiche session. Idéalement aussi practitioner + center + patient si la session est liée.`;
+PATCHES OBLIGATOIRES À PRODUIRE :
+1. **Fiche session** (path: sessions/<sessionShort>.md, kind='session', operation='create') — toujours.
+2. **Si une fiche audioprothésiste existe pour cet audioprothésiste** : tu DOIS l'enrichir avec operation='replace' (ou 'append_section' si tu ajoutes une seule section). Met à jour le frontmatter (sessions_analyzed +1, avg_score recalculé, updated_at). Ajoute la session dans "## Sessions récentes". Ajuste "## Forces récurrentes" et "## Points d'amélioration" en fonction des insights de cette session.
+3. **Si la session a un patient lié et que sa fiche existe** : tu DOIS l'enrichir aussi (souvent operation='append_section' sur "## Timeline").
+4. **Si tu détectes un pattern récurrent** ou **si une fiche pattern existante est concernée par les insights** : crée la fiche pattern (kind='pattern') ou ajoute à la section "## Sessions où ce pattern a été détecté".
+
+Au TOTAL : minimum 2 patches, idéalement 3-5.`;
 
   const existingPagesBlock =
     existingPages.length === 0
@@ -332,7 +336,7 @@ Mets à jour le vault en appelant l'outil emit_vault_updates. Au minimum produit
           properties: {
             patches: {
               type: "array",
-              minItems: 1,
+              minItems: 2,
               maxItems: 6,
               items: {
                 type: "object",

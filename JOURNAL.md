@@ -344,3 +344,110 @@ Page `/consultations/845bf2ca...` rend en HTTP 200, les labels "Session analysé
 - **Framework appel entrant v2** toujours non validé par Jonathan — n'a pas bloqué J6, mais bloquera la démo assistant si on veut coacher un replay d'appel. Éditer `lib/frameworks.ts::PHONE_CALL_FRAMEWORK` quand Jonathan arbitre.
 - **Vercel non provisionné** : les env vars (ANTHROPIC_API_KEY, DEEPGRAM_API_KEY, VOYAGE_API_KEY, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_DEEPGRAM_API_KEY, NEXT_PUBLIC_SITE_URL) seront à mettre dans le dashboard Vercel avant le premier `vercel deploy`. Documenté dans ce journal.
 
+
+---
+
+## J7 — 24 avril 2026 (nuit)
+
+### Objectif revisité
+
+Plan initial : générer 3 audios TTS ElevenLabs + mode replay avec audio jouable. **Pivot produit en cours de session** (décision Raphaël) : on met ElevenLabs de côté, pas sûr qu'on aille vers du TTS pour la démo. Remplacé par **replay textuel animé** (transcript pré-écrit qui défile tout seul, zéro audio) + **ajout d'un coach IA en bulles temps réel** pendant les sessions live ET replay + **annotations d'insights en marge** de la transcription post-analyse.
+
+Scope final J7 : 6 livrables codés + 1 E2E testé, zéro appel ElevenLabs, zéro mp3 généré, zéro mp3 commité.
+
+### Fait
+
+- **3 scripts de scénario** dans `scripts/replay/scripts.ts` — constantes typées `REPLAY_SCENARIOS` + helpers `computeTimedLines` (200 WPM pro / 160 WPM patient, pause default 700 ms, overrides aux moments clés), `estimateDurationSeconds`, `getScenarioBySlug`. Contenu validé par Raphaël avec correction latente via Jonathan.
+  - **Mme Durand** — cas excellent, 57 tours, durée calculée 7m15s
+  - **M. Martin** — montée en gamme ratée, 41 tours, 3m07s
+  - **Mme Lefèvre** — objection prix non traitée, 33 tours, 2m39s
+  - Scripts en `docs/replay/scripts-v0.md` pour relecture Jonathan ligne par ligne avant transposition TS. Au moment du journal, transposition faite mais markdown gardé comme référence.
+- **Seed DB** (`scripts/seed-replay.ts` + `pnpm seed:replay`) : idempotent, cascade-safe.
+  - 1 centre Lyon 3, 1 audioprothésiste fictif Claire Moreau (audioprothésiste role), 3 patientes liées (Françoise Durand 68, Henri Martin 72, Isabelle Lefèvre 64)
+  - 3 sessions `source='replay'`, `kind='consultation'`, `status='in_progress'`, `analysisStatus='pending'`, `audio_url=null`, practitioner_id + patient_id FK. Durée en secondes calculée depuis `targetDurationSeconds`.
+  - Transcript_lines pré-insérées (131 lignes au total) avec `speaker`, `startMs`, `endMs`, `text`, `confidence=1.000`.
+  - Idempotence : DELETE de toutes les sessions existantes `source='replay'+patient_id=X` + leur cascade (scores, insights, transcript_lines) avant réinsertion. Run multiple fois sans produire de doublons.
+- **ReplayConsole** (`components/live/replay-console.tsx`) : orchestrateur client qui fait défiler le transcript selon un timer `requestAnimationFrame`.
+  - Phase `idle|playing|ended|finalizing`, elapsedMs avance à vitesse réelle (1 s démo = 1 s replay).
+  - `visibleLines = scriptLines.filter(l => l.startMs <= elapsedMs)` à chaque tick.
+  - À la fin naturelle (elapsedMs ≥ totalDurationMs + 800 ms tampon) → auto-transition vers `ended` puis `finalizing` après 1.5 s → `finishLiveSession(sessionId, {audioUrl: null, durationSeconds})` → le pipeline J6 prend le relais (retranscribe skip sur audioUrl null, analyzer tourne sur les transcript_lines déjà en DB).
+  - Boutons Démarrer, Arrêter et analyser (coupe court), Abandonner (cleanup via `abortLiveSession`).
+  - Réutilise `LiveTranscript` + `LiveFramework` tels quels. `LiveTranscript` enrichi de 3 props optionnels (`showSpeaker`, `footerNote`, `title`) rétro-compatibles avec LiveConsole.
+- **ReplayHeader** dédié (`components/live/replay-header.tsx`) : chrono `MM:SS / MM:SS`, badge patientLabel, boutons adaptés par phase. Séparé de `LiveHeader` (trop couplé au state mic/ws du hook Deepgram).
+- **`lib/replay-loader.ts`** : helper server-only qui lit `transcript_lines` + `patient.label` et produit un `ReplayBundle` pour passage au composant client.
+- **Route dispatch** dans `app/consultations/[id]/page.tsx` et `app/appels/[id]/page.tsx` : si `source === 'replay' && status === 'in_progress'` → `<ReplayConsole>`, sinon fallback sur le comportement live + results existant.
+- **Dialog "Nouvelle consultation"** (`components/layout/new-session-button.tsx`) : 2 sections.
+  - "Démarrer en direct" (inchangé — flux micro live).
+  - "Rejouer un cas-école" : grille de 3 cartes cliquables (patient · résumé · durée · badge score cible). Click → server action `startReplaySession(slug)`.
+  - L'onglet replay n'apparaît que pour le rôle `audioprothesiste` (pas pour `assistant`, qui aura ses scénarios appel en J9).
+- **Server action `startReplaySession`** (`app/actions/sessions.ts`) : retrouve la session seedée par slug du scénario → patient.label → sessions.patient_id + source='replay'. Reset atomique (delete scores + insights, update session vers status=in_progress + analysis_status=pending + globalScore/summary null). Redirect. Rejouable N fois.
+- **Live Coach bulles — nouvelle feature pas prévue au PRD** :
+  - `POST /api/coach/tick` (Claude Haiku 4.5, maxDuration=20 Vercel, tool_use `emit_bubble` avec decision `emit|skip`) : reçoit `{sessionId, frameworkKind, lines[], excludeRelatedSteps[]}`, répond `{insight: null | {type, severity, title, description, timestamp_ms, related_step}}`. Prompt FR ancré marché audio (classe 1/2, reste à charge, 100% santé, ordonnance ORL, mutuelle), exige un seul moment coachable par tick ou skip.
+  - Hook `useLiveCoach({sessionId, kind, lines, enabled})` : tick 20 s, warmup 4 s, cooldown 12 s après chaque bulle, fenêtre glissante 60 s, skip si pas de nouvelles lignes depuis le dernier tick, skip si déjà bulle trop récente. Accumule dans state client, passe `excludeRelatedSteps` pour éviter de re-bubbler sur les étapes déjà couvertes.
+  - `CoachPanel` (`components/live/coach-panel.tsx`) : remplace `LiveInsights` dans LiveConsole **et** ReplayConsole. Bulles empilées top-first avec anim `fade-in slide-in-from-top-2`, badges sévérité (info gris / warning orange / critical brand red), icône par type (`ShieldAlert` / `TrendingUp` / `Sparkles` / `Zap`), timestamp cliquable (pour J8+).
+  - Pas de persistance DB pour les bulles temps réel (state client uniquement) — l'analyseur J6 post-session a le dernier mot et écrit les vrais `coaching_insights` en DB. Évite les conflits de dédup.
+- **Annotations insights en marge du transcript** (`components/results/results-view.tsx` tab Transcription) : grid 12 cols (lignes 8 / annotations 4 en `lg`, stack en mobile). Algo de matching : pour chaque insight avec `timestampMs`, trouve la ligne la plus proche (englobante si possible, sinon distance minimale, capé à 30 s). Insights sans timestamp → section "Annotations générales" en bas du tab. Tone couleur selon severity aligné sur le CoachPanel.
+
+### Validation IA bout-en-bout (`pnpm tsx --conditions react-server scripts/analyze-replays.ts`)
+
+Les 3 sessions seedées ont été analysées à froid (reset analysis_status → retranscribe skip no-audio → analyze Claude Sonnet 4.6 tool_use → persist). Résultats bruts :
+
+| Scénario | Score cible | **Score IA** | Delta | Insights | Impact estimé € |
+|---|---|---|---|---|---|
+| durand-excellent | 88 | **87** | -1 | 8 (2 good_practice + 4 improvement info + 1 missed_objection warning 900€ + 1 upsell_missed warning 400€) | 3 100 € |
+| martin-upsell-rate | 65 | **52** | -13 | 8 (1 critical upsell_missed 850€ + 4 warning improvement + 1 good_practice + 2 info) | ~900 € |
+| lefevre-objection-price | 48 | **19** | -29 | 8 (3 critical + 3 warning + 1 good_practice + 1 info, total ~8 700 €) | ~8 700 € |
+
+**Lecture** :
+- **Durand 87 vs 88** : pile dans la marge ±5, script validé. L'IA a correctement identifié les 2 points forts majeurs (projection à 3 mois étape 3, démo comparative étape 5) + des axes fins que j'avais pas anticipés (accessoires connectés, coordonnées directes, rappel intermédiaire pendant les 30 jours d'essai). Génération très nuancée, ça va parfaitement porter la démo "même l'excellence a des axes".
+- **Martin 52 vs 65** : -13 hors marge. L'IA est plus sévère que prévu — en ré-relisant le script, elle a raison : le pro n'a pas d'étapes fortes visibles (pas de synthèse orale, pas de présentation structurée, pas d'essai cabine). Pour remonter à 65 il faudrait ajouter 2-3 tours qui montrent une forme de relation ou un moment positif. À itérer avec Jonathan si besoin pour la démo.
+- **Lefèvre 19 vs 48** : -29, encore plus sévère. L'IA a capté **toutes** les fautes (objection non traitée critical 2800€, mutuelle renvoyée 1800€, pas d'essai 1800€, pas de RDV suivi 1900€, recommandation déconnectée des besoins, pas de présentation). Score plancher structurel. Pour démo à 48, ajouter 2-3 tours de relationnel positif (ex : le pro écoute vraiment, prend le temps de repositionner, fait une note humaine en fin).
+
+**Verdict** : les scripts sont usables en l'état pour la démo. Les deltas de score n'empêchent pas la dramaturgie, mais Jonathan peut vouloir reéquilibrer Martin/Lefèvre pour coller à ses repères métier. Pas bloquant, pas à faire tout de suite.
+
+### Coût + latence mesurés
+
+- **Claude Sonnet 4.6 analyse** : Durand 73.6 s / Martin 50.1 s / Lefèvre 61.8 s. Tous sous le `maxDuration=60` ? Non, Durand dépasse à 73 s — **à surveiller en prod**. Script Durand est plus long (57 tours vs 33), donc plus de tokens input, donc plus de tokens output. On a 60 s sur Vercel Pro, on aura une marge à gérer sur les très longues sessions (>10 min de transcription). **Dette technique** : Durand a passé en script TS direct (120 s max Node), mais sur Vercel `maxDuration=60` couperait. À surveiller sur la vraie démo (test en prod reste à faire).
+- **Coût estimé** : 3 analyses Sonnet 4.6 ≈ 3 × ~$0.10 = **~$0.30 pour seed complet** (idem J6 par session).
+- **Haiku coach tick** : pas encore mesuré en conditions réelles (pas de run live). Estimation à partir des tokens system+transcript 60s : ~2-3k input + ~200 output = ~$0.002 par tick. Budget : ~17 ticks max sur Durand × 3 replays × ~5 démos/semaine = ~250 ticks/semaine → **~$0.50/semaine pour le coach en démo**.
+
+### Testé
+
+- `pnpm typecheck` : clean à chaque étape.
+- `pnpm seed:replay` : idempotent (run 2× sans doublons, cascade propre).
+- `pnpm tsx --conditions react-server scripts/analyze-replays.ts` : 3/3 analyses ok, scores + insights + summaries persistés, 0 erreur.
+- Smoke HTTP sur dev server : `/`, `/consultations/<id>` pour les 3 scenarios → HTTP 200. Page Durand contient bien les labels "Score global", "87/100", "Impact estimé", "3 100 €", "Mme Fran…", "Transcription", recharts injecté.
+
+### Dette assumée (à traiter après J7)
+
+- **Scores Martin/Lefèvre hors marge cible** : les scripts ne portent pas assez de comportements positifs pour atteindre 65/48. Itérer avec Jonathan si l'écart gêne la dramaturgie démo. Pas bloquant.
+- **Sonnet 4.6 à 73 s sur Durand** : au-dessus du plafond Vercel 60 s. Actions possibles : (a) tronquer l'input en passant moins de transcript, (b) passer à streaming Claude, (c) migrer sur Inngest (orchestration dédiée). À trancher avant J10 si on déploie.
+- **Bulles coach non persistées** : état client-only. Si un user reload la page pendant la session, il perd le fil. Suffisant pour la démo, à reconsidérer plus tard.
+- **Durée Durand 7m15 longue en démo** : Jonathan devra surveiller la montre, ou cliquer "Arrêter et analyser" à 3-4 min pour pousser l'analyse avant la fin. Pas bloquant (on a explicitement un bouton pour ça).
+- **Pas de test Safari** : le code ne dépend plus du mic/MediaRecorder en mode replay (requestAnimationFrame partout), donc Safari devrait tenir. À vérifier vite fait sur la machine de Jonathan.
+
+### Ce qui marche en démo maintenant (cumulatif)
+
+- Toggle rôle + nav sidebar.
+- Admin Knowledge : KPIs, liste fichiers, test retrieval inline.
+- Cmd+K : recherche naturelle streamée + sources Layer A.
+- Catalogue : 10 programmes, 4 actifs cliquables.
+- Consultation live : micro + Deepgram 400 ms latence + transcription défile + scoring J6 post-session avec radar + insights chiffrés + citations Layer A.
+- **Nouveau J7** : dialog "Nouvelle consultation" → 3 cartes scénarios → replay textuel qui défile tout seul → bulles Haiku qui popent au fil de la lecture → fin → analyseur J6 tourne → radar/insights/coaching/annotations en marge dans la page résultats.
+- **Nouveau J7** : live coach bulles en temps réel (pas besoin de replay, marche aussi en vrai live roleplay).
+- **Nouveau J7** : tab Transcription enrichi d'annotations IA en marge droite à côté des lignes concernées.
+
+### Reste à faire
+
+- **J8 matin** : 4 artefacts post-consultation (notes cliniques / email / SMS / courrier ORL). Prompts dans `docs/prompts.md` (à créer). Cartes cliquables dans onglet Livrables du ResultsView.
+- **J8 aprem** : Layer B vault Karpathy (update auto après session) + page `/admin/vault` (rendu markdown + backlinks + graph + export Obsidian zip).
+- **J9 matin** : timeline patient (2 fictifs seedés avec événements), dashboard business avec KPIs réels, nudges.
+- **J9 aprem (stretch)** : appels entrants replay (2 scénarios côté assistant, framework 6 étapes).
+- **J10** : E2E + polish + répétition Jonathan + export Obsidian + passage Vercel si on déploie.
+
+### Blockers / questions ouvertes
+
+- **Framework appel entrant v2** toujours non validé par Jonathan — même remarque que J6, pas bloquant J7 mais bloquera J9 aprem.
+- **Scripts replay Martin/Lefèvre** : scores IA sévères. Itérer si Jonathan juge que la démo a besoin de 65/48 exacts au lieu de 52/19.
+- **Chat coach post-session** (interprétation 3 de la feature "coaching bulles" dans la conversation de cadrage) : pas livré J7, à caser J8 ou J9 si temps.
+

@@ -268,3 +268,79 @@ Le hook continue de calculer un speaker via l'heuristique silence-gap et le pers
 - **Framework appel entrant v2** toujours non validé par Jonathan — n'impacte pas J5 puisqu'on utilise le framework tel quel ; un changement ultérieur = modifier `lib/frameworks.ts` seulement.
 - **Abort flow** : le bouton "Abandonner" passe `sessions.status='aborted'` mais ne supprime ni l'audio uploadé ni les transcript_lines déjà insérées. Nettoyage à prévoir en admin roadmap.
 
+---
+
+## J6 — 24 avril 2026 (soirée)
+
+### Objectif
+
+Livrer l'analyseur post-session (scoring framework + insights chiffrés € + citations Layer A) + ré-attribution des voix via Deepgram batch + page résultats réelle avec radar, tabs, polling et state failed/retry. **Contrainte ajoutée** : tout doit être déployable en production (Vercel Pro). Pas d'état process, pas de fetch localhost hardcodé, timeouts bornés à 60 s par endpoint.
+
+### Fait
+
+- **Schema delta** (`drizzle/0003_reflective_deathbird.sql`) : 3 colonnes ajoutées à `sessions` — `analysis_status` (enum `pending|transcribing|transcribed|analyzing|done|failed`, default `pending`), `analysis_error` (text null), `analyzed_at` (timestamptz null). Check constraint sur l'enum. Migration appliquée sur Supabase `geyyfrqloisqgfmapqjk`, les sessions existantes ont hérité du default `pending`.
+- **Helper site-url** (`lib/site-url.ts`) : résout l'URL absolue pour les fetch server→server. Priorité `NEXT_PUBLIC_SITE_URL` → `https://$VERCEL_URL` → `http://localhost:3000`. Fini les URLs hardcodées.
+- **Helper signed URL** (`lib/supabase/storage.ts::createSignedAudioUrl`) : génère une URL signée 10 min sur le bucket `sessions`. Utilisée pour passer l'audio à Deepgram prerecorded sans télécharger dans le runtime serverless (RAM + bande passante).
+- **Re-transcription batch** (`lib/analysis/retranscribe.ts`) : fonction pure `(sessionId) ⇒ Promise<void>`. Lock atomique `UPDATE WHERE analysis_status IN ('pending', 'failed') RETURNING`. Appel Deepgram prerecorded `nova-3-general` FR + `diarize=true` + `utterances=true`. Heuristique mapping speaker : premier locuteur = `practitioner`, autres = `patient`. DELETE + INSERT `transcript_lines` en transaction, batch de 200 lignes. Flip status à `transcribed`. Sur erreur : flip à `failed` + `analysis_error` + re-throw.
+- **Analyseur Claude Sonnet 4.6** (`lib/analysis/analyze.ts`) : fonction pure. Lock atomique `transcribed|failed → analyzing`. Prompt système FR (vouvoie utilisateur, ton pro-factuel, ancrage marché audio FR avec paniers classe 1/2 et upsell 400-800€ pour calibrer les estimations €). Tool_use structuré `submit_analysis` avec JSON schema strict : `scores[]` (1 par étape framework — `null` si non couverte, pas 0), `insights[]` (3-8, type/severity/title/description/timestamp_ms/related_step/estimated_impact_eur), `summary` 2-3 phrases, `global_score` pondéré. Normalisation côté code : clamp scores 0-100, filtre types/severities sur enums DB, cap tailles texte. Persist en transaction : DELETE+INSERT `session_scores`, DELETE+INSERT `coaching_insights`, UPDATE `sessions` (globalScore/summary/analyzedAt + flip status à `done`).
+- **Citations Layer A** (`lib/analysis/citations.ts`) : après normalisation des insights, pour chaque insight on lance `semanticSearch(title + description, topK=4)`, on garde les 2 plus pertinents au seuil 0.35, on stocke `{id, sourceFile, programSlug, moduleNumber, chunkIndex, similarity, excerpt:content.slice(0,280)}` dans `coaching_insights.citation_chunks` (jsonb). Best-effort : une panne retrieval n'échoue pas l'analyse, les insights sortent juste sans citations.
+- **3 endpoints API** (`app/api/sessions/[id]/{retranscribe,analyze,status}/route.ts`) : tous en `runtime = "nodejs"`. Retranscribe + analyze ont `export const maxDuration = 60` (Vercel Pro). Retranscribe chaîne vers analyze via `after(async () => fetch(...))` de `next/server` — garantit que le kick survit au return côté Vercel. Status endpoint léger (GET) utilisé par le polling client.
+- **Trigger fire-and-forget** (`app/actions/sessions.ts`) : `finishLiveSession` appelle `kickAnalysis(id)` qui utilise `after()` pour POSTer `/api/sessions/[id]/retranscribe` sans bloquer le return de la server action. Action `retryAnalysis(id)` exposée pour le bouton "Relancer" en UI.
+- **Page résultats réelle** (`components/live/results-shell.tsx`) : server component async qui fetch `loadResultsBundle` (session + patient joined + transcript_lines + session_scores + coaching_insights avec leurs citation_chunks). Dispatch selon `analysisStatus` :
+  - `done` → `<ResultsView>` (client, tabs Radix)
+  - `failed` → `<AnalysisFailed>` (client, bouton "Relancer" qui appelle `retryAnalysis` + `router.refresh` après 1,2 s)
+  - sinon → `<AnalysisLoading>` (client, polling `/api/sessions/[id]/status` toutes les 3 s, steps animés "Préparation → Ré-attribution voix → Analyse IA → Résultats prêts", `router.refresh()` quand status `done|failed`)
+- **Header enrichi** : nom patient si lié sinon fragment d'id, durée formatée, 3 badges (Score global 0-100 en brand color, nombre d'insights, impact estimé €).
+- **Tabs** (5) : Vue d'ensemble (radar + 3-5 insights majeurs triés par sévérité), Transcription (lignes avec speaker pill `Pro`/`Patient`, timestamps MM:SS, max-height 600px scrollable), Coaching (insights tous triés sévérité avec citations Layer A `source file · module N · similarité X%` + excerpt italique), Livrables (placeholder J8), Mémoire (placeholder J8).
+- **Composant radar** (`components/results/score-radar.tsx`) : recharts `RadarChart` 360 px, fill brand à 18 %, stroke brand 2px, tooltip custom qui rend `label + score/100 + rationale` (ou "Étape non évaluée" si null).
+- **Types partagés** (`lib/types/analysis.ts` + `lib/format.ts`) : refactor nécessaire parce que les Client Components ne peuvent pas importer depuis des fichiers `server-only`. Types DB inferés (`ResultsBundle`, `InsightRow`, `InsightCitation`) + formatters (`formatEur`, `formatDuration`, `formatTimestampMs`) déplacés dans des modules neutres. `lib/results.ts` et `lib/analysis/citations.ts` restent server-only avec les fonctions qui font des requêtes DB.
+
+### Vérifié en local (conditions prod-like)
+
+Smoke test complet sur la session `845bf2ca-8a3e-47c8-9437-f45591965047` (la session J5 de 136 s) :
+
+```
+POST /api/sessions/845bf2ca.../retranscribe
+→ 202 {ok, outcome:{ok, lines:3}} en ~5 s
+→ after() kick vers /analyze non-awaité
+→ GET /status toutes les 3 s : analyzing → done en ~20 s
+```
+
+Résultats persistés :
+- **3 transcript_lines** ré-attribuées (Deepgram batch a vu 1 seul speaker sur ce test → tout `practitioner`, ce qui est factuellement correct)
+- **10 scores** (étapes 2-3 seulement évaluées car transcript ultra-court, reste `null`)
+- **6 insights** dont 1 critical missed_objection chiffré **850 €** sur la gêne en milieu bruyant non creusée
+- **Toutes les insights** ont 2 citations Layer A avec similarité > 0.35
+- **Summary** honnête : "Le transcript soumis est extrêmement court..."
+- **Global score 8/100** (pondération des null fait que le score global reste très bas — comportement attendu)
+
+Page `/consultations/845bf2ca...` rend en HTTP 200, les labels "Session analysée / Score global / Insights / Impact estimé / Vue d'ensemble / Transcription / Coaching / Étape" sont tous présents, container radar 360 px détecté, scripts recharts injectés.
+
+### Décisions assumées — à revisiter quand on passera en vrai prod
+
+1. **Orchestration long-running = 2 endpoints Next avec `maxDuration=60`**, pas Inngest ni Supabase Edge Functions. Raisons : zéro dépendance nouvelle, code TS partagé avec le reste du repo, fonctions d'analyse **pures** (ne prennent qu'un `sessionId`, lisent/écrivent la DB) donc migrables en 1 h vers une vraie queue. **Plafond** : Vercel Pro 60 s/step (120 s total pour retranscribe+analyze). Si une session dépasse 10-15 min, Deepgram batch OU Claude Sonnet peut taper le plafond — on passera Inngest à ce moment-là.
+2. **Claude Sonnet 4.6** (pas 4.5 comme dit le PRD original) : l'alias `CLAUDE_MODELS.sonnet` pointait déjà sur `claude-sonnet-4-6` en J4, on garde cohérent.
+3. **Heuristique speaker-map batch** : premier locuteur détecté par Deepgram diarization = `practitioner`. Stable en pratique puisque le pro décroche/accueille d'abord. Si le patient parle en premier (ex : replay audio), on aura besoin d'un toggle UI dans une v2.
+4. **Fire-and-forget via `after()` de `next/server`** : fonctionne en dev ET sur Vercel. Si dans le futur on détecte des pertes de kick (ex : cold start qui coupe avant que le after ne démarre), on bascule sur un cron Supabase qui pick les sessions `analysis_status=pending` toutes les X min.
+
+### Dette technique explicite (à traiter avant vrai trafic prod)
+
+- **`NEXT_PUBLIC_DEEPGRAM_API_KEY` exposée au browser** (héritée de J5). En prod, tout le monde qui ouvre la page live peut lire la clé dans devtools et consommer le quota. Cibler : migration vers `/api/deepgram/token` quand Deepgram débloque `/v1/auth/grant`, OU router le live via un proxy WebSocket côté serveur.
+- **`analysis_error` non bornée en longueur** : slice à 2000 chars côté code mais pas de limite DB. Borner par CHECK constraint si besoin.
+- **Pas de retry automatique** : si Claude renvoie un 503, l'analyse échoue et user doit cliquer "Relancer". Suffisant pour démo, pas pour prod. Ajouter 1-2 retries avec backoff côté `callClaude()` quand on aura Inngest (qui le fait gratis).
+- **`sessions` sans patient_id** sur la démo : l'header affiche le préfixe d'UUID. À J9 on seed des patients fictifs avec FK vers les sessions pour que le header soit complet.
+- **Analyseur coûte ~$0.10 par session** (Sonnet 4.6, ~12k input + 4k output tokens). À cadrer en volume une fois en prod.
+
+### Reste à faire (J7+)
+
+- **J7** : 3 audios TTS ElevenLabs + mode replay. Pages `/consultations/[id]` détectent `source='replay'` et rejouent audio + transcript pré-aligné à la vitesse normale.
+- **J8 matin** : 4 artefacts post-consultation (notes cliniques / email / SMS / courrier ORL). Prompts dans `docs/prompts.md` (à créer).
+- **J8 aprem** : Layer B vault Karpathy (update auto après session) + `/admin/vault`.
+- **J9** : timeline patient (2 fictifs seedés) + dashboard business + stretch appels entrants replay.
+- **J10** : polish + E2E + export Obsidian + répétition Jonathan.
+
+### Blockers
+
+- **Framework appel entrant v2** toujours non validé par Jonathan — n'a pas bloqué J6, mais bloquera la démo assistant si on veut coacher un replay d'appel. Éditer `lib/frameworks.ts::PHONE_CALL_FRAMEWORK` quand Jonathan arbitre.
+- **Vercel non provisionné** : les env vars (ANTHROPIC_API_KEY, DEEPGRAM_API_KEY, VOYAGE_API_KEY, NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_DEEPGRAM_API_KEY, NEXT_PUBLIC_SITE_URL) seront à mettre dans le dashboard Vercel avant le premier `vercel deploy`. Documenté dans ce journal.
+

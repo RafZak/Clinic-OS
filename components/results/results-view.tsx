@@ -5,13 +5,13 @@ import {
   AlertTriangle,
   ArrowUpRight,
   CheckCircle2,
-  FileText,
   MessageSquare,
   NotebookPen,
   Sparkles,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScoreRadar, type RadarPoint } from "@/components/results/score-radar";
+import { ArtifactsPanel } from "@/components/results/artifacts-panel";
 import { cn } from "@/lib/utils";
 import { formatEur, formatTimestampMs } from "@/lib/format";
 import type { ResultsBundle, InsightCitation } from "@/lib/types/analysis";
@@ -213,10 +213,10 @@ export function ResultsView({ bundle }: { bundle: Bundle }) {
       </TabsContent>
 
       <TabsContent value="artifacts">
-        <PlaceholderPanel
-          icon={<FileText className="size-5 text-muted-foreground" aria-hidden />}
-          title="Livrables post-consultation (J8)"
-          description="Notes cliniques, email patient, SMS patient et courrier ORL seront générés ici à partir de la même analyse. Prévu pour la deuxième moitié du chantier (J8)."
+        <ArtifactsPanel
+          sessionId={session.id}
+          artifacts={bundle.artifacts}
+          analysisDone={session.analysisStatus === "done"}
         />
       </TabsContent>
 

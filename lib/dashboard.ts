@@ -325,7 +325,7 @@ function buildPractitionerKpis(ctx: DashboardContext): DashboardKpi[] {
   const fittedDen = ctx.consultationsCount > 0 ? ctx.consultationsCount : 0;
   return [
     {
-      label: "Taux d'appareillage",
+      label: "Taux de concrétisation",
       value: pct(ctx.fittedPatients, fittedDen || ctx.totalPatients),
       hint: `${ctx.fittedPatients} patients équipés sur ${
         fittedDen || ctx.totalPatients
@@ -338,11 +338,6 @@ function buildPractitionerKpis(ctx: DashboardContext): DashboardKpi[] {
           ? `${ctx.basketAvgEur.toLocaleString("fr-FR")} €`
           : "—",
       hint: "Aide auditive · prix moyen essai/livraison",
-    },
-    {
-      label: "Conversion appel → RDV",
-      value: pct(ctx.appointmentsCount, ctx.phoneCallsCount),
-      hint: `${ctx.appointmentsCount} RDV / ${ctx.phoneCallsCount} appels`,
     },
     {
       label: "Score consultations moyen",
@@ -361,22 +356,12 @@ function buildAssistantKpis(ctx: DashboardContext): DashboardKpi[] {
   const dur = ctx.callDurationAvgSec;
   return [
     {
-      label: "Taux appel → RDV",
-      value: pct(ctx.appointmentsCount, ctx.phoneCallsCount),
-      hint: `${ctx.appointmentsCount} RDV / ${ctx.phoneCallsCount} appels`,
-    },
-    {
       label: "Durée moyenne appel",
       value:
         dur != null
           ? `${Math.floor(dur / 60)}m ${(dur % 60).toString().padStart(2, "0")}s`
           : "—",
       hint: "Cible : ≤ 2 min",
-    },
-    {
-      label: "Taux RDV honorés",
-      value: pct(ctx.honoredAppointments, ctx.appointmentsCount),
-      hint: `${ctx.honoredAppointments} consultations sur ${ctx.appointmentsCount} RDV`,
     },
     {
       label: "Score qualité accueil",

@@ -6,6 +6,7 @@ import { NudgesPanel } from "@/components/dashboard/nudges-panel";
 import { loadDashboard } from "@/lib/dashboard";
 import { buildNudges } from "@/lib/nudges";
 import { getRole, ROLE_LABEL } from "@/lib/role";
+import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,7 @@ export default async function DashboardPage() {
   const nudges = buildNudges(role, dashboard.context);
 
   const isPractitioner = role === "audioprothesiste";
+  const kpiCount = dashboard.kpis.length;
 
   return (
     <div className="flex flex-col gap-6">
@@ -22,12 +24,19 @@ export default async function DashboardPage() {
         title={`Tableau de bord — ${ROLE_LABEL[role]}`}
         description={
           isPractitioner
-            ? "KPIs business, évolution de vos taux d'appareillage et actions recommandées par Clinic OS."
-            : "KPIs de transformation d'appels, durée moyenne, qualité d'accueil et actions recommandées."
+            ? "Taux de concrétisation, panier moyen et qualité de vos consultations — actions recommandées par Clinic OS."
+            : "Durée moyenne et qualité de vos appels — actions recommandées par Clinic OS."
         }
       />
 
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-4">
+      <section
+        className={cn(
+          "grid grid-cols-1 gap-4",
+          kpiCount === 2 && "md:max-w-3xl md:grid-cols-2",
+          kpiCount === 3 && "md:grid-cols-3",
+          kpiCount >= 4 && "md:grid-cols-4"
+        )}
+      >
         {dashboard.kpis.map((kpi) => (
           <div
             key={kpi.label}

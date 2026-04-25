@@ -5,7 +5,7 @@ import { asc } from "drizzle-orm";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { PatientTimeline } from "@/components/patients/patient-timeline";
-import { VaultMarkdown } from "@/components/admin/vault-markdown";
+import { MemoryView } from "@/components/patients/memory-view";
 import { db } from "@/db/client";
 import { vaultPages } from "@/db/schema";
 import {
@@ -117,13 +117,13 @@ export default async function PatientDetailPage({
               )}
             </div>
             {vaultPage ? (
-              <div className="rounded-lg border border-border bg-surface px-5 py-4">
-                <VaultMarkdown
+              <div className="flex flex-col gap-3">
+                <MemoryView
                   raw={vaultPage.contentMd}
                   pageIndex={pageIndex}
                 />
                 {vaultPage.updatedAt && (
-                  <p className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground">
+                  <p className="px-1 text-xs text-muted-foreground">
                     Fiche mise à jour le{" "}
                     {vaultPage.updatedAt.toLocaleString("fr-FR", {
                       day: "2-digit",

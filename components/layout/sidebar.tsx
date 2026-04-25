@@ -11,17 +11,31 @@ import { NavLink } from "./nav-link";
 import { SidebarRecents } from "./sidebar-recents";
 import { SidebarFooter } from "./sidebar-footer";
 
-type Badge = { count: number; tone: "alert" | "info" } | null;
+type Badge = {
+  count: number;
+  tone: "alert" | "info";
+  tooltip: string;
+} | null;
 
 function badgeFor(item: NavItem, ctx: {
   patientsAlerts: number;
   vaultUpdatesToday: number;
 }): Badge {
   if (item.href === "/patients" && ctx.patientsAlerts > 0) {
-    return { count: ctx.patientsAlerts, tone: "alert" };
+    const n = ctx.patientsAlerts;
+    return {
+      count: n,
+      tone: "alert",
+      tooltip: `${n} patient${n > 1 ? "s" : ""} perdu${n > 1 ? "s" : ""} — à rappeler`,
+    };
   }
   if (item.href === "/admin/vault" && ctx.vaultUpdatesToday > 0) {
-    return { count: ctx.vaultUpdatesToday, tone: "info" };
+    const n = ctx.vaultUpdatesToday;
+    return {
+      count: n,
+      tone: "info",
+      tooltip: `${n} fiche${n > 1 ? "s" : ""} Karpathy mise${n > 1 ? "s" : ""} à jour aujourd'hui`,
+    };
   }
   return null;
 }

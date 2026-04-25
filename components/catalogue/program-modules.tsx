@@ -7,8 +7,8 @@ import {
   Circle,
   ExternalLink,
   FileText,
-  Mic,
   Sheet,
+  Video,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ProgramFile, ProgramModule } from "@/lib/programs";
@@ -226,7 +226,7 @@ function CompletionIcon({ completed }: { completed: boolean }) {
   );
 }
 
-const BADGE_ICON = { video: Mic, pdf: FileText, docx: Sheet } as const;
+const BADGE_ICON = { video: Video, pdf: FileText, docx: Sheet } as const;
 const BADGE_LABEL = { video: "Vidéo", pdf: "PDF", docx: "DOCX" } as const;
 const BADGE_CLS = {
   video: "bg-violet-50 text-violet-700 border-violet-200",
@@ -412,7 +412,7 @@ function FileList({
                   <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                 )}
                 <a
-                  href={`/api/pdf/${encodeURIComponent(f.driveFileId)}`}
+                  href={`/api/file/${encodeURIComponent(f.driveFileId)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => void handleOpen(f.driveFileId)}

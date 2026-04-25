@@ -10,12 +10,41 @@ import { getDriveClient } from "@/lib/drive/client";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+const MIME_BY_EXT: Record<string, string> = {
+  ".pdf": "application/pdf",
+  ".docx":
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ".doc": "application/msword",
+  ".xlsx":
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  ".xls": "application/vnd.ms-excel",
+  ".pptx":
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  ".ppt": "application/vnd.ms-powerpoint",
+};
+
+const INLINE_EXTENSIONS = new Set([".pdf"]);
+
+function describe(filename: string | null): {
+  mime: string;
+  inline: boolean;
+  basename: string;
+} {
+  const safeName = filename ?? "fichier";
+  const ext = path.extname(safeName).toLowerCase();
+  return {
+    mime: MIME_BY_EXT[ext] ?? "application/octet-stream",
+    inline: INLINE_EXTENSIONS.has(ext),
+    basename: safeName,
+  };
+}
+
 type ChunkMetaRow = {
   metadata: unknown;
   source_file: string;
 };
 
-async function findLocalPath(
+async function findLocalRow(
   driveFileId: string
 ): Promise<{ absolutePath: string; sourceFile: string } | null> {
   const rows = await db.execute<ChunkMetaRow>(sql`
@@ -44,6 +73,11 @@ async function findSourceFileFor(
   return rows[0]?.source_file ?? null;
 }
 
+function dispositionHeader(name: string, inline: boolean): string {
+  const safe = name.replace(/[\r\n"]/g, "");
+  return `${inline ? "inline" : "attachment"}; filename="${safe}"`;
+}
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ driveFileId: string }> }
@@ -51,7 +85,7 @@ export async function GET(
   const { driveFileId } = await params;
 
   if (driveFileId.startsWith("local:")) {
-    const found = await findLocalPath(driveFileId);
+    const found = await findLocalRow(driveFileId);
     if (!found) return new Response("Not indexed", { status: 404 });
 
     let s;
@@ -61,13 +95,14 @@ export async function GET(
       return new Response("Source file missing on disk", { status: 410 });
     }
 
+    const meta = describe(found.sourceFile || found.absolutePath);
     const stream = createReadStream(found.absolutePath);
     return new Response(Readable.toWeb(stream) as ReadableStream<Uint8Array>, {
       status: 200,
       headers: {
-        "Content-Type": "application/pdf",
+        "Content-Type": meta.mime,
         "Content-Length": String(s.size),
-        "Content-Disposition": `inline; filename="${path.basename(found.absolutePath)}"`,
+        "Content-Disposition": dispositionHeader(meta.basename, meta.inline),
         "Cache-Control": "private, max-age=3600",
       },
     });
@@ -78,6 +113,7 @@ export async function GET(
   }
 
   const sourceFile = await findSourceFileFor(driveFileId);
+  const meta = describe(sourceFile);
   const drive = getDriveClient();
 
   let driveResp;
@@ -87,20 +123,18 @@ export async function GET(
       { responseType: "stream" }
     );
   } catch (e) {
-    console.error("pdf proxy: drive fetch failed", driveFileId, e);
+    console.error("file proxy: drive fetch failed", driveFileId, e);
     return new Response("Upstream error", { status: 502 });
   }
 
   const inputStream = driveResp.data as unknown as Readable;
   const headers = new Headers();
-  headers.set("Content-Type", "application/pdf");
+  headers.set("Content-Type", meta.mime);
   headers.set("Cache-Control", "private, max-age=3600");
-  if (sourceFile) {
-    headers.set(
-      "Content-Disposition",
-      `inline; filename="${sourceFile.replace(/[\r\n"]/g, "")}"`
-    );
-  }
+  headers.set(
+    "Content-Disposition",
+    dispositionHeader(meta.basename, meta.inline)
+  );
   const driveHeaders = driveResp.headers as Record<string, string | undefined>;
   const cl = driveHeaders["content-length"];
   if (cl) headers.set("Content-Length", cl);

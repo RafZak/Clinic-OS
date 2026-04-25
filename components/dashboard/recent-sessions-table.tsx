@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import type { RecentSessionRow } from "@/lib/dashboard";
-import { formatDuration } from "@/lib/format";
+import { formatDuration, scoreTextColor } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 function formatRelative(date: Date | null): string {
@@ -14,13 +14,6 @@ function formatRelative(date: Date | null): string {
   return date.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
 }
 
-function scoreColor(score: number | null): string {
-  if (score == null) return "text-muted-foreground";
-  if (score >= 80) return "text-emerald-700";
-  if (score >= 60) return "text-amber-700";
-  if (score >= 40) return "text-orange-700";
-  return "text-red-700";
-}
 
 export function RecentSessionsTable({
   rows,
@@ -67,7 +60,7 @@ export function RecentSessionsTable({
                 )}
               </td>
               <td className="px-4 py-2.5">
-                <span className={cn("font-semibold", scoreColor(r.globalScore))}>
+                <span className={cn("font-semibold", scoreTextColor(r.globalScore))}>
                   {r.globalScore != null ? `${r.globalScore}/100` : "—"}
                 </span>
               </td>

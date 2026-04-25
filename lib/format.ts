@@ -19,3 +19,25 @@ export function formatTimestampMs(ms: number): string {
   const r = s % 60;
   return `${m.toString().padStart(2, "0")}:${r.toString().padStart(2, "0")}`;
 }
+
+export type ScoreTone = "good" | "warn" | "bad" | "neutral";
+
+export function scoreTone(score: number | null | undefined): ScoreTone {
+  if (score == null) return "neutral";
+  if (score >= 80) return "good";
+  if (score >= 60) return "warn";
+  return "bad";
+}
+
+export function scoreTextColor(score: number | null | undefined): string {
+  switch (scoreTone(score)) {
+    case "good":
+      return "text-emerald-700";
+    case "warn":
+      return "text-amber-700";
+    case "bad":
+      return "text-red-700";
+    default:
+      return "text-muted-foreground";
+  }
+}

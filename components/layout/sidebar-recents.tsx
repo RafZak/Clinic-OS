@@ -5,6 +5,7 @@ import type {
   SidebarRecentSession,
 } from "@/lib/sidebar-context";
 import { cn } from "@/lib/utils";
+import { scoreTextColor } from "@/lib/format";
 
 const STATUS_DOT: Record<SidebarRecentPatient["status"], string> = {
   prospect: "bg-slate-400",
@@ -84,7 +85,12 @@ export function SidebarRecents({
                 {lastSession.patientLabel}
               </span>
               {lastSession.globalScore != null && (
-                <span className="inline-flex items-center gap-1 text-[10px]">
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-1 text-[10px] font-medium",
+                    scoreTextColor(lastSession.globalScore)
+                  )}
+                >
                   <Sparkles className="size-2.5" />
                   Score {lastSession.globalScore}/100
                 </span>

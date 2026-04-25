@@ -54,7 +54,7 @@ export function parseMemoryMarkdown(raw: string): ParsedMemory {
       const sm = chunk.match(/^##\s+(.+?)\r?\n([\s\S]*)$/);
       if (sm) {
         const heading = sm[1].trim();
-        const sectionBody = sm[2].replace(/^\s+|\s+$/g, "");
+        const sectionBody = sanitizeSectionBody(sm[2]);
         if (sectionBody.length > 0) {
           sections.push({ heading, body: sectionBody });
         }
@@ -63,4 +63,30 @@ export function parseMemoryMarkdown(raw: string): ParsedMemory {
   }
 
   return { title, inlineMeta, intro: introWithoutMeta, sections };
+}
+
+function sanitizeSectionBody(raw: string): string {
+  const lines = raw.split(/\r?\n/);
+  const out: string[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    if (/^_[^_]+_\s*$/.test(trimmed)) {
+      i += 1;
+      continue;
+    }
+
+    if (/^\|.*\|\s*$/.test(trimmed)) {
+      while (i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i])) {
+        i += 1;
+      }
+      continue;
+    }
+
+    out.push(line);
+    i += 1;
+  }
+  return out.join("\n").replace(/\n{3,}/g, "\n\n").trim();
 }

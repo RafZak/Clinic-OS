@@ -56,7 +56,7 @@ export function MemoryView({
       )}
 
       {otherSections.map((s) => (
-        <SectionCard key={s.heading} heading={s.heading}>
+        <SectionCard key={s.heading} heading={remapHeading(s.heading)}>
           <VaultMarkdown raw={s.body} pageIndex={pageIndex} />
         </SectionCard>
       ))}
@@ -69,6 +69,14 @@ export function MemoryView({
       )}
     </div>
   );
+}
+
+function remapHeading(heading: string): string {
+  const lower = heading.toLowerCase();
+  if (lower === "timeline" || lower === "parcours" || lower === "historique") {
+    return "Profil & contexte";
+  }
+  return heading;
 }
 
 function SectionCard({

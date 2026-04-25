@@ -55,8 +55,8 @@ export default async function DashboardPage() {
         ))}
       </section>
 
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-5">
-        <div className="rounded-lg border border-border bg-surface p-5 lg:col-span-3">
+      <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="rounded-lg border border-border bg-surface p-5">
           <div className="flex items-baseline justify-between">
             <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
               Évolution score {dashboard.frameworkLabel.toLowerCase()} — 4 semaines
@@ -68,7 +68,7 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        <div className="rounded-lg border border-border bg-surface p-5 lg:col-span-2">
+        <div className="rounded-lg border border-border bg-surface p-5">
           <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
             Performance par étape — Framework {dashboard.frameworkLabel}
           </h2>

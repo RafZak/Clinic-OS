@@ -1,39 +1,60 @@
 import { cn } from "@/lib/utils";
 import type { StepHeatmapCell } from "@/lib/dashboard";
 
-function scoreClass(score: number | null): string {
-  if (score == null) return "bg-surface-muted text-muted-foreground border-border";
-  if (score >= 80) return "bg-emerald-50 text-emerald-700 border-emerald-200";
-  if (score >= 60) return "bg-amber-50 text-amber-800 border-amber-200";
-  if (score >= 40) return "bg-orange-50 text-orange-700 border-orange-200";
-  return "bg-red-50 text-red-700 border-red-200";
+function fillClass(score: number | null): string {
+  if (score == null) return "bg-surface-muted";
+  if (score >= 80) return "bg-emerald-500";
+  if (score >= 60) return "bg-amber-500";
+  if (score >= 40) return "bg-orange-500";
+  return "bg-red-500";
+}
+
+function scoreTextClass(score: number | null): string {
+  if (score == null) return "text-muted-foreground";
+  if (score >= 80) return "text-emerald-700";
+  if (score >= 60) return "text-amber-700";
+  if (score >= 40) return "text-orange-700";
+  return "text-red-700";
 }
 
 export function StepHeatmap({ cells }: { cells: StepHeatmapCell[] }) {
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+    <ul className="flex flex-col gap-2.5">
       {cells.map((cell) => {
-        const klass = scoreClass(cell.avgScore);
+        const score = cell.avgScore;
+        const widthPct =
+          score != null ? Math.max(2, Math.min(100, score)) : 0;
         return (
-          <div
+          <li
             key={cell.number}
-            className={cn(
-              "flex flex-col gap-1 rounded-md border px-3 py-2.5 text-xs",
-              klass
-            )}
+            className="flex items-center gap-3 text-xs"
           >
-            <div className="flex items-center justify-between">
-              <span className="font-mono text-[10px] opacity-60">
-                Étape {cell.number}
-              </span>
-              <span className="text-base font-semibold leading-none">
-                {cell.avgScore != null ? cell.avgScore : "—"}
-              </span>
+            <span className="w-6 shrink-0 font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+              {String(cell.number).padStart(2, "0")}
+            </span>
+            <span className="min-w-0 flex-1 truncate font-medium text-foreground">
+              {cell.name}
+            </span>
+            <div className="h-1.5 w-24 shrink-0 overflow-hidden rounded-full bg-surface-muted sm:w-32">
+              <div
+                className={cn(
+                  "h-full rounded-full transition-[width] duration-500",
+                  fillClass(score)
+                )}
+                style={{ width: `${widthPct}%` }}
+              />
             </div>
-            <span className="line-clamp-2 leading-tight">{cell.name}</span>
-          </div>
+            <span
+              className={cn(
+                "w-10 shrink-0 text-right text-sm font-semibold tabular-nums",
+                scoreTextClass(score)
+              )}
+            >
+              {score != null ? score : "—"}
+            </span>
+          </li>
         );
       })}
-    </div>
+    </ul>
   );
 }

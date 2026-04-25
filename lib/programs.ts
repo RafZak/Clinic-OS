@@ -1,7 +1,7 @@
 import "server-only";
 import { db } from "@/db/client";
 import { programs } from "@/db/schema";
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 
 export type ProgramCategory =
   | "acquisition"
@@ -37,7 +37,6 @@ export async function getProgramBySlug(slug: string) {
 }
 
 export async function getProgramChunkStats() {
-  const { sql } = await import("drizzle-orm");
   const rows = await db.execute<{
     program_slug: string;
     chunks: number;
@@ -53,4 +52,72 @@ export async function getProgramChunkStats() {
     map.set(r.program_slug, { chunks: r.chunks, files: r.files })
   );
   return map;
+}
+
+export type ProgramFile = {
+  driveFileId: string;
+  sourceFile: string;
+};
+
+export type ProgramModule = {
+  number: number;
+  video: ProgramFile | null;
+  pdfs: ProgramFile[];
+  docxs: ProgramFile[];
+};
+
+type RawFileRow = {
+  drive_file_id: string;
+  source_file: string;
+  source_type: "pdf" | "docx" | "video_transcript";
+  module_number: number | null;
+};
+
+export async function getProgramModules(slug: string): Promise<ProgramModule[]> {
+  const rows = await db.execute<RawFileRow>(sql`
+    SELECT DISTINCT
+      drive_file_id,
+      source_file,
+      source_type::text as source_type,
+      module_number
+    FROM knowledge_chunks
+    WHERE program_slug = ${slug}
+      AND drive_file_id IS NOT NULL
+    ORDER BY module_number NULLS LAST, source_file
+  `);
+
+  const byNum = new Map<number, ProgramModule>();
+  for (const r of rows) {
+    const num = r.module_number ?? 0;
+    let mod = byNum.get(num);
+    if (!mod) {
+      mod = { number: num, video: null, pdfs: [], docxs: [] };
+      byNum.set(num, mod);
+    }
+    const f: ProgramFile = {
+      driveFileId: r.drive_file_id,
+      sourceFile: r.source_file,
+    };
+    if (r.source_type === "video_transcript" && !mod.video) {
+      mod.video = f;
+    } else if (r.source_type === "pdf") {
+      mod.pdfs.push(f);
+    } else if (r.source_type === "docx") {
+      mod.docxs.push(f);
+    }
+  }
+  return Array.from(byNum.values()).sort((a, b) => a.number - b.number);
+}
+
+export function moduleTitle(m: ProgramModule): string {
+  if (m.number === 0) return "Ressources complémentaires";
+  return `Module ${m.number}`;
+}
+
+export function moduleDriveIds(m: ProgramModule): string[] {
+  const ids: string[] = [];
+  if (m.video) ids.push(m.video.driveFileId);
+  for (const p of m.pdfs) ids.push(p.driveFileId);
+  for (const d of m.docxs) ids.push(d.driveFileId);
+  return ids;
 }

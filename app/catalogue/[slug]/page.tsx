@@ -1,32 +1,20 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, FileText, Mic, Sheet } from "lucide-react";
-import { sql } from "drizzle-orm";
-import { db } from "@/db/client";
+import { ArrowLeft } from "lucide-react";
 import { PageHeader, PlaceholderBlock } from "@/components/layout/page-header";
-import { getProgramBySlug } from "@/lib/programs";
+import {
+  getProgramBySlug,
+  getProgramModules,
+  moduleDriveIds,
+} from "@/lib/programs";
+import { loadProgressMap } from "@/lib/module-progress";
+import { getRole } from "@/lib/role";
+import {
+  ProgramModules,
+  type ClientProgressEntry,
+} from "@/components/catalogue/program-modules";
 
 export const dynamic = "force-dynamic";
-
-type ChunkFile = {
-  drive_file_id: string;
-  source_file: string;
-  source_type: "pdf" | "docx" | "video_transcript";
-  module_number: number | null;
-  chunks: number;
-};
-
-const TYPE_ICON = {
-  pdf: FileText,
-  docx: Sheet,
-  video_transcript: Mic,
-} as const;
-
-const TYPE_LABEL = {
-  pdf: "PDF",
-  docx: "DOCX",
-  video_transcript: "Vidéo",
-} as const;
 
 export default async function ProgramPage({
   params,
@@ -37,26 +25,34 @@ export default async function ProgramPage({
   const program = await getProgramBySlug(slug);
   if (!program) notFound();
 
-  const files = await db.execute<ChunkFile>(sql`
-    SELECT
-      drive_file_id,
-      source_file,
-      source_type::text as source_type,
-      module_number,
-      count(*)::int as chunks
-    FROM knowledge_chunks
-    WHERE program_slug = ${slug}
-    GROUP BY drive_file_id, source_file, source_type, module_number
-    ORDER BY module_number NULLS FIRST, source_file
-  `);
+  const role = await getRole();
+  const [modules, progressMap] = await Promise.all([
+    getProgramModules(slug),
+    loadProgressMap(role),
+  ]);
 
-  const byType = {
-    pdf: files.filter((f) => f.source_type === "pdf"),
-    docx: files.filter((f) => f.source_type === "docx"),
-    video_transcript: files.filter((f) => f.source_type === "video_transcript"),
-  };
+  const completedModules = modules.filter((m) => {
+    const ids = moduleDriveIds(m);
+    if (ids.length === 0) return false;
+    return ids.every((id) => progressMap.get(id)?.completedAt != null);
+  }).length;
 
-  const totalChunks = files.reduce((sum, f) => sum + f.chunks, 0);
+  const initialProgress: ClientProgressEntry[] = [];
+  for (const m of modules) {
+    for (const id of moduleDriveIds(m)) {
+      const entry = progressMap.get(id);
+      if (entry) {
+        initialProgress.push({
+          driveFileId: entry.driveFileId,
+          watchedSeconds: entry.watchedSeconds,
+          durationSeconds: entry.durationSeconds,
+          completedAt: entry.completedAt
+            ? entry.completedAt.toISOString()
+            : null,
+        });
+      }
+    }
+  }
 
   return (
     <div className="flex flex-col gap-8">
@@ -86,9 +82,10 @@ export default async function ProgramPage({
 
       {!program.isAvailable ? (
         <PlaceholderBlock>
-          Ce programme sera ajouté à une prochaine itération. Pas d'ingestion pour l'instant.
+          Ce programme sera ajouté à une prochaine itération. Pas d&apos;ingestion
+          pour l&apos;instant.
         </PlaceholderBlock>
-      ) : files.length === 0 ? (
+      ) : modules.length === 0 ? (
         <PlaceholderBlock>
           Aucun fichier ingéré pour ce programme. Lance{" "}
           <code className="rounded bg-surface-muted px-1.5 py-0.5">
@@ -97,65 +94,45 @@ export default async function ProgramPage({
           .
         </PlaceholderBlock>
       ) : (
-        <div className="flex flex-col gap-6">
-          <div className="grid grid-cols-3 gap-3">
-            <Stat label="Fichiers" value={files.length.toString()} />
-            <Stat label="Chunks" value={totalChunks.toLocaleString("fr-FR")} />
-            <Stat
-              label="Vidéos transcrites"
-              value={byType.video_transcript.length.toString()}
-            />
-          </div>
-
-          {(["pdf", "video_transcript", "docx"] as const).map((type) => {
-            const list = byType[type];
-            if (list.length === 0) return null;
-            const Icon = TYPE_ICON[type];
-            return (
-              <section key={type} className="flex flex-col gap-3">
-                <div className="flex items-baseline justify-between border-b border-border pb-2">
-                  <h2 className="flex items-center gap-2 text-sm font-semibold tracking-tight">
-                    <Icon className="size-4 text-muted-foreground" aria-hidden />
-                    {TYPE_LABEL[type]}
-                  </h2>
-                  <span className="text-xs tabular-nums text-muted-foreground">
-                    {list.length} fichier{list.length > 1 ? "s" : ""}
-                  </span>
-                </div>
-                <ul className="flex flex-col divide-y divide-border rounded-md border border-border bg-surface">
-                  {list.map((f) => (
-                    <li
-                      key={f.drive_file_id}
-                      className="grid grid-cols-[1fr,auto,auto] items-center gap-3 px-4 py-2.5 text-sm"
-                    >
-                      <span className="truncate font-medium text-ink">
-                        {f.source_file}
-                      </span>
-                      <span className="text-xs tabular-nums text-muted-foreground">
-                        {f.module_number ? `module ${f.module_number}` : "—"}
-                      </span>
-                      <span className="w-24 text-right text-xs tabular-nums text-muted-foreground">
-                        {f.chunks} chunk{f.chunks > 1 ? "s" : ""}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            );
-          })}
+        <div className="flex flex-col gap-5">
+          <CompletionBar
+            completed={completedModules}
+            total={modules.length}
+          />
+          <ProgramModules modules={modules} initialProgress={initialProgress} />
         </div>
       )}
     </div>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function CompletionBar({
+  completed,
+  total,
+}: {
+  completed: number;
+  total: number;
+}) {
+  const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
   return (
-    <div className="rounded-lg border border-border bg-surface p-4">
-      <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-        {label}
-      </p>
-      <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight">{value}</p>
+    <div className="rounded-lg border border-border bg-surface px-4 py-3.5">
+      <div className="flex items-baseline justify-between">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          Complétion du programme
+        </p>
+        <p className="text-sm font-semibold tabular-nums">
+          {completed} / {total}{" "}
+          <span className="text-xs font-normal text-muted-foreground">
+            modules · {pct}%
+          </span>
+        </p>
+      </div>
+      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-surface-muted">
+        <div
+          className="h-full rounded-full bg-emerald-500 transition-[width] duration-500"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
     </div>
   );
 }

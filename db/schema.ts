@@ -7,6 +7,7 @@ import {
   jsonb,
   numeric,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   unique,
@@ -364,7 +365,32 @@ export const vaultPages = pgTable(
 );
 
 // ==================================================================
-// 15. Ingestion runs (Drive sync logs)
+// 15bis. Module progress (formation completion tracking)
+// ==================================================================
+export const moduleProgress = pgTable(
+  "module_progress",
+  {
+    role: text("role").notNull(),
+    driveFileId: text("drive_file_id").notNull(),
+    watchedSeconds: integer("watched_seconds").notNull().default(0),
+    durationSeconds: integer("duration_seconds"),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.role, t.driveFileId] }),
+    check(
+      "module_progress_role_check",
+      sql`${t.role} in ('audioprothesiste', 'assistant')`
+    ),
+    index("module_progress_role_idx").on(t.role),
+  ]
+);
+
+// ==================================================================
+// 16. Ingestion runs (Drive sync logs)
 // ==================================================================
 export const ingestionRuns = pgTable(
   "ingestion_runs",

@@ -15,6 +15,7 @@
     "db:check": "tsx db/check.ts",
     "seed:programs": "tsx scripts/seed-programs.ts",
     "seed:replay": "tsx scripts/seed-replay.ts",
+    "seed:journeys": "tsx scripts/seed-patient-journeys.ts",
     "seed:vault": "tsx --conditions react-server scripts/seed-vault.ts",
     "test:j8": "tsx --conditions react-server scripts/test-j8-pipeline.ts",
     "ingest": "tsx scripts/ingest.ts",

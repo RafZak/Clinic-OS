@@ -12,7 +12,13 @@ import { getRole } from "@/lib/role";
 import {
   ProgramModules,
   type ClientProgressEntry,
+  type ClientQuizEntry,
 } from "@/components/catalogue/program-modules";
+import {
+  getBestAttemptsByPractitioner,
+  listQuizSetsForProgram,
+} from "@/lib/quizzes";
+import { getCurrentQuizPractitioner } from "@/lib/quiz-identity";
 
 export const dynamic = "force-dynamic";
 
@@ -26,10 +32,33 @@ export default async function ProgramPage({
   if (!program) notFound();
 
   const role = await getRole();
-  const [modules, progressMap] = await Promise.all([
+  const [modules, progressMap, quizSets, practitioner] = await Promise.all([
     getProgramModules(slug),
     loadProgressMap(role),
+    listQuizSetsForProgram(slug),
+    getCurrentQuizPractitioner(role),
   ]);
+
+  const attemptsMap = practitioner
+    ? await getBestAttemptsByPractitioner(
+        practitioner.id,
+        quizSets.map((q) => q.id)
+      )
+    : new Map();
+
+  const clientQuizzes: ClientQuizEntry[] = quizSets.map((q) => {
+    const a = attemptsMap.get(q.id);
+    return {
+      id: q.id,
+      title: q.title,
+      ordinal: q.ordinal,
+      moduleNumber: q.moduleNumber,
+      passThreshold: q.passThreshold,
+      bestScore: a ? a.score : null,
+      passed: a ? a.passed : false,
+      lastAttemptAt: a?.completedAt ? a.completedAt.toISOString() : null,
+    };
+  });
 
   const completedModules = modules.filter((m) => {
     const ids = moduleDriveIds(m);
@@ -99,7 +128,11 @@ export default async function ProgramPage({
             completed={completedModules}
             total={modules.length}
           />
-          <ProgramModules modules={modules} initialProgress={initialProgress} />
+          <ProgramModules
+            modules={modules}
+            initialProgress={initialProgress}
+            quizzes={clientQuizzes}
+          />
         </div>
       )}
     </div>

@@ -1,17 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import {
   CheckCircle2,
   ChevronDown,
   Circle,
   ExternalLink,
   FileText,
+  PlayCircle,
+  RotateCcw,
   Sheet,
+  Sparkles,
   Video,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ProgramFile, ProgramModule } from "@/lib/programs";
+import type { QuizSetWithQuestions } from "@/lib/quizzes";
+import { loadQuizSetAction } from "@/app/actions/quizzes";
+import { QuizRunner } from "./quiz-runner";
 
 export type ClientProgressEntry = {
   driveFileId: string;
@@ -20,21 +26,43 @@ export type ClientProgressEntry = {
   completedAt: string | null;
 };
 
+export type ClientQuizEntry = {
+  id: string;
+  title: string;
+  ordinal: number;
+  moduleNumber: number | null;
+  passThreshold: number;
+  bestScore: number | null;
+  passed: boolean;
+  lastAttemptAt: string | null;
+};
+
 type ProgressMap = Record<string, ClientProgressEntry>;
+type QuizMap = Record<string, ClientQuizEntry>;
 
 export function ProgramModules({
   modules,
   initialProgress,
+  quizzes = [],
 }: {
   modules: ProgramModule[];
   initialProgress: ClientProgressEntry[];
+  quizzes?: ClientQuizEntry[];
 }) {
   const [progress, setProgress] = useState<ProgressMap>(() => {
     const m: ProgressMap = {};
     for (const p of initialProgress) m[p.driveFileId] = p;
     return m;
   });
+  const [quizState, setQuizState] = useState<QuizMap>(() => {
+    const m: QuizMap = {};
+    for (const q of quizzes) m[q.id] = q;
+    return m;
+  });
   const [hashTarget, setHashTarget] = useState<number | null>(null);
+  const [activeQuiz, setActiveQuiz] = useState<QuizSetWithQuestions | null>(null);
+  const [loadingQuizId, setLoadingQuizId] = useState<string | null>(null);
+  const [, startQuizLoad] = useTransition();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -58,6 +86,44 @@ export function ProgramModules({
     setProgress((prev) => ({ ...prev, [entry.driveFileId]: entry }));
   }, []);
 
+  const moduleNumbers = useMemo(
+    () => new Set(modules.map((m) => m.number)),
+    [modules]
+  );
+
+  const quizzesByModule = useMemo(() => {
+    const m = new Map<number, ClientQuizEntry[]>();
+    for (const q of quizzes) {
+      if (q.moduleNumber == null || !moduleNumbers.has(q.moduleNumber)) continue;
+      const arr = m.get(q.moduleNumber) ?? [];
+      arr.push(quizState[q.id] ?? q);
+      m.set(q.moduleNumber, arr);
+    }
+    return m;
+  }, [quizzes, quizState, moduleNumbers]);
+
+  const transverseQuizzes = useMemo(
+    () =>
+      quizzes
+        .filter(
+          (q) => q.moduleNumber == null || !moduleNumbers.has(q.moduleNumber)
+        )
+        .map((q) => quizState[q.id] ?? q),
+    [quizzes, quizState, moduleNumbers]
+  );
+
+  const openQuiz = useCallback(
+    (quizSetId: string) => {
+      setLoadingQuizId(quizSetId);
+      startQuizLoad(async () => {
+        const set = await loadQuizSetAction(quizSetId);
+        setLoadingQuizId(null);
+        if (set) setActiveQuiz(set);
+      });
+    },
+    []
+  );
+
   return (
     <div className="flex flex-col gap-3">
       {modules.map((m, idx) => (
@@ -66,10 +132,156 @@ export function ProgramModules({
           mod={m}
           progress={progress}
           onLocalUpdate={updateLocal}
+          quizzes={quizzesByModule.get(m.number) ?? []}
+          loadingQuizId={loadingQuizId}
+          onOpenQuiz={openQuiz}
           defaultOpen={idx === 0}
           forceOpen={hashTarget === m.number}
         />
       ))}
+
+      {transverseQuizzes.length > 0 && (
+        <TransverseQuizzes
+          quizzes={transverseQuizzes}
+          loadingQuizId={loadingQuizId}
+          onOpenQuiz={openQuiz}
+        />
+      )}
+
+      {activeQuiz && (
+        <QuizRunner
+          open={true}
+          onOpenChange={(v) => !v && setActiveQuiz(null)}
+          quiz={activeQuiz}
+          onCompleted={(r) =>
+            setQuizState((prev) => ({
+              ...prev,
+              [activeQuiz.id]: {
+                ...(prev[activeQuiz.id] ?? {
+                  id: activeQuiz.id,
+                  title: activeQuiz.title,
+                  ordinal: activeQuiz.ordinal,
+                  moduleNumber: activeQuiz.moduleNumber,
+                  passThreshold: activeQuiz.passThreshold,
+                }),
+                bestScore:
+                  prev[activeQuiz.id]?.bestScore != null
+                    ? Math.max(prev[activeQuiz.id]!.bestScore!, r.score)
+                    : r.score,
+                passed: r.passed || (prev[activeQuiz.id]?.passed ?? false),
+                lastAttemptAt: new Date().toISOString(),
+              },
+            }))
+          }
+        />
+      )}
+    </div>
+  );
+}
+
+function TransverseQuizzes({
+  quizzes,
+  loadingQuizId,
+  onOpenQuiz,
+}: {
+  quizzes: ClientQuizEntry[];
+  loadingQuizId: string | null;
+  onOpenQuiz: (id: string) => void;
+}) {
+  return (
+    <div className="mt-3 rounded-lg border border-border bg-surface px-4 py-4">
+      <div className="mb-3 flex items-baseline justify-between">
+        <h3 className="text-sm font-semibold text-foreground">
+          Quiz transverses
+        </h3>
+        <p className="text-[11px] text-muted-foreground">
+          Validation pédagogique du programme · ≥ 80%
+        </p>
+      </div>
+      <div className="flex flex-col gap-2">
+        {quizzes.map((q) => (
+          <QuizCard
+            key={q.id}
+            quiz={q}
+            loading={loadingQuizId === q.id}
+            onOpen={() => onOpenQuiz(q.id)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function QuizCard({
+  quiz,
+  loading,
+  onOpen,
+}: {
+  quiz: ClientQuizEntry;
+  loading: boolean;
+  onOpen: () => void;
+}) {
+  const hasAttempt = quiz.bestScore != null;
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-white px-3 py-2.5">
+      <div className="flex min-w-0 items-center gap-3">
+        <div
+          className={cn(
+            "flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
+            quiz.passed
+              ? "bg-emerald-50 text-emerald-700"
+              : hasAttempt
+                ? "bg-amber-50 text-amber-700"
+                : "bg-violet-50 text-violet-700"
+          )}
+        >
+          <Sparkles className="h-4 w-4" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-foreground">{quiz.title}</p>
+          <p className="text-[11px] text-muted-foreground">
+            {quiz.passed ? (
+              <span className="font-medium text-emerald-700">
+                Validé · meilleur score {quiz.bestScore}%
+              </span>
+            ) : hasAttempt ? (
+              <span className="font-medium text-amber-700">
+                Dernière tentative {quiz.bestScore}% — à repasser
+              </span>
+            ) : (
+              <span>
+                Quiz à passer · score à atteindre ≥ {quiz.passThreshold}%
+              </span>
+            )}
+          </p>
+        </div>
+      </div>
+      <button
+        onClick={onOpen}
+        disabled={loading}
+        className={cn(
+          "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+          loading
+            ? "bg-surface-muted text-muted-foreground"
+            : hasAttempt
+              ? "border border-border bg-white text-foreground hover:bg-surface-muted/40"
+              : "bg-brand text-white hover:bg-brand-dark"
+        )}
+      >
+        {loading ? (
+          "Chargement…"
+        ) : hasAttempt ? (
+          <>
+            <RotateCcw className="h-3.5 w-3.5" />
+            Repasser
+          </>
+        ) : (
+          <>
+            <PlayCircle className="h-3.5 w-3.5" />
+            Lancer le quiz
+          </>
+        )}
+      </button>
     </div>
   );
 }
@@ -78,12 +290,18 @@ function ModuleAccordion({
   mod,
   progress,
   onLocalUpdate,
+  quizzes,
+  loadingQuizId,
+  onOpenQuiz,
   defaultOpen,
   forceOpen,
 }: {
   mod: ProgramModule;
   progress: ProgressMap;
   onLocalUpdate: (entry: ClientProgressEntry) => void;
+  quizzes: ClientQuizEntry[];
+  loadingQuizId: string | null;
+  onOpenQuiz: (id: string) => void;
   defaultOpen?: boolean;
   forceOpen?: boolean;
 }) {
@@ -162,6 +380,7 @@ function ModuleAccordion({
             {mod.docxs.length > 0 && (
               <NatureBadge type="docx" count={mod.docxs.length} />
             )}
+            {quizzes.length > 0 && <QuizBadge quizzes={quizzes} />}
             {videoEntry && videoPct > 0 && !completed && (
               <span className="text-muted-foreground">· Vidéo {videoPct}%</span>
             )}
@@ -203,9 +422,47 @@ function ModuleAccordion({
               onLocalUpdate={onLocalUpdate}
             />
           )}
+          {quizzes.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <p className="text-xs font-medium text-muted-foreground">
+                Quiz {quizzes.length > 1 ? "(plusieurs)" : ""}
+              </p>
+              {quizzes.map((q) => (
+                <QuizCard
+                  key={q.id}
+                  quiz={q}
+                  loading={loadingQuizId === q.id}
+                  onOpen={() => onOpenQuiz(q.id)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
+  );
+}
+
+function QuizBadge({ quizzes }: { quizzes: ClientQuizEntry[] }) {
+  const passed = quizzes.every((q) => q.passed);
+  const tried = quizzes.some((q) => q.bestScore != null);
+  const tone = passed
+    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+    : tried
+      ? "bg-amber-50 text-amber-700 border-amber-200"
+      : "bg-violet-50 text-violet-700 border-violet-200";
+  const label = passed ? "Quiz validé" : tried ? "Quiz à repasser" : "Quiz";
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium",
+        tone
+      )}
+    >
+      <Sparkles className="h-3 w-3" />
+      {label}
+      {quizzes.length > 1 ? ` × ${quizzes.length}` : ""}
+    </span>
   );
 }
 

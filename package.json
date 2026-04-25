@@ -22,7 +22,9 @@
     "ingest": "tsx scripts/ingest.ts",
     "ingest:local": "tsx scripts/ingest-local.ts",
     "storage:bootstrap": "tsx --conditions react-server scripts/bootstrap-storage.ts",
-    "warm:video": "tsx scripts/warm-video-cache.ts"
+    "warm:video": "tsx scripts/warm-video-cache.ts",
+    "parse:quiz": "tsx scripts/parse-quiz.ts",
+    "migrate:quizzes": "tsx scripts/migrate-quizzes.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.90.0",

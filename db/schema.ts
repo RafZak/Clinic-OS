@@ -390,6 +390,73 @@ export const moduleProgress = pgTable(
 );
 
 // ==================================================================
+// 15ter. Quizzes (interactive quiz sets parsed from Drive)
+// ==================================================================
+export const quizSets = pgTable(
+  "quiz_sets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    programSlug: text("program_slug").notNull(),
+    moduleNumber: integer("module_number"),
+    ordinal: integer("ordinal").notNull(),
+    title: text("title").notNull(),
+    passThreshold: integer("pass_threshold").notNull().default(80),
+    sourceFile: text("source_file").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (t) => [
+    unique("quiz_sets_program_ordinal_uniq").on(t.programSlug, t.ordinal),
+    index("quiz_sets_program_idx").on(t.programSlug, t.ordinal),
+  ]
+);
+
+export const quizQuestions = pgTable(
+  "quiz_questions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    quizSetId: uuid("quiz_set_id")
+      .notNull()
+      .references(() => quizSets.id, { onDelete: "cascade" }),
+    position: integer("position").notNull(),
+    prompt: text("prompt").notNull(),
+    kind: text("kind").notNull(),
+    choices: jsonb("choices").notNull(),
+    correctIds: text("correct_ids").array().notNull(),
+    explanation: text("explanation").notNull(),
+    relatedModule: integer("related_module"),
+  },
+  (t) => [
+    unique("quiz_questions_set_position_uniq").on(t.quizSetId, t.position),
+    check(
+      "quiz_questions_kind_check",
+      sql`${t.kind} in ('single', 'multi', 'boolean')`
+    ),
+  ]
+);
+
+export const quizAttempts = pgTable(
+  "quiz_attempts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    quizSetId: uuid("quiz_set_id")
+      .notNull()
+      .references(() => quizSets.id, { onDelete: "cascade" }),
+    practitionerId: uuid("practitioner_id")
+      .notNull()
+      .references(() => practitioners.id, { onDelete: "cascade" }),
+    score: integer("score").notNull(),
+    passed: boolean("passed").notNull(),
+    answers: jsonb("answers").notNull(),
+    durationMs: integer("duration_ms"),
+    completedAt: timestamp("completed_at", { withTimezone: true }).defaultNow(),
+  },
+  (t) => [
+    index("quiz_attempts_practitioner_idx").on(t.practitionerId),
+    index("quiz_attempts_set_idx").on(t.quizSetId),
+  ]
+);
+
+// ==================================================================
 // 16. Ingestion runs (Drive sync logs)
 // ==================================================================
 export const ingestionRuns = pgTable(

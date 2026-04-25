@@ -380,7 +380,7 @@ function FileList({
                   <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                 )}
                 <a
-                  href={`https://drive.google.com/file/d/${f.driveFileId}/view`}
+                  href={`/api/pdf/${encodeURIComponent(f.driveFileId)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => void handleOpen(f.driveFileId)}

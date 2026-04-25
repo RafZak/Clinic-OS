@@ -32,6 +32,41 @@ const INSIGHT_ICON: Record<string, typeof AlertTriangle> = {
   improvement: Sparkles,
 };
 
+type Tone = {
+  card: string;
+  inline: string;
+  icon: string;
+};
+
+const INSIGHT_TONE: Record<string, Tone> = {
+  missed_objection: {
+    card: "border-red-300 bg-red-50/60",
+    inline: "border-red-300 bg-red-50/70",
+    icon: "text-red-600",
+  },
+  upsell_missed: {
+    card: "border-red-300 bg-red-50/60",
+    inline: "border-red-300 bg-red-50/70",
+    icon: "text-red-600",
+  },
+  improvement: {
+    card: "border-amber-300 bg-amber-50/60",
+    inline: "border-amber-300 bg-amber-50/70",
+    icon: "text-amber-600",
+  },
+  good_practice: {
+    card: "border-emerald-300 bg-emerald-50/60",
+    inline: "border-emerald-300 bg-emerald-50/70",
+    icon: "text-emerald-600",
+  },
+};
+
+const NEUTRAL_TONE: Tone = {
+  card: "border-border bg-surface",
+  inline: "border-border bg-surface-muted",
+  icon: "text-muted-foreground",
+};
+
 const SEVERITY_ORDER: Record<string, number> = {
   critical: 0,
   warning: 1,
@@ -168,7 +203,7 @@ export function ResultsView({ bundle }: { bundle: Bundle }) {
                     </span>
                     <span
                       className={cn(
-                        "w-16 shrink-0 rounded-full px-2 py-0.5 text-center text-[10px] uppercase tracking-wide",
+                        "mt-0.5 inline-flex h-5 w-16 shrink-0 items-center justify-center self-start rounded-full text-[10px] font-medium uppercase tracking-wide",
                         l.speaker === "practitioner"
                           ? "bg-brand/10 text-brand"
                           : "bg-surface-muted text-muted-foreground"
@@ -239,17 +274,12 @@ function InsightCard({
 }) {
   const Icon = INSIGHT_ICON[insight.type] ?? Sparkles;
   const typeLabel = INSIGHT_TYPE_LABEL[insight.type] ?? insight.type;
-  const severityClass =
-    insight.severity === "critical"
-      ? "border-destructive/40 bg-destructive/5"
-      : insight.severity === "warning"
-        ? "border-amber-400/40 bg-amber-400/5"
-        : "border-border bg-surface";
+  const tone = INSIGHT_TONE[insight.type] ?? NEUTRAL_TONE;
 
   return (
-    <div className={cn("rounded-lg border px-4 py-3", severityClass)}>
+    <div className={cn("rounded-lg border px-4 py-3", tone.card)}>
       <div className="flex items-start gap-2">
-        <Icon className="mt-0.5 size-4 shrink-0 text-brand" aria-hidden />
+        <Icon className={cn("mt-0.5 size-4 shrink-0", tone.icon)} aria-hidden />
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -307,17 +337,12 @@ function InlineAnnotation({
 }) {
   const Icon = INSIGHT_ICON[insight.type] ?? Sparkles;
   const typeLabel = INSIGHT_TYPE_LABEL[insight.type] ?? insight.type;
-  const tone =
-    insight.severity === "critical"
-      ? "border-brand/60 bg-brand/5 text-brand"
-      : insight.severity === "warning"
-        ? "border-amber-400/50 bg-amber-50 text-amber-800"
-        : "border-border bg-surface-muted text-muted-foreground";
+  const tone = INSIGHT_TONE[insight.type] ?? NEUTRAL_TONE;
 
   return (
-    <div className={cn("rounded-md border px-2.5 py-1.5 text-[11px]", tone)}>
+    <div className={cn("rounded-md border px-2.5 py-1.5 text-[11px]", tone.inline)}>
       <div className="flex items-start gap-1.5">
-        <Icon className="mt-0.5 size-3 shrink-0" aria-hidden />
+        <Icon className={cn("mt-0.5 size-3 shrink-0", tone.icon)} aria-hidden />
         <div className="flex flex-1 flex-col gap-0.5">
           <span className="text-[9px] uppercase tracking-wide opacity-80">{typeLabel}</span>
           <span className="font-medium leading-tight text-ink">{insight.title}</span>

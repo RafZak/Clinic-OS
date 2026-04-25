@@ -85,10 +85,6 @@ export default async function DashboardPage() {
         <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
           Actions recommandées
         </h2>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Suggestions générées à partir de vos sessions analysées et de votre
-          mémoire organisationnelle.
-        </p>
         <div className="mt-4">
           <NudgesPanel nudges={nudges} />
         </div>

@@ -544,3 +544,84 @@ C'est **exactement** la mécanique Karpathy attendue pour la démo : une consult
 - **Scripts replay Martin/Lefèvre** : scores IA sévères vu en J7. Pas itéré J8 (priorité aux 4 artefacts + vault). Si Jonathan juge nécessaire pour la démo, à itérer J9 ou J10.
 - **Investigation 5e patch vault** non bloquante mais à faire en J9 par hygiène.
 
+---
+
+## J9 — 25 avril 2026 (matinée + début d'aprem)
+
+### Objectif
+
+Livrer (1) le **seed des parcours patients complets** (Durand → réussi, Martin → en cours upsell raté, Lefèvre → perdue après objection prix) avec timeline `patient_events` rattachée aux sessions consultation existantes + sessions phone_call seedées, (2) la **page liste `/patients`** avec filtre par statut + métriques agrégées par patient, (3) la **page détail `/patients/[id]`** avec timeline verticale custom + fiche Karpathy en regard, (4) le **dashboard business** branché sur des KPIs réels calculés depuis Drizzle (4 cartes adaptées au rôle, line chart 4 semaines, heatmap framework, table des dernières sessions), (5) l'**encart "Actions recommandées" (nudges)** pré-écrits et paramétrés par les vraies données. Stretch appels entrants reporté faute de validation framework v2.
+
+### Décisions techniques arbitrées avant code (validées par Raphaël)
+
+1. **`patient_events.metadata` = jsonb libre** côté DB + discriminated union TS côté code à l'écriture seed. Cohérent avec `vault_pages.metadata` et `coaching_insights.citation_chunks`. Volumes ridicules (≤ 15 events), zéro migration future.
+2. **Dashboard KPIs en JS server avec Drizzle** (pas de SQL agrégé custom au-delà de quelques `LATERAL JOIN`), **pas de cache** (`dynamic = "force-dynamic"`). 50 rows max, on veut voir le KPI bouger en live après une session jouée pendant la démo.
+3. **Nudges pré-écrits durs** dans `lib/nudges.ts`, paramétrés par `DashboardContext` (jours depuis appel non rappelé, étape la plus faible du framework, etc.). Déterministe, gratuit, scriptable mot-pour-mot pour la démo. La cohérence avec le PRD §12 est totale.
+4. **Lefèvre incluse en statut `lost`** dans la liste patients (pas isolée comme cas d'école) — cohérent avec son scénario d'objection prix non traitée.
+
+### Fait
+
+- **Seed parcours patients** (`scripts/seed-patient-journeys.ts` + `pnpm seed:journeys`) : idempotent, ancré sur `2026-04-25T10:00Z` (TODAY anchor déterministe). Crée un assistant accueil "Sophie Bernard" rattaché à Lyon 3 (rôle `assistant`). Met à jour `patients.status` + `firstContactAt` selon la trajectoire. 13 events insérés au total :
+  - **Mme Françoise Durand** (status=`patient`) — 6 events sur 30 jours : appel entrant J-30 (score 82, RDV pris) → RDV scheduled J-30 → consultation J-21 (replay durand-excellent existant) → trial_start J-21 (Phonak Audéo Lumity P90 classe 2, 3 200 €) → delivery J-2 → follow_up J0.
+  - **M. Henri Martin** (status=`prospect`) — 4 events sur 15 jours : appel J-15 (score 75) → RDV J-15 → consultation J-7 (replay martin-upsell-rate) → trial_start J-7 (Signia classe 1, 1 800 €, `upsell_missed: true`).
+  - **Mme Isabelle Lefèvre** (status=`lost`) — 3 events sur 10 jours : appel J-10 (score 68) → RDV J-10 → consultation J-3 (replay lefevre-objection-price, score 19) — pas d'essai, parcours arrêté.
+  - **Sessions kind=`phone_call` seedées** : 3 sessions `source='seed'`, `status='completed'`, `analysis_status='done'`, durée 96-142 s, `globalScore` cohérent (75/82/68), 1 `coaching_insight` chacune. Pas de `transcript_lines` faute de framework v2 validé — la page `/appels/[id]` les ouvre quand même mais sans transcript.
+- **`lib/patients.ts`** : 2 loaders server-only (`listPatients`, `getPatientDetail`) basés sur `LATERAL JOIN` SQL pour aggréger events count + dernier event + count consultations + score moyen. Helper `patientSlug` aligné sur `slugify` du vault, mappings `STATUS_LABEL` et `EVENT_LABEL`. Résolution `sessionHasTranscript` via sub-query `EXISTS` pour qu'un event phone_call sans transcript ne soit pas cliquable.
+- **Page `/patients`** : table shadcn-styled (avatar initiales + nom + âge + badge statut coloré + centre + counts events/consultations + score moyen + dernière interaction relative). Filtre via search param `?status=prospect|patient|lost|all` rendu en pseudo-Tabs cliquables (Links). Ordonné par date dernière interaction DESC.
+- **Composant `<PatientTimeline>`** (`components/patients/patient-timeline.tsx`) : flexbox vertical custom avec ligne `absolute left-3` + dots colorés ringed par kind (sky / violet / brand / amber / emerald / slate). Chaque event = carte avec icône lucide, score si session liée, summary, métadonnées formatées (créneau RDV, produit + classe + prix, durée essai, motif perdu). Click = `<Link>` vers `/consultations/[id]` ou `/appels/[id]` selon `kind` et disponibilité du transcript. Events sans session (RDV, trial, delivery, follow_up) restent non cliquables avec metadata visible.
+- **Page `/patients/[id]`** : layout `lg:grid-cols-12` (timeline col-span-7 + Karpathy `sticky top-4` col-span-5). Fiche Karpathy chargée via `getVaultPageByPath('patients/<slug>.md')` et rendue avec `<VaultMarkdown>` existant + index global des pages pour résoudre les wikilinks. Bouton "Ouvrir dans /admin/vault" + horodatage de la dernière mise à jour de la fiche. Si pas de fiche encore : message dégradé.
+- **`lib/dashboard.ts`** : `loadDashboard(role)` retourne `DashboardData` typé fort (KPIs, weekly score points, heatmap cells, recent sessions, context riche utilisé par les nudges). Tous les `db.execute` lancés en `Promise.all`. Filtre `patient_id IS NOT NULL` partout pour exclure les sessions live de test orphelines (qui polluaient `avg(global_score)` à cause de scores 8/14 sur des runs de validation J5-J6).
+- **Composant `<WeeklyScoreChart>`** (`components/dashboard/weekly-score-chart.tsx`, client component) : recharts LineChart 4 buckets sem (S-3 / S-2 / S-1 / Cette sem.), domain 0-100, brand color, `connectNulls` pour les semaines vides. Fallback dégradé si zéro session sur 4 semaines.
+- **Composant `<StepHeatmap>`** : grid responsive 2/3/5 colonnes (consultations 10 étapes, appels 6 étapes), couleur dépendante du score (emerald ≥ 80, amber ≥ 60, orange ≥ 40, red < 40). Server component pur HTML/CSS.
+- **Composant `<RecentSessionsTable>`** : table shadcn 5 dernières sessions analysées du framework du rôle, colonnes Patient / Pro + Centre / Score (couleur conditionnelle) / Durée / Date relative / lien vers la session.
+- **Dashboard branché** (`app/page.tsx`) : remplace placeholder. 4 KPIs adaptés au rôle (audioprothésiste vs assistant), 2 panels (chart + heatmap), encart Actions recommandées, table dernières sessions. `dynamic = 'force-dynamic'`.
+- **`lib/nudges.ts`** + **`<NudgesPanel>`** : 4 max par rôle, sévérité `info|warning|critical` (3 styles tailwind distincts avec icônes Lightbulb/Sparkles/AlertTriangle). Côté pro : étape sous tension, patient lost non rappelée, opportunité montée en gamme avec calcul du delta euros, dernière consultation analysée si <24h. Côté assistant : relance Lefèvre (critical), durée d'appel au-dessus cible, RDV non honorés, pattern objection prix.
+- **Bonus dette vault J8** : amélioration du logging du `try/catch` dans `applyPatch`. Au prochain run E2E vault, tout patch en échec produira une ligne JSON taggée `vault_patch_failed` avec `path`, `operation`, `section_heading`, preview du contenu (200 c.) + `stack` tronquée. + nouvelle ligne taggée `vault_ingest:partial` listant tous les échecs en agrégat. Pas de fix spéculatif sans diag clair — le hook capture d'abord la cause au prochain replay.
+
+### Smoke tests E2E (dev server local)
+
+| Endpoint | HTTP | Vérif contenu |
+|---|---|---|
+| `/patients` | 200 | "Mme Françoise Durand", "M. Henri Martin", "Mme Isabelle Lefèvre", badges Patient/Prospect/Perdu, "Lyon 3" |
+| `/patients?status=patient` | 200 | Filtre OK, seul Durand listé |
+| `/patients/<durand-id>` | 200 | 6 events Appel/RDV/Consultation/Essai/Livraison/Suivi, "Phonak Audéo Lumity", boutons "Voir l'analyse", "Mémoire organisationnelle" + "Ouvrir dans /admin/vault" |
+| `/` (audioprothésiste) | 200 | KPIs : 33 % appareillage, 2 733 € panier, 100 % conv. appel→RDV, 52/100 score consult. Nudges : "Étape 2 sous tension", "Mme Lefèvre pas rappelée", "Opportunité de montée", "Consultation analysée" |
+| `/` (assistant, cookie role=assistant) | 200 | KPIs : 100 % appel→RDV, 1m 55s durée moy., 100 % RDV honorés, 75/100 qualité accueil. Nudges : "Relance recommandée Lefèvre", "Pattern récurrent objection prix" |
+
+### Coût mesuré
+
+**$0** sur J9 — aucun appel IA externe. Tous les calculs sont SQL/JS et les nudges pré-écrits durs. La régénération des pages dashboard et patient est purement DB-bound. Cette journée est le coup de pelle de la démo : data, UI, dramaturgie.
+
+### Dette technique acceptée / reportée
+
+- **Stretch appels entrants replay non livré** : bloqué par la validation du framework appel v2 (6 étapes) par Jonathan. **Code analyzer + ReplayConsole + LiveFramework déjà compatibles `kind='phone_call'`** — vérifié dans `lib/analysis/analyze.ts:191` et `lib/frameworks.ts`. Il manque juste : 2 scripts replay (converti score 82 + perdu score 38 dans `scripts/replay/scripts-phone.ts`), extension de `seed-replay.ts` pour seeder ces sessions kind='phone_call' avec transcript_lines, et une variante du dialog "Nouvelle consultation" côté rôle assistant qui propose 2 cartes appel. Estimation : 30-45 min de code une fois le framework validé. À reprendre J10 si feu vert Jonathan.
+- **Investigation 5e patch vault non concluante mais instrumentée** : pas de fix spéculatif. Le logging amélioré capturera la cause au prochain replay E2E vault. Ce 4/5 silencieux n'a pas d'impact démo (les 4 fiches entités s'enrichissent comme attendu, c'est ce que Jonathan montre).
+- **Sessions live de test polluaient les agrégats dashboard** : 12 sessions `kind='consultation' source='live'` avec `patient_id=null` héritées des runs de validation J5-J6. Ajout du filtre `AND patient_id IS NOT NULL` dans tous les calculs sessions. À nettoyer en bulk un jour (`DELETE FROM sessions WHERE source='live' AND patient_id IS NULL`) — dans le contexte de la démo, ces sessions ne sont liées à aucune fiche patient donc elles sont invisibles partout sauf dans `db.check`.
+- **TODAY anchor durci en `2026-04-25`** dans le seed parcours : si le serveur de démo a une date différente, les calculs `daysSinceContact` côté nudges peuvent décaler de quelques jours. Pas critique en local le 25, à surveiller si on déploie demain (J10).
+
+### Ce qui marche en démo maintenant (cumulatif J1→J9)
+
+- Toggle rôle + nav sidebar.
+- Admin Knowledge : KPIs, fichiers, test retrieval inline.
+- Cmd+K : recherche naturelle streamée + sources Layer A.
+- Catalogue : 10 programmes, 4 actifs cliquables.
+- Consultation live : micro + Deepgram 400 ms latence + transcription défile + scoring J6 post-session avec radar + insights + citations.
+- Replay textuel animé : dialog "Nouvelle consultation" → 3 cartes Durand/Martin/Lefèvre → transcript défile tout seul → bulles coach Haiku popent → fin → analyseur tourne.
+- Tab Livrables — 4 cartes copiables/régénérables, génération auto en parallèle après analyse.
+- Tab Mémoire — lien direct vers la fiche audioprothésiste qui vient d'être enrichie + lien vers la fiche session.
+- `/admin/vault` complet — liste par kind, rendu markdown avec wikilinks cliquables, graph React Flow, export Obsidian zip.
+- **Nouveau J9** — Dashboard business avec 4 KPIs réels par rôle, line chart 4 semaines, heatmap framework, table dernières sessions, encart Actions recommandées 100 % data-driven.
+- **Nouveau J9** — `/patients` avec filtre par statut, table avec score moyen + dernière interaction.
+- **Nouveau J9** — `/patients/[id]` avec timeline verticale 6 types d'événements + fiche Karpathy patient en regard. Click event → ouvre la session analysée.
+
+### Reste à faire
+
+- **J9 aprem (stretch reporté)** : appels entrants replay — déblocage framework v2 par Jonathan + 30-45 min de code.
+- **J10** : E2E + polish + répétition Jonathan + investigation patch vault si re-run nécessaire + déploiement Vercel si on y va. Surveillance des durées Sonnet 4.6 (analyse + vault > 60 s sur Durand) qui dépassent le plafond Vercel — bloquant en prod, pas en local.
+
+### Blockers / questions ouvertes
+
+- **Framework appel entrant v2** non validé — bloque le stretch appels.
+- **Scripts replay Martin/Lefèvre** : scores IA sévères vu en J7 (52 vs 65 cible, 19 vs 48). Pas itéré J9. Si Jonathan juge l'écart gênant pour la dramaturgie démo, à corriger en J10.
+- **Patch vault 5e raté** : maintenant instrumenté mais reproduction non faite faute de temps (relancer un test E2E vault prend 2.5 min). À fusionner avec le polish J10.
+

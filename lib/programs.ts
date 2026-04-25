@@ -83,6 +83,7 @@ export async function getProgramModules(slug: string): Promise<ProgramModule[]> 
     FROM knowledge_chunks
     WHERE program_slug = ${slug}
       AND drive_file_id IS NOT NULL
+      AND source_file !~* '^\\s*master'
     ORDER BY module_number NULLS LAST, source_file
   `);
 

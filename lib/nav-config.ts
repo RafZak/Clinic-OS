@@ -1,10 +1,8 @@
 import {
   BookOpen,
-  ClipboardCheck,
   Database,
   LayoutDashboard,
   Notebook,
-  Phone,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -25,18 +23,6 @@ export const PRIMARY_NAV: NavItem[] = [
     icon: LayoutDashboard,
     roles: ["audioprothesiste", "assistant"],
     match: "exact",
-  },
-  {
-    href: "/consultations",
-    label: "Consultations",
-    icon: ClipboardCheck,
-    roles: ["audioprothesiste"],
-  },
-  {
-    href: "/appels",
-    label: "Appels entrants",
-    icon: Phone,
-    roles: ["assistant"],
   },
   {
     href: "/patients",

@@ -13,10 +13,19 @@ export async function getSessionById(id: string): Promise<SessionRow | null> {
   return row ?? null;
 }
 
-export async function insertSession(input: { kind: SessionKind; source: "live" | "replay" | "seed" }): Promise<string> {
+export async function insertSession(input: {
+  kind: SessionKind;
+  source: "live" | "replay" | "seed";
+  patientId?: string | null;
+}): Promise<string> {
   const [row] = await db
     .insert(sessions)
-    .values({ kind: input.kind, source: input.source, status: "in_progress" })
+    .values({
+      kind: input.kind,
+      source: input.source,
+      status: "in_progress",
+      patientId: input.patientId ?? null,
+    })
     .returning({ id: sessions.id });
   return row.id;
 }

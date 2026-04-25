@@ -1,8 +1,15 @@
 "use client";
 
-import { Mic, Plus, Radio } from "lucide-react";
-import { useState, useTransition } from "react";
+import { Mic, Plus, Radio, UserPlus, User, Search } from "lucide-react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +17,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { startLiveSession, startReplaySession } from "@/app/actions/sessions";
+import {
+  listPatientsLite,
+  startLiveSession,
+  startReplaySession,
+  type PatientSummary,
+} from "@/app/actions/sessions";
 import { REPLAY_SCENARIOS } from "@/scripts/replay/scripts";
 import { REPLAY_PHONE_SCENARIOS } from "@/scripts/replay/scripts-phone";
 import type { Role } from "@/lib/role";
@@ -25,12 +37,71 @@ export function NewSessionButton({ role }: { role: Role }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [replayPendingSlug, setReplayPendingSlug] = useState<string | null>(null);
+  const [patients, setPatients] = useState<PatientSummary[]>([]);
+  const [query, setQuery] = useState("");
+  const [pickedId, setPickedId] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
   const label = role === "audioprothesiste" ? "Nouvelle consultation" : "Nouvel appel";
   const kind = role === "audioprothesiste" ? "consultation" : "phone_call";
 
-  const onLive = () => {
+  useEffect(() => {
+    if (open) {
+      listPatientsLite()
+        .then(setPatients)
+        .catch(() => setPatients([]));
+    } else {
+      setQuery("");
+      setPickedId(null);
+    }
+  }, [open]);
+
+  const trimmed = query.trim();
+  const lowered = trimmed.toLowerCase();
+  const matches = useMemo(() => {
+    if (lowered.length === 0) return [];
+    return patients
+      .filter((p) => p.label.toLowerCase().includes(lowered))
+      .slice(0, 5);
+  }, [lowered, patients]);
+  const exactMatch = useMemo(
+    () => patients.find((p) => p.label.toLowerCase() === lowered) ?? null,
+    [lowered, patients]
+  );
+  const pickedPatient = pickedId
+    ? patients.find((p) => p.id === pickedId) ?? null
+    : null;
+
+  const onPick = (p: PatientSummary) => {
+    setPickedId(p.id);
+    setQuery(p.label);
+    inputRef.current?.blur();
+  };
+
+  const onChangeQuery = (v: string) => {
+    setQuery(v);
+    if (pickedId) setPickedId(null);
+  };
+
+  const startLabel = pickedPatient
+    ? `Démarrer avec ${pickedPatient.label}`
+    : exactMatch
+      ? `Démarrer avec ${exactMatch.label}`
+      : trimmed.length > 0
+        ? `Créer « ${trimmed} » et démarrer`
+        : "Démarrer sans patient";
+
+  const onStart = () => {
     startTransition(async () => {
-      await startLiveSession(kind);
+      if (pickedPatient) {
+        await startLiveSession(kind, { patientId: pickedPatient.id });
+      } else if (exactMatch) {
+        await startLiveSession(kind, { patientId: exactMatch.id });
+      } else if (trimmed.length > 0) {
+        await startLiveSession(kind, { newPatientName: trimmed });
+      } else {
+        await startLiveSession(kind);
+      }
     });
   };
 
@@ -40,6 +111,9 @@ export function NewSessionButton({ role }: { role: Role }) {
       await startReplaySession(slug);
     });
   };
+
+  const showSuggestions =
+    !pickedId && matches.length > 0 && lowered.length >= 1 && !exactMatch;
 
   return (
     <>
@@ -58,32 +132,83 @@ export function NewSessionButton({ role }: { role: Role }) {
             <DialogTitle>{label}</DialogTitle>
             <DialogDescription>
               {role === "audioprothesiste"
-                ? "Démarrer une consultation en direct ou rejouer un cas-école."
-                : "Réceptionner un appel en direct ou rejouer un cas-école."}
+                ? "Sélectionnez ou créez un patient, puis démarrez la consultation."
+                : "Sélectionnez ou créez un appelant, puis démarrez l'appel."}
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 pt-2">
-            <button
-              type="button"
-              onClick={onLive}
-              disabled={pending}
-              className="flex items-start gap-3 rounded-md border border-border bg-surface px-4 py-3 text-left transition hover:border-brand hover:bg-brand/5 disabled:opacity-50"
-            >
-              <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand">
-                <Mic className="size-4" aria-hidden />
-              </span>
-              <span className="flex flex-col gap-0.5">
-                <span className="text-sm font-medium text-ink">
-                  {pending && !replayPendingSlug
-                    ? "Création de la session…"
-                    : "Démarrer en direct"}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  Micro + transcription en direct — coaching IA pendant la consultation
-                </span>
-              </span>
-            </button>
+            <div className="rounded-md border border-border bg-surface px-4 py-3">
+              <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <Mic className="size-3.5" aria-hidden />
+                Démarrer en direct
+              </div>
+
+              <div className="relative">
+                <Search
+                  className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+                  aria-hidden
+                />
+                <Input
+                  ref={inputRef}
+                  value={query}
+                  onChange={(e) => onChangeQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !pending) {
+                      e.preventDefault();
+                      onStart();
+                    }
+                  }}
+                  placeholder={
+                    role === "audioprothesiste"
+                      ? "Nom du patient (ex. Mme Durand)"
+                      : "Nom de l'appelant"
+                  }
+                  className="pl-9"
+                  disabled={pending}
+                />
+
+                {showSuggestions && (
+                  <ul className="absolute left-0 right-0 top-full z-10 mt-1 max-h-56 overflow-auto rounded-md border border-border bg-surface shadow-lg">
+                    {matches.map((p) => (
+                      <li key={p.id}>
+                        <button
+                          type="button"
+                          onClick={() => onPick(p)}
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-surface-muted"
+                        >
+                          <User className="size-3.5 text-muted-foreground" aria-hidden />
+                          <span className="flex-1 truncate">{p.label}</span>
+                          <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                            {p.status === "patient"
+                              ? "gagné"
+                              : p.status === "lost"
+                                ? "perdu"
+                                : "prospect"}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {trimmed.length > 0 && !exactMatch && !pickedId && (
+                <p className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <UserPlus className="size-3" aria-hidden />
+                  Aucun patient trouvé — un nouveau dossier sera créé.
+                </p>
+              )}
+
+              <Button
+                type="button"
+                onClick={onStart}
+                disabled={pending}
+                className="mt-3 w-full bg-brand text-primary-foreground hover:bg-brand-dark"
+              >
+                {pending && !replayPendingSlug ? "Création de la session…" : startLabel}
+              </Button>
+            </div>
 
             {role === "audioprothesiste" && (
               <div className="flex flex-col gap-2">

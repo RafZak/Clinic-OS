@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { after } from "next/server";
-import { and, eq } from "drizzle-orm";
+import { and, asc, eq, ilike } from "drizzle-orm";
 import { db } from "@/db/client";
 import {
   sessions,
@@ -16,8 +16,64 @@ import { getSiteUrl } from "@/lib/site-url";
 import { getScenarioBySlug } from "@/scripts/replay/scripts";
 import { getPhoneScenarioBySlug } from "@/scripts/replay/scripts-phone";
 
-export async function startLiveSession(kind: SessionKind): Promise<void> {
-  const id = await insertSession({ kind, source: "live" });
+export type PatientSummary = {
+  id: string;
+  label: string;
+  status: "prospect" | "patient" | "lost";
+};
+
+export async function listPatientsLite(): Promise<PatientSummary[]> {
+  const rows = await db
+    .select({
+      id: patients.id,
+      label: patients.label,
+      status: patients.status,
+    })
+    .from(patients)
+    .orderBy(asc(patients.label));
+  return rows.map((r) => ({
+    id: r.id,
+    label: r.label,
+    status: (r.status as PatientSummary["status"]) ?? "prospect",
+  }));
+}
+
+export async function startLiveSession(
+  kind: SessionKind,
+  opts: { patientId?: string; newPatientName?: string } = {}
+): Promise<void> {
+  let patientId = opts.patientId;
+
+  if (!patientId && opts.newPatientName) {
+    const trimmed = opts.newPatientName.trim();
+    if (trimmed.length === 0) {
+      throw new Error("Nom du patient vide");
+    }
+    const existing = await db
+      .select({ id: patients.id })
+      .from(patients)
+      .where(ilike(patients.label, trimmed))
+      .limit(1);
+    if (existing[0]) {
+      patientId = existing[0].id;
+    } else {
+      const [created] = await db
+        .insert(patients)
+        .values({
+          label: trimmed,
+          status: "prospect",
+          firstContactAt: new Date(),
+        })
+        .returning({ id: patients.id });
+      patientId = created.id;
+    }
+  }
+
+  const id = await insertSession({
+    kind,
+    source: "live",
+    patientId: patientId ?? null,
+  });
   const route = kind === "consultation" ? `/consultations/${id}` : `/appels/${id}`;
   redirect(route);
 }

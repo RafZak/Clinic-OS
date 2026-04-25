@@ -40,6 +40,9 @@ const SEVERITY_ORDER: Record<string, number> = {
 
 export function ResultsView({ bundle }: { bundle: Bundle }) {
   const { session, lines, scores, insights } = bundle;
+  const isPhoneCall = session.kind === "phone_call";
+  const proLabel = isPhoneCall ? "Standardiste" : "Pro";
+  const patientLabel = isPhoneCall ? "Appelant" : "Patient";
 
   const radarPoints: RadarPoint[] = useMemo(
     () =>
@@ -171,7 +174,7 @@ export function ResultsView({ bundle }: { bundle: Bundle }) {
                           : "bg-surface-muted text-muted-foreground"
                       )}
                     >
-                      {l.speaker === "practitioner" ? "Pro" : "Patient"}
+                      {l.speaker === "practitioner" ? proLabel : patientLabel}
                     </span>
                     <span className="flex-1 text-ink leading-relaxed">{l.text}</span>
                   </div>

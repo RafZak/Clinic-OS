@@ -90,7 +90,12 @@ export function LiveConsole({
 
       <div className="grid h-[calc(100vh-220px)] min-h-[540px] grid-cols-12 gap-4">
         <div className="col-span-3 min-w-0">
-          <LiveTranscript lines={lines} interim={interim} />
+          <LiveTranscript
+            lines={lines}
+            interim={interim}
+            practitionerLabel={kind === "phone_call" ? "Standardiste" : "Pro"}
+            patientLabel={kind === "phone_call" ? "Appelant" : "Patient"}
+          />
         </div>
         <div className="col-span-6 min-w-0">
           <LiveFramework kind={kind} />

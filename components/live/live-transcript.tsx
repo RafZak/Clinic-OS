@@ -19,12 +19,16 @@ export function LiveTranscript({
   showSpeaker = false,
   footerNote = DEFAULT_FOOTER_NOTE,
   title = "Transcription en direct",
+  practitionerLabel = "Pro",
+  patientLabel = "Patient",
 }: {
   lines: LiveLine[];
   interim: string;
   showSpeaker?: boolean;
   footerNote?: string | null;
   title?: string;
+  practitionerLabel?: string;
+  patientLabel?: string;
 }) {
   const endRef = useRef<HTMLDivElement | null>(null);
 
@@ -58,7 +62,7 @@ export function LiveTranscript({
                       : "bg-surface-muted text-muted-foreground"
                   }`}
                 >
-                  {l.speaker === "practitioner" ? "Pro" : "Patient"}
+                  {l.speaker === "practitioner" ? practitionerLabel : patientLabel}
                 </span>
               )}
               <p className="text-sm leading-relaxed text-ink">{l.text}</p>

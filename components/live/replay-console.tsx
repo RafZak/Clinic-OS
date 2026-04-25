@@ -121,6 +121,8 @@ export function ReplayConsole({
             showSpeaker
             footerNote={null}
             title="Transcription replay"
+            practitionerLabel={kind === "phone_call" ? "Standardiste" : "Pro"}
+            patientLabel={kind === "phone_call" ? "Appelant" : "Patient"}
           />
         </div>
         <div className="col-span-6 min-w-0">

@@ -4,9 +4,11 @@ import { FRAMEWORK_LABEL, type FrameworkKind } from "@/lib/frameworks";
 import { loadResultsBundle, sumEstimatedImpact } from "@/lib/results";
 import { formatDuration, formatEur } from "@/lib/format";
 import type { SessionRow } from "@/lib/sessions";
+import { parsePhoneTags, type SessionMetadata } from "@/lib/phone-tags";
 import { AnalysisLoading } from "@/components/results/analysis-loading";
 import { AnalysisFailed } from "@/components/results/analysis-failed";
 import { ResultsView } from "@/components/results/results-view";
+import { PhoneTagsPanel } from "@/components/results/phone-tags-panel";
 
 type AnalysisStatus =
   | "pending"
@@ -18,13 +20,20 @@ type AnalysisStatus =
 
 export async function ResultsShell({ session }: { session: SessionRow }) {
   const kind = (session.kind as FrameworkKind) ?? "consultation";
-  const backHref = kind === "consultation" ? "/consultations" : "/appels";
   const bundle = await loadResultsBundle(session.id);
   if (!bundle) return null;
 
   const status = (bundle.session.analysisStatus ?? "pending") as AnalysisStatus;
   const impact = sumEstimatedImpact(bundle.insights);
   const globalScore = bundle.session.globalScore;
+  const phoneTags =
+    kind === "phone_call"
+      ? parsePhoneTags(
+          (bundle.session.metadata as SessionMetadata | null)?.tags
+        )
+      : null;
+  const backHref = bundle.patient ? `/patients/${bundle.patient.id}` : "/";
+  const backLabel = bundle.patient ? "Parcours patient" : "Tableau de bord";
 
   return (
     <div className="flex flex-col gap-6">
@@ -34,7 +43,7 @@ export async function ResultsShell({ session }: { session: SessionRow }) {
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-ink"
         >
           <ArrowLeft className="size-4" aria-hidden />
-          Retour
+          {backLabel}
         </Link>
         <span className="rounded-full bg-surface-muted px-3 py-1 text-xs uppercase tracking-wide text-muted-foreground">
           {statusLabel(status)}
@@ -64,6 +73,8 @@ export async function ResultsShell({ session }: { session: SessionRow }) {
           )}
         </div>
       </div>
+
+      {status === "done" && phoneTags && <PhoneTagsPanel tags={phoneTags} />}
 
       {status === "failed" ? (
         <AnalysisFailed sessionId={bundle.session.id} error={bundle.session.analysisError} />

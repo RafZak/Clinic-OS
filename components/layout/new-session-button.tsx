@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { startLiveSession, startReplaySession } from "@/app/actions/sessions";
 import { REPLAY_SCENARIOS } from "@/scripts/replay/scripts";
+import { REPLAY_PHONE_SCENARIOS } from "@/scripts/replay/scripts-phone";
 import type { Role } from "@/lib/role";
 
 function formatDuration(totalSec: number): string {
@@ -123,18 +124,41 @@ export function NewSessionButton({ role }: { role: Role }) {
               </div>
             )}
 
-            {role !== "audioprothesiste" && (
-              <div className="flex items-start gap-3 rounded-md border border-dashed border-border bg-surface-muted px-4 py-3 opacity-60">
-                <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-surface text-muted-foreground">
-                  <Radio className="size-4" aria-hidden />
-                </span>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-sm font-medium text-ink">
-                    Rejouer un appel entrant
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    Stretch goal — scénarios d&apos;appels arrivant en J9 aprem.
-                  </span>
+            {role === "assistant" && (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2 pt-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <Radio className="size-3.5" aria-hidden />
+                  Rejouer un appel-école
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {REPLAY_PHONE_SCENARIOS.map((scenario) => {
+                    const isPending = pending && replayPendingSlug === scenario.slug;
+                    return (
+                      <button
+                        key={scenario.slug}
+                        type="button"
+                        onClick={() => onReplay(scenario.slug)}
+                        disabled={pending}
+                        className="flex flex-col gap-2 rounded-md border border-border bg-surface p-3 text-left transition hover:border-brand hover:bg-brand/5 disabled:opacity-50"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-medium text-ink">
+                            {scenario.callerLabel.replace(/^Mme |^M\. /, "")}
+                          </span>
+                          <span className="inline-flex items-center rounded-full bg-brand/10 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-brand">
+                            {scenario.targetScore}
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-muted-foreground">
+                          {scenario.label.split("—")[1]?.trim() ?? scenario.label}
+                        </span>
+                        <span className="text-[11px] text-muted-foreground">
+                          {formatDuration(scenario.targetDurationSeconds)}
+                          {isPending ? " · lancement…" : ""}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}

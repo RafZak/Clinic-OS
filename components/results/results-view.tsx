@@ -353,11 +353,10 @@ function MemoryPanel({ bundle }: { bundle: Bundle }) {
         <div className="flex items-start gap-3">
           <NotebookPen className="mt-0.5 size-5 text-brand" aria-hidden />
           <div>
-            <h3 className="text-sm font-medium text-ink">Mémoire organisationnelle (Layer B)</h3>
+            <h3 className="text-sm font-medium text-ink">Mémoire</h3>
             <p className="mt-1 text-xs text-muted-foreground">
-              Cette session a enrichi automatiquement le vault Karpathy. Chaque interaction
-              construit la mémoire vivante du réseau — patterns détectés, forces récurrentes,
-              points d&apos;amélioration.
+              Cette session a enrichi automatiquement la mémoire — patterns détectés,
+              forces, axes d&apos;amélioration. Le réseau apprend collectivement.
             </p>
           </div>
         </div>
@@ -366,7 +365,7 @@ function MemoryPanel({ bundle }: { bundle: Bundle }) {
       <div className="grid gap-3 lg:grid-cols-2">
         <VaultLinkCard
           title="Fiche audioprothésiste"
-          description="Karpathy mémoire — synthèse, forces, points d'amélioration, sessions récentes."
+          description="Synthèse, forces récurrentes, axes d'amélioration et sessions récentes."
           link={bundle.practitionerVault}
           recent={recentlyUpdated(bundle.practitionerVault)}
         />

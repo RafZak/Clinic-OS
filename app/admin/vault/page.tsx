@@ -11,41 +11,37 @@ const KIND_META: Record<
   index: {
     label: "Sommaire",
     icon: FileText,
-    description: "Page d'accueil de la mémoire organisationnelle.",
+    description: "Page d'accueil.",
   },
   practitioner: {
     label: "Audioprothésistes",
     icon: Users,
-    description:
-      "Une fiche par audioprothésiste — forces, axes d'amélioration, sessions récentes.",
+    description: "Forces, axes d'amélioration, sessions récentes.",
   },
   assistant: {
     label: "Assistants accueil",
     icon: Users,
-    description:
-      "Une fiche par assistant accueil — qualité des appels, patterns identifiés.",
+    description: "Qualité des appels, patterns identifiés.",
   },
   center: {
     label: "Centres",
     icon: Building2,
-    description: "Une fiche par centre du réseau.",
+    description: "Profil de chaque centre.",
   },
   patient: {
     label: "Patients",
     icon: Users,
-    description:
-      "Profil clinique, parcours et entourage de chaque patient suivi.",
+    description: "Profil, parcours, entourage.",
   },
   pattern: {
     label: "Patterns récurrents",
     icon: Wrench,
-    description:
-      "Situations métier récurrentes identifiées à travers le réseau (objection prix, montée en gamme, etc.).",
+    description: "Situations métier récurrentes du réseau.",
   },
   session: {
     label: "Fiches session",
     icon: FileText,
-    description: "Une fiche générée automatiquement après chaque session analysée.",
+    description: "Snapshot par session analysée.",
   },
 };
 
@@ -66,8 +62,8 @@ export default async function AdminVaultPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Mémoire organisationnelle"
-        description="Une fiche vivante par audioprothésiste, assistant accueil, patient et centre. Chaque consultation ou appel analysé enrichit automatiquement les fiches concernées — exportable en Obsidian, auditable à tout moment."
+        title="Mémoire"
+        description="Le réseau apprend collectivement. Chaque session enrichit automatiquement les fiches concernées — exportable Obsidian, auditable."
         actions={
           <div className="flex items-center gap-2">
             <Link href="/admin/vault/graph">
@@ -87,7 +83,7 @@ export default async function AdminVaultPage() {
       />
 
       <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
-        <Stat label="Fiches dans la mémoire" value={total} />
+        <Stat label="Fiches en mémoire" value={total} />
         <Stat
           label="Audioprothésistes suivis"
           value={byKind.get("practitioner")?.length ?? 0}
@@ -97,7 +93,7 @@ export default async function AdminVaultPage() {
           value={byKind.get("patient")?.length ?? 0}
         />
         <Stat
-          label="Sessions analysées"
+          label="Sessions intégrées"
           value={byKind.get("session")?.length ?? 0}
         />
       </div>

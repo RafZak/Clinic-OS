@@ -30,7 +30,7 @@ const GROUP_DESCRIPTION: Record<NudgeKind, string> = {
   alert:
     "Actions concrètes à mener maintenant — patients à rappeler, RDV à confirmer, livrables à valider.",
   improvement:
-    "Suggestions de coaching basées sur vos sessions analysées et la mémoire organisationnelle.",
+    "Suggestions de coaching basées sur vos sessions analysées et la mémoire du réseau.",
 };
 
 export function NudgesPanel({ nudges }: { nudges: Nudge[] }) {

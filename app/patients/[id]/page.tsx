@@ -104,7 +104,7 @@ export default async function PatientDetailPage({
           <div className="sticky top-4 flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-                Mémoire organisationnelle
+                Mémoire
               </h2>
               {vaultPage && (
                 <Link
@@ -137,7 +137,7 @@ export default async function PatientDetailPage({
               </div>
             ) : (
               <div className="rounded-lg border border-dashed border-border bg-surface px-5 py-8 text-center text-sm text-muted-foreground">
-                Pas de fiche Karpathy encore. Une session analysée pour ce patient
+                Pas de fiche en mémoire encore. Une session analysée pour ce patient
                 en générera une automatiquement.
               </div>
             )}

@@ -47,7 +47,7 @@ export const ADMIN_NAV: NavItem[] = [
   },
   {
     href: "/admin/vault",
-    label: "Mémoire organisationnelle",
+    label: "Mémoire",
     icon: Notebook,
     roles: ["audioprothesiste", "assistant"],
   },

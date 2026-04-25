@@ -29,9 +29,9 @@ export async function GET() {
   // README explicatif au top du zip
   zip.file(
     "_README.md",
-    `# Vault Clinic OS — Export Obsidian
+    `# Mémoire du réseau Clinic OS — Export Obsidian
 
-Cette archive contient l'intégralité du vault Layer B (mémoire organisationnelle pattern Karpathy) au format markdown.
+Cette archive contient l'intégralité de la mémoire vivante du réseau au format markdown.
 
 ## Pour ouvrir dans Obsidian
 

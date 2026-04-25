@@ -14,7 +14,9 @@ const globalForPostgres = globalThis as unknown as {
 const client =
   globalForPostgres.postgres ??
   postgres(process.env.DATABASE_URL, {
-    max: 10,
+    max: 1,
+    prepare: false,
+    idle_timeout: 20,
   });
 
 if (process.env.NODE_ENV !== "production") {

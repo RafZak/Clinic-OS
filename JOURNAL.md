@@ -625,3 +625,126 @@ Livrer (1) le **seed des parcours patients complets** (Durand → réussi, Marti
 - **Scripts replay Martin/Lefèvre** : scores IA sévères vu en J7 (52 vs 65 cible, 19 vs 48). Pas itéré J9. Si Jonathan juge l'écart gênant pour la dramaturgie démo, à corriger en J10.
 - **Patch vault 5e raté** : maintenant instrumenté mais reproduction non faite faute de temps (relancer un test E2E vault prend 2.5 min). À fusionner avec le polish J10.
 
+---
+
+## J9 stretch — 25 avril 2026 (après-midi) — Appels entrants replay
+
+### Débloquage Phase 1 — Validation framework v3 par Jonathan en live
+
+Session de cadrage en direct avec Jonathan. Refonte philosophique du framework `phone_call` : **l'appel entrant n'est pas un acte de vente, c'est un acte de TRIAGE**. Changements actés :
+
+- L'objectif n'est pas de "vendre du 100% santé" ni de "convaincre" — c'est de **trier** la raison de l'appel (nouveau patient / problème technique / renouvellement / etc.) et de **router vers la bonne durée de RDV**. Aucune décision sur les gammes, prix, classe 1/2 ou forme d'appareil — c'est le job de l'audioprothésiste en RDV.
+- La standardiste doit **capturer l'identité tôt** (prénom + nom + email idéalement, sinon téléphone) — un appel anonyme est un lead 100% perdu.
+- Question ORL/ordonnance **déplacée à la clôture** (étape 6) — l'évoquer en début d'appel est vécu comme agressif commercialement.
+- "Reformulation" supprimée comme étape autonome (intégrée dans Triage / Découverte).
+- Étape 5 devient "Action adaptée" : la **bonne durée** de RDV (bilan 60 / technique 15 / renouvellement 45), pas "RDV à tout prix".
+
+Framework v3 final (6 étapes) : Accueil · Identification · Triage · Découverte ciblée · Action adaptée · Ancrage et clôture.
+
+### Débloquage Phase 2 — Tags de triage validés (4 dimensions)
+
+Chacun obligatoire pour un appel téléphonique, produits par l'analyzer en plus des scores/insights/summary :
+
+- **`call_type`** (1 valeur, 7 options) : new_patient / renewal / trial_followup / tech_issue / info_request / urgency / admin
+- **`recommended_action`** (1 valeur, 8 options) : rdv_bilan_60min / rdv_renouvellement_45min / rdv_technique_{15,30}min / rappel_pro / resolved_phone / transfer_orl / transfer_admin
+- **`lead_temperature`** : hot / warm / cold / lost
+- **`data_capture`** : complete / partial / anonymous + **`data_capture_note`** facultative explicative
+  - Règle métier : email idéal, téléphone acceptable si pas d'email, **pas de jugement sur la standardiste si le patient refuse** (c'est un fait consigné, pas une faute)
+
+### Fait
+
+- **Framework v3 réécrit** dans `lib/frameworks.ts` (6 étapes + 22 critères validés Jonathan). L'analyzer charge automatiquement le bon framework via `getFramework(kind)` — zéro changement nécessaire en aval.
+- **2 scripts replay phone** dans `scripts/replay/scripts-phone.ts` :
+  - **`dubois-converti`** — Mme Caroline Dubois 67 ans, premier contact, RDV pris (15 turns, 2m03s, cible 82)
+  - **`lefranc-perdu`** — M. Robert Lefranc 71 ans, info_request, lead anonyme (11 turns, 1m02s, cible 38)
+- **`scripts/seed-replay-phone.ts`** + **`pnpm seed:replay-phone`** : idempotent, créé Mme Dubois et M. Lefranc rattachés à Sophie Bernard / Lyon 3, 2 sessions `kind='phone_call'` `source='replay'` avec transcript_lines pré-insérées.
+- **`lib/phone-tags.ts`** : types stricts + labels FR + helper `parsePhoneTags(unknown)` pour valider les retours Sonnet.
+- **Migration DB** : ajout colonne `sessions.metadata` jsonb (ALTER TABLE direct via script ad-hoc, pas drizzle-kit qui requiert un TTY).
+- **Analyzer Sonnet 4.6 étendu** dans `lib/analysis/analyze.ts` :
+  - Bloc système conditionnel `kind === 'phone_call'` qui décrit la philosophie triage et les 4 dimensions de tagging
+  - Tool_use `submit_analysis` avec `phone_tags` requis si phone_call (object typé strict via enums) sinon nullable
+  - Persistance dans `sessions.metadata.tags` via merge avec metadata existante
+  - Labels transcript adaptés : "Standardiste/Appelant" pour phone_call, "Pro/Patient" pour consultation
+- **`<PhoneTagsPanel>`** (`components/results/phone-tags-panel.tsx`) : 4 badges colorés (Type d'appel / Action / Lead température / Capture identité) avec tons distincts par sévérité (emerald/amber/red), affichage de la note Clinic OS en bas si data_capture != complete.
+- **`<ResultsShell>` enrichi** : affiche `<PhoneTagsPanel>` au-dessus du `<ResultsView>` quand `kind='phone_call'` et tags présents. **Bonus** : `backHref` corrigé pour pointer vers `/patients/[id]` (pertinent) au lieu de `/consultations` ou `/appels` qui n'existent plus.
+- **`startReplaySession(slug)` étendu** dans `app/actions/sessions.ts` : reconnaît à la fois les scénarios consultation et phone, route la session vers `/consultations/[id]` ou `/appels/[id]` selon `kind`. Filtre `kind` dans la lookup pour éviter les collisions.
+- **`<NewSessionButton>` côté assistant** : section "Rejouer un appel-école" activée avec 2 cartes Dubois/Lefranc (remplace le placeholder "stretch goal" J7).
+- **Labels speakers UI live/replay/results** : `LiveTranscript`, `ReplayConsole`, `LiveConsole`, `ResultsView` paramétrent désormais "Standardiste/Appelant" si `kind=phone_call`.
+- **`scripts/analyze-replays-phone.ts`** + **`pnpm tsx --conditions react-server scripts/analyze-replays-phone.ts`** : run E2E à froid (reset → retranscribe skip → analyze → mark completed).
+
+### Architecture live phone_call validée (Jonathan a insisté)
+
+L'architecture **n'est pas replay-only**. Vérifications en live :
+- `app/appels/[id]/page.tsx` dispatche déjà `live → LiveConsole` / `replay → ReplayConsole` / `completed → ResultsShell` (acquis J7).
+- `LiveConsole`, `ReplayConsole`, `LiveFramework` paramétrés par `kind: FrameworkKind` — chargent automatiquement `PHONE_CALL_FRAMEWORK` v3.
+- `startLiveSession(kind)` accepte `phone_call`, redirect vers `/appels/<id>`.
+- Le bouton "Nouvel appel" côté assistant ouvre la dialog "Démarrer en direct" qui crée une vraie session live `kind='phone_call'`.
+- Coach Haiku tick reçoit déjà `frameworkKind` et adapte ses prompts.
+
+**Pour brancher un vrai téléphone (Twilio / Aircall / Ringover / OVH SIP)** : il suffira d'ajouter un endpoint webhook qui crée une session live `kind='phone_call'` et streame l'audio dual-channel vers Deepgram. Couche d'**ingestion**, pas couche **métier**.
+
+### Validation E2E mesurée — pnpm tsx scripts/analyze-replays-phone.ts
+
+| Scénario | Cible | **Score IA** | Tags produits | Insights | Latence Sonnet |
+|---|---|---|---|---|---|
+| **dubois-converti** | 82 | **91/100** (+9) | new_patient · rdv_bilan_60min · hot · **complete** | 7 (3 good_practice + 4 improvement) | 45.9 s |
+| **lefranc-perdu** | 38 | **8/100** (-30) | info_request · rdv_bilan_60min · **lost** · **anonymous** | 7 (4 critical + 3 warning) | 43.1 s |
+
+**Lecture détaillée Dubois** : l'IA a noté Sophie 91 alors qu'on ciblait 82. Plus généreuse que prévue parce que Sophie a effectivement bien fait le job (identification + triage + ancrage + email + ordonnance ORL en clôture). Les 4 axes d'amélioration captés sont fins et pédagogiques :
+- "Date du RDV non précisée avec le quantième — risque pour le public senior" (1 800 € d'impact estimé)
+- "Téléphone de rappel non capturé"
+- "Deuxième question de découverte absente"
+- "Présence du mari non exploitée comme signal de motivation"
+- Plus 3 good_practices : identification tôt, ordonnance en clôture, bénéfice patient
+
+**Lecture détaillée Lefranc** : l'IA a noté 8 alors qu'on ciblait 38. Plus sévère que prévu parce qu'elle a vraiment **tout** capté. Insights chiffrés :
+- 🔴 critical "Objection prix traitée par chiffrage brut — lead perdu immédiatement" (1 800 €)
+- 🔴 critical "Objection 'vous n'avez rien de moins cher ?' non traitée" (950 €)
+- 🔴 critical "Aucun RDV proposé — appel entrant 100% non converti" (1 800 €)
+- 🔴 critical "Lead 100% anonyme — aucune coordonnée capturée" (1 800 €)
+- 🟠 warning "Gammes et prix évoqués — hors du rôle de la standardiste" (philosophie Jonathan parfaitement appliquée)
+- 🟠 warning "Zéro découverte"
+- 🟠 warning "Accueil non identifiant"
+
+**Total chiffré pour Lefranc : 6 350 € de panier perdu sur un seul appel mal géré**. Pour la démo Amplifon, c'est l'argument financier idéal : à raison de N appels mal gérés par centre × 10 000 centres mondiaux, on chiffre la perte annuelle directement à partir d'**un seul cas réel scoré par l'IA**.
+
+**Note `data_capture_note` auto-générée par Claude pour Lefranc** :
+> *"Aucune coordonnée capturée (ni nom, ni téléphone, ni email) — lead totalement non exploitable, aucune relance possible."*
+
+Exactement la philosophie validée par Jonathan : pas de jugement sur la standardiste, juste un fait consigné.
+
+### Smoke E2E UI
+
+| Endpoint | HTTP | Vérif contenu |
+|---|---|---|
+| `/appels/<dubois-id>` | 200 | "Triage de l'appel", "Nouveau patient", "RDV bilan 60 min", "Chaud", "Identité complète", "Score global 91/100" |
+| `/appels/<lefranc-id>` | 200 | "Triage de l'appel", "Demande d'information", "RDV bilan 60 min", "Perdu", "Anonyme", "Note Clinic OS · Aucune coordonnée capturée…", "Score global 8/100", "Standardiste" |
+| `/` (assistant) | 200 | Bouton "Nouvel appel" + dialog avec 2 cartes replay phone (Dubois 82, Lefranc 38). Pas d'entrée sidebar "Consultations" résiduelle. |
+
+### Coût mesuré
+
+- 2 analyses Sonnet 4.6 ≈ 2 × ~$0.10 = **~$0.20** pour le seed E2E phone complet
+- Latence cumulée 89 s (45.9 + 43.1) — **sous le plafond 60 s par requête**, contrairement à Durand consultation (73 s en J7)
+
+### Dette assumée (à traiter J10 ou plus tard)
+
+- **Score Lefranc 8 vs 38** : très en dessous de la cible. Pour la démo, deux options : (a) garder tel quel et le retourner positivement ("regardez, l'IA est plus sévère que je ne l'avais anticipé, et elle a raison"), (b) ajouter 2-3 turns de comportement positif minimal côté Sophie. À trancher avec Jonathan en répétition J10.
+- **Durée Lefranc 1m02 vs cible 1m30** : court mais réaliste pour un appel raté. Pas bloquant.
+- **Vrai live téléphonique** : webhook SIP/WebRTC à ajouter pour brancher Aircall/Ringover/Twilio/OVH. Hors scope démo. Architecture prête côté business, c'est juste une couche d'ingestion à faire.
+- **Diarisation au micro pour le live phone** : si Jonathan teste un appel live au micro browser (sans téléphone réel), Deepgram doit diariser à l'oreille deux voix qui parlent simultanément/alternance. Moins fiable qu'un face-à-face consult ou qu'un dual-channel SIP. Pour une démo robuste : utiliser le replay (chemin balisé), garder le live au micro pour la suite.
+
+### Ce qui marche en démo maintenant (cumulatif J1→J9 stretch)
+
+- Tout J1-J9 + :
+- **Nouveau J9 stretch** — Bouton "Nouvel appel" côté assistant : dialog "Démarrer en direct" + 2 cartes replay (Dubois 82, Lefranc 38)
+- **Nouveau J9 stretch** — Replay d'appel : transcript défile, scoring framework v3 6 étapes, coach Haiku temps réel adapté phone_call, finalize → analyze → résultats
+- **Nouveau J9 stretch** — Page `/appels/[id]` résultats avec **PhoneTagsPanel** (4 badges colorés) + note Clinic OS automatique si capture incomplète
+- **Nouveau J9 stretch** — Argumentaire chiffré pour Amplifon : "ce seul appel raté = 6 350 € de panier perdu par l'IA, multiplié par 10 000 centres = X M€/an"
+
+### Reste à faire (recap pour J10)
+
+- Itérer scripts replay Martin/Lefèvre/Lefranc (consultation + phone) si Jonathan veut ajuster les scores en répétition
+- Investigation patch vault 5e raté (logging instrumenté en J9)
+- Polish + répétition Jonathan complète bout-en-bout
+- Décision déploiement Vercel ou pas (durées Sonnet > 60 s à régler)
+

@@ -9,9 +9,16 @@ export type NavLinkProps = {
   label: string;
   icon: React.ReactNode;
   match?: "exact" | "prefix";
+  badge?: { count: number; tone: "alert" | "info" } | null;
 };
 
-export function NavLink({ href, label, icon, match = "prefix" }: NavLinkProps) {
+export function NavLink({
+  href,
+  label,
+  icon,
+  match = "prefix",
+  badge,
+}: NavLinkProps) {
   const pathname = usePathname();
   const active =
     match === "exact"
@@ -28,8 +35,22 @@ export function NavLink({ href, label, icon, match = "prefix" }: NavLinkProps) {
           : "text-muted-foreground hover:bg-surface-muted hover:text-ink [&_svg]:text-muted-foreground hover:[&_svg]:text-ink"
       )}
     >
-      <span className="flex size-4 shrink-0 items-center justify-center">{icon}</span>
-      <span className="truncate">{label}</span>
+      <span className="flex size-4 shrink-0 items-center justify-center">
+        {icon}
+      </span>
+      <span className="min-w-0 flex-1 truncate">{label}</span>
+      {badge && badge.count > 0 && (
+        <span
+          className={cn(
+            "inline-flex h-5 min-w-[1.25rem] shrink-0 items-center justify-center rounded-full px-1.5 text-[10px] font-semibold tabular-nums",
+            badge.tone === "alert"
+              ? "bg-red-100 text-red-700"
+              : "bg-brand/10 text-brand"
+          )}
+        >
+          {badge.count}
+        </span>
+      )}
     </Link>
   );
 }

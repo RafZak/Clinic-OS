@@ -122,86 +122,88 @@ export const CONSULTATION_FRAMEWORK: FrameworkStep[] = [
 ];
 
 /**
- * Framework d'analyse d'un appel entrant — 6 étapes — v2.
+ * Framework d'analyse d'un appel entrant — 6 étapes — v3.
  *
- * Version **backed par recherche externe** (23 avril 2026), à valider avec
- * Jonathan pour la nuance finale mais solidement ancrée dans la littérature :
+ * Validé par Jonathan le 25 avril 2026. Philosophie centrale : l'appel
+ * entrant est un acte de **triage**, pas un mini-acte de vente. La
+ * standardiste doit capturer l'identité, comprendre la raison de l'appel,
+ * et router vers le BON type de RDV (durée adaptée). Aucune décision sur
+ * les gammes / prix / 100% santé / forme d'appareil — c'est le job de
+ * l'audioprothésiste en RDV.
  *
- * - Walter Learning + Youschool (secrétariat médical français)
- * - Keona Health (US healthcare call flow)
- * - Phonak Practice Forward (front office training, motivational interviewing)
- * - Méthode CRAC (Creuser-Reformuler-Argumenter-Contrôler-Suivi)
- * - Hamilton CapTel Amplify The Impact (hearing healthcare specific)
- *
- * Différences vs v1 (brouillon 5 étapes avant recherche) :
- * - Reformulation promue en étape à part entière (consensus médical FR)
- * - Objection APRÈS Proposition RDV (dans la vraie vie, l'objection surgit
- *   quand on concrétise, pas avant)
- * - Détection ordonnance/ORL ajoutée dans Découverte (spécificité audio FR)
- * - Ancrage séparé de la clôture (spécificité senior : répéter 2×, SMS)
+ * Changements vs v2 :
+ * - "Identification" devient une étape autonome (capture identité avant tout)
+ * - "Triage" devient une étape autonome (catégoriser pour router)
+ * - "Reformulation" supprimée comme étape (intégrée dans Triage / Découverte)
+ * - "100% santé" supprimé des critères (pas le bon canal, pas le bon moment)
+ * - Question ORL/ordonnance déplacée à l'étape Ancrage (étape 6, en clôture)
+ *   — la mentionner trop tôt est vécu comme agressif commercialement
+ * - Étape 5 devient "Action adaptée" : la bonne durée de RDV plutôt que
+ *   "RDV à tout prix"
  */
 export const PHONE_CALL_FRAMEWORK: FrameworkStep[] = [
   {
     number: 1,
     name: "Accueil",
-    description: "15 premières secondes — ton, présentation, ouverture proactive",
+    description: "15 premières secondes — neutre, professionnel, ouvert",
     criteria: [
-      { id: "acc_rapidite", label: "Décroché ≤ 3 sonneries" },
-      { id: "acc_presentation", label: "Nom du centre + prénom/fonction annoncés" },
-      { id: "acc_ouverture", label: "Formule d'ouverture proactive (pas juste \"allô\")" },
+      { id: "acc_rapidite", label: "Décroché ≤ 4 sonneries" },
+      { id: "acc_presentation", label: "Nom du centre + prénom annoncés" },
+      { id: "acc_ouverture_ouverte", label: "Question d'ouverture ouverte (\"Que puis-je faire pour vous ?\")" },
       { id: "acc_ton", label: "Ton positif / sourire audible" },
     ],
   },
   {
     number: 2,
-    name: "Découverte",
-    description: "Entretien motivationnel — comprendre le besoin réel",
+    name: "Identification",
+    description: "Capturer l'identité avant d'aller plus loin — pour pouvoir relancer même si l'appel n'aboutit pas",
     criteria: [
-      { id: "dec_questions_ouvertes", label: "≥ 2 questions ouvertes (depuis quand, contexte, impact)" },
-      { id: "dec_motif", label: "Motif identifié (RDV / prix / problème appareil / suivi)" },
-      { id: "dec_ordonnance", label: "Question ORL/ordonnance posée" },
-      { id: "dec_ecoute_active", label: "Marqueur verbal d'écoute active (reprise)" },
+      { id: "id_prenom_nom", label: "Prénom + nom demandés tôt dans l'appel" },
+      { id: "id_email", label: "Email demandé (idéal pour SMS/relances)" },
+      { id: "id_telephone", label: "Téléphone de rappel capturé (obligatoire si pas d'email)" },
+      { id: "id_pas_anonyme", label: "Au moins une coordonnée capturée — pas d'appel anonyme" },
     ],
   },
   {
     number: 3,
-    name: "Reformulation",
-    description: "Validation explicite du besoin avant de proposer",
+    name: "Triage",
+    description: "Comprendre la raison de l'appel pour router vers la bonne prise en charge",
     criteria: [
-      { id: "ref_phrase_pivot", label: "Phrase-pivot \"Si je comprends bien…\" ou équivalent" },
-      { id: "ref_validation", label: "Demande validation explicite (\"C'est bien ça ?\")" },
-      { id: "ref_empathie", label: "Marqueur d'empathie sur la gêne exprimée" },
+      { id: "tri_categorisation", label: "Catégorisation explicite (nouveau patient / problème technique / renouvellement / suivi / admin / urgence)" },
+      { id: "tri_clarification", label: "Question de clarification posée si la raison est floue" },
+      { id: "tri_pas_de_precipitation", label: "Pas de précipitation vers une solution avant d'avoir compris" },
     ],
   },
   {
     number: 4,
-    name: "Proposition RDV",
-    description: "Alternative fermée, pas question ouverte",
+    name: "Découverte ciblée",
+    description: "Quelques questions génériques selon la raison identifiée — utiles pour briefer le pro",
     criteria: [
-      { id: "prop_2_creneaux", label: "2 créneaux proposés (jamais 1, jamais \"quand vous voulez\")" },
-      { id: "prop_duree", label: "Durée du RDV annoncée (ex. \"bilan 45 min gratuit\")" },
-      { id: "prop_benefice", label: "Bénéfice patient explicité (pas juste logistique)" },
+      { id: "dec_questions_ouvertes", label: "≥ 2 questions ouvertes adaptées au type d'appel" },
+      { id: "dec_motivation", label: "Motivation / démotivation comprise (depuis quand, contexte de gêne, attentes)" },
+      { id: "dec_pas_de_gamme", label: "Reste générique : pas de gamme, pas de prix, pas de classe 1/2, pas de forme d'appareil" },
+      { id: "dec_notes_pro", label: "Notes capturées utiles pour briefer l'audioprothésiste" },
     ],
   },
   {
     number: 5,
-    name: "Traitement objection",
-    description: "Méthode CRAC — accueillir, creuser, argumenter, contrôler",
+    name: "Action adaptée",
+    description: "Proposer le bon type de prise en charge selon le triage",
     criteria: [
-      { id: "obj_accueil", label: "Objection accueillie sans couper" },
-      { id: "obj_creuser", label: "≥ 1 question pour creuser avant d'argumenter" },
-      { id: "obj_valeur", label: "Argumente par valeur / reste à charge 0 classe 1 si prix" },
-      { id: "obj_re_propose", label: "Re-propose un créneau après traitement (ne pas abandonner)" },
+      { id: "act_bonne_duree", label: "RDV de la bonne durée selon le motif (bilan 60 min / technique 15 min / renouvellement 45 min)" },
+      { id: "act_2_creneaux", label: "2 créneaux proposés (jamais 1, jamais \"quand vous voulez\")" },
+      { id: "act_benefice", label: "Bénéfice patient explicité (pas juste logistique)" },
+      { id: "act_resolution_telephone", label: "Si problème technique simple : tentative de résolution téléphone avant de proposer un RDV" },
     ],
   },
   {
     number: 6,
     name: "Ancrage et clôture",
-    description: "Calibré population senior — répétition, SMS, clôture chaleureuse",
+    description: "Verrouiller le RDV — calibré population senior",
     criteria: [
       { id: "ancr_repetition", label: "Date/heure répétées 2 fois" },
       { id: "ancr_sms", label: "Engagement sur SMS/email de confirmation" },
-      { id: "ancr_documents", label: "Documents à apporter rappelés (ordonnance, carte vitale)" },
+      { id: "ancr_documents", label: "Documents à apporter rappelés — ordonnance ORL mentionnée ICI si pertinent (jamais en début d'appel)" },
       { id: "ancr_cloture", label: "Clôture chaleureuse non-transactionnelle" },
     ],
   },

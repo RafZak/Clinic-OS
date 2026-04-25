@@ -1,6 +1,10 @@
 import "server-only";
 import { sql } from "drizzle-orm";
 import { db } from "@/db/client";
+import {
+  LEAD_TEMPERATURES,
+  type LeadTemperature,
+} from "@/lib/phone-tags";
 
 export type PatientStatus = "prospect" | "patient" | "lost";
 
@@ -15,8 +19,10 @@ export type PatientRow = {
   eventsCount: number;
   lastEventAt: Date | null;
   consultationsCount: number;
+  phoneCallsCount: number;
   avgConsultationScore: number | null;
   lastConsultationScore: number | null;
+  lastPhoneTemperature: LeadTemperature | null;
 };
 
 type RawPatientRow = {
@@ -30,8 +36,10 @@ type RawPatientRow = {
   events_count: number;
   last_event_at: string | null;
   consultations_count: number;
+  phone_calls_count: number;
   avg_consultation_score: number | null;
   last_consultation_score: number | null;
+  last_phone_temperature: string | null;
 };
 
 function toDate(v: string | null): Date | null {
@@ -51,8 +59,10 @@ export async function listPatients(): Promise<PatientRow[]> {
       coalesce(ev.events_count, 0)::int AS events_count,
       ev.last_event_at,
       coalesce(s.consultations_count, 0)::int AS consultations_count,
+      coalesce(s.phone_calls_count, 0)::int AS phone_calls_count,
       s.avg_consultation_score::int AS avg_consultation_score,
-      s.last_consultation_score AS last_consultation_score
+      s.last_consultation_score AS last_consultation_score,
+      s.last_phone_temperature AS last_phone_temperature
     FROM patients p
     LEFT JOIN centers c ON c.id = p.center_id
     LEFT JOIN LATERAL (
@@ -65,13 +75,22 @@ export async function listPatients(): Promise<PatientRow[]> {
     LEFT JOIN LATERAL (
       SELECT
         count(*) FILTER (WHERE kind = 'consultation') AS consultations_count,
+        count(*) FILTER (WHERE kind = 'phone_call') AS phone_calls_count,
         avg(global_score) FILTER (WHERE kind = 'consultation' AND global_score IS NOT NULL) AS avg_consultation_score,
         (
           SELECT global_score FROM sessions
           WHERE patient_id = p.id AND kind = 'consultation' AND global_score IS NOT NULL
           ORDER BY started_at DESC NULLS LAST
           LIMIT 1
-        ) AS last_consultation_score
+        ) AS last_consultation_score,
+        (
+          SELECT metadata->'tags'->>'lead_temperature' FROM sessions
+          WHERE patient_id = p.id
+            AND kind = 'phone_call'
+            AND metadata->'tags'->>'lead_temperature' IS NOT NULL
+          ORDER BY started_at DESC NULLS LAST
+          LIMIT 1
+        ) AS last_phone_temperature
       FROM sessions
       WHERE patient_id = p.id
     ) s ON true
@@ -89,8 +108,14 @@ export async function listPatients(): Promise<PatientRow[]> {
     eventsCount: r.events_count,
     lastEventAt: toDate(r.last_event_at),
     consultationsCount: r.consultations_count,
+    phoneCallsCount: r.phone_calls_count,
     avgConsultationScore: r.avg_consultation_score,
     lastConsultationScore: r.last_consultation_score,
+    lastPhoneTemperature: LEAD_TEMPERATURES.includes(
+      r.last_phone_temperature as LeadTemperature
+    )
+      ? (r.last_phone_temperature as LeadTemperature)
+      : null,
   }));
 }
 
@@ -241,7 +266,7 @@ export function patientSlug(label: string): string {
 
 export const STATUS_LABEL: Record<PatientStatus, string> = {
   prospect: "Prospect",
-  patient: "Patient",
+  patient: "Gagné",
   lost: "Perdu",
 };
 

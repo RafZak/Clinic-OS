@@ -7,6 +7,10 @@ import {
   type PatientRow,
   type PatientStatus,
 } from "@/lib/patients";
+import {
+  LEAD_TEMPERATURE_LABEL,
+  type LeadTemperature,
+} from "@/lib/phone-tags";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +18,7 @@ export const dynamic = "force-dynamic";
 const STATUS_TABS: { value: "all" | PatientStatus; label: string }[] = [
   { value: "all", label: "Tous" },
   { value: "prospect", label: "Prospects" },
-  { value: "patient", label: "Patients" },
+  { value: "patient", label: "Gagnés" },
   { value: "lost", label: "Perdus" },
 ];
 
@@ -22,6 +26,13 @@ const STATUS_BADGE_CLASS: Record<PatientStatus, string> = {
   prospect: "bg-surface-muted text-foreground border-border",
   patient: "bg-emerald-50 text-emerald-700 border-emerald-200",
   lost: "bg-red-50 text-red-700 border-red-200",
+};
+
+const TEMPERATURE_BADGE_CLASS: Record<LeadTemperature, string> = {
+  hot: "bg-red-50 text-red-700 border-red-200",
+  warm: "bg-amber-50 text-amber-700 border-amber-200",
+  cold: "bg-sky-50 text-sky-700 border-sky-200",
+  lost: "bg-slate-100 text-slate-600 border-slate-300",
 };
 
 function initials(label: string): string {
@@ -116,6 +127,7 @@ export default async function PatientsPage({
               <tr>
                 <th className="px-4 py-3 text-left font-medium">Patient</th>
                 <th className="px-4 py-3 text-left font-medium">Statut</th>
+                <th className="px-4 py-3 text-left font-medium">Température</th>
                 <th className="px-4 py-3 text-left font-medium">Centre</th>
                 <th className="px-4 py-3 text-left font-medium">Parcours</th>
                 <th className="px-4 py-3 text-left font-medium">
@@ -168,6 +180,20 @@ function PatientTableRow({ p }: { p: PatientRow }) {
           {STATUS_LABEL[p.status]}
         </span>
       </td>
+      <td className="px-4 py-3">
+        {p.lastPhoneTemperature ? (
+          <span
+            className={cn(
+              "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium",
+              TEMPERATURE_BADGE_CLASS[p.lastPhoneTemperature]
+            )}
+          >
+            {LEAD_TEMPERATURE_LABEL[p.lastPhoneTemperature]}
+          </span>
+        ) : (
+          <span className="text-xs text-muted-foreground">—</span>
+        )}
+      </td>
       <td className="px-4 py-3 text-muted-foreground">{p.centerName ?? "—"}</td>
       <td className="px-4 py-3">
         <div className="flex items-center gap-3 text-muted-foreground">
@@ -175,9 +201,9 @@ function PatientTableRow({ p }: { p: PatientRow }) {
             <Stethoscope className="h-3.5 w-3.5" />
             {p.consultationsCount}
           </span>
-          <span className="inline-flex items-center gap-1" title="Événements parcours">
+          <span className="inline-flex items-center gap-1" title="Appels téléphoniques">
             <Phone className="h-3.5 w-3.5" />
-            {p.eventsCount}
+            {p.phoneCallsCount}
           </span>
         </div>
       </td>

@@ -1,6 +1,10 @@
 import "server-only";
 import type { Role } from "@/lib/role";
 import type { DashboardContext } from "@/lib/dashboard";
+import {
+  moduleHrefForStep,
+  programHrefBySlug,
+} from "@/lib/learning-links";
 
 export type NudgeSeverity = "info" | "warning" | "critical";
 export type NudgeKind = "alert" | "improvement";
@@ -62,7 +66,10 @@ function buildPractitionerNudges(ctx: DashboardContext): Nudge[] {
       severity: "warning",
       title: `Étape ${ctx.lowestStep.number} sous tension : ${ctx.lowestStep.name}`,
       description: `Score moyen ${ctx.lowestStep.avgScore}/100 sur vos consultations analysées. Revoir le module formation correspondant aiderait à remonter cette étape.`,
-      cta: { label: "Ouvrir le catalogue", href: "/catalogue" },
+      cta: {
+        label: `Revoir le module ${ctx.lowestStep.number}`,
+        href: moduleHrefForStep("consultation", ctx.lowestStep.number),
+      },
     });
   }
 
@@ -121,8 +128,11 @@ function buildAssistantNudges(ctx: DashboardContext): Nudge[] {
       kind: "improvement",
       severity: "info",
       title: "Durée d'appel au-dessus de la cible",
-      description: `Moyenne ${m}m ${s.toString().padStart(2, "0")}s — la cible interne est ≤ 2 min. Revoir le module "Convaincre au téléphone" pour resserrer la phase de découverte.`,
-      cta: { label: "Ouvrir le catalogue", href: "/catalogue" },
+      description: `Moyenne ${m}m ${s.toString().padStart(2, "0")}s — la cible interne est ≤ 2 min. Revoir le module "Découverte ciblée" pour resserrer cette phase.`,
+      cta: {
+        label: "Voir le module Découverte",
+        href: moduleHrefForStep("phone_call", 4),
+      },
     });
   }
 
@@ -133,8 +143,11 @@ function buildAssistantNudges(ctx: DashboardContext): Nudge[] {
       severity: "info",
       title: "Pattern récurrent — objection prix au téléphone",
       description:
-        "Plusieurs appels perdus avec une objection financière éludée. Le module \"Convaincre au téléphone\" a un focus dédié sur le 100% santé à mobiliser dès l'objection.",
-      cta: { label: "Ouvrir le catalogue", href: "/catalogue" },
+        "Plusieurs appels perdus avec une objection financière éludée. Le programme \"Convaincre au téléphone\" rappelle qu'au téléphone l'objectif est le triage, pas la vente — l'objection prix se traite en RDV.",
+      cta: {
+        label: "Voir le programme téléphone",
+        href: programHrefBySlug("convaincre-au-telephone"),
+      },
     });
   }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CheckCircle2,
   ChevronDown,
@@ -34,6 +34,25 @@ export function ProgramModules({
     for (const p of initialProgress) m[p.driveFileId] = p;
     return m;
   });
+  const [hashTarget, setHashTarget] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const readHash = () => {
+      const m = window.location.hash.match(/^#module-(\d+)$/);
+      const target = m ? parseInt(m[1], 10) : null;
+      setHashTarget(target);
+      if (target != null) {
+        setTimeout(() => {
+          const el = document.getElementById(`module-${target}`);
+          if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 120);
+      }
+    };
+    readHash();
+    window.addEventListener("hashchange", readHash);
+    return () => window.removeEventListener("hashchange", readHash);
+  }, []);
 
   const updateLocal = useCallback((entry: ClientProgressEntry) => {
     setProgress((prev) => ({ ...prev, [entry.driveFileId]: entry }));
@@ -48,6 +67,7 @@ export function ProgramModules({
           progress={progress}
           onLocalUpdate={updateLocal}
           defaultOpen={idx === 0}
+          forceOpen={hashTarget === m.number}
         />
       ))}
     </div>
@@ -59,13 +79,19 @@ function ModuleAccordion({
   progress,
   onLocalUpdate,
   defaultOpen,
+  forceOpen,
 }: {
   mod: ProgramModule;
   progress: ProgressMap;
   onLocalUpdate: (entry: ClientProgressEntry) => void;
   defaultOpen?: boolean;
+  forceOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen ?? false);
+
+  useEffect(() => {
+    if (forceOpen) setOpen(true);
+  }, [forceOpen]);
 
   const allIds = useMemo(() => {
     const ids: string[] = [];
@@ -96,7 +122,13 @@ function ModuleAccordion({
     : 0;
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-surface">
+    <div
+      id={`module-${mod.number}`}
+      className={cn(
+        "overflow-hidden rounded-lg border border-border bg-surface scroll-mt-20",
+        forceOpen && "ring-2 ring-brand/30"
+      )}
+    >
       <button
         onClick={() => setOpen((v) => !v)}
         className={cn(

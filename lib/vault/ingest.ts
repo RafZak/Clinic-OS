@@ -85,16 +85,39 @@ export async function updateVaultForSession(
 
     // 5) Appliquer les patches
     let applied = 0;
+    const failures: { path: string; operation: string; error: string }[] = [];
     for (const patch of patches) {
       try {
         await applyPatch(patch, sessionRow);
         applied += 1;
       } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        const stack = err instanceof Error ? err.stack : undefined;
+        failures.push({
+          path: patch.path,
+          operation: patch.operation,
+          error: errorMsg,
+        });
         console.warn(
-          `vault patch failed for ${patch.path}`,
-          err instanceof Error ? err.message : err
+          JSON.stringify({
+            tag: "vault_patch_failed",
+            sessionId,
+            path: patch.path,
+            operation: patch.operation,
+            section_heading: patch.section_heading ?? null,
+            content_preview: patch.content_md.slice(0, 200),
+            error: errorMsg,
+            stack: stack?.split("\n").slice(0, 4).join(" | "),
+          })
         );
       }
+    }
+    if (failures.length > 0) {
+      log(sessionId, "vault_ingest", "partial", Date.now() - t0, {
+        patches: applied,
+        total: patches.length,
+        failures,
+      });
     }
 
     log(sessionId, "vault_ingest", "ok", Date.now() - t0, {

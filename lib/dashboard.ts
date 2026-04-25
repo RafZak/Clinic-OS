@@ -178,10 +178,18 @@ async function loadContext(): Promise<Omit<DashboardContext, "lowestStep">> {
       WHERE pa.kind = 'appointment_scheduled'
     `),
     db.execute<{ avg: number | null }>(sql`
-      SELECT avg((metadata->>'price_eur')::int)::int AS avg
-      FROM patient_events
-      WHERE kind IN ('trial_start', 'delivery')
-        AND metadata->>'price_eur' IS NOT NULL
+      SELECT avg(price_eur)::int AS avg
+      FROM (
+        SELECT DISTINCT ON (patient_id)
+          (metadata->>'price_eur')::int AS price_eur
+        FROM patient_events
+        WHERE kind IN ('trial_start', 'delivery')
+          AND metadata->>'price_eur' IS NOT NULL
+        ORDER BY
+          patient_id,
+          CASE kind WHEN 'delivery' THEN 0 ELSE 1 END,
+          occurred_at DESC
+      ) AS one_per_patient
     `),
     db.execute<{ avg: number | null }>(sql`
       SELECT avg(duration_seconds)::int AS avg
@@ -337,7 +345,7 @@ function buildPractitionerKpis(ctx: DashboardContext): DashboardKpi[] {
         ctx.basketAvgEur != null
           ? `${ctx.basketAvgEur.toLocaleString("fr-FR")} €`
           : "—",
-      hint: "Aide auditive · prix moyen essai/livraison",
+      hint: "Prix moyen par patient appareillé",
     },
     {
       label: "Score consultations moyen",

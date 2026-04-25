@@ -102,6 +102,3 @@ export async function loadResultsBundle(sessionId: string): Promise<ResultsBundl
   };
 }
 
-export function sumEstimatedImpact(insights: InsightRow[]): number {
-  return insights.reduce((acc, i) => acc + (i.estimatedImpactEur ?? 0), 0);
-}

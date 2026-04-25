@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { FRAMEWORK_LABEL, type FrameworkKind } from "@/lib/frameworks";
-import { loadResultsBundle, sumEstimatedImpact } from "@/lib/results";
-import { formatDuration, formatEur } from "@/lib/format";
+import { loadResultsBundle } from "@/lib/results";
+import { formatDuration } from "@/lib/format";
 import type { SessionRow } from "@/lib/sessions";
 import { parsePhoneTags, type SessionMetadata } from "@/lib/phone-tags";
 import { AnalysisLoading } from "@/components/results/analysis-loading";
@@ -24,7 +24,6 @@ export async function ResultsShell({ session }: { session: SessionRow }) {
   if (!bundle) return null;
 
   const status = (bundle.session.analysisStatus ?? "pending") as AnalysisStatus;
-  const impact = sumEstimatedImpact(bundle.insights);
   const globalScore = bundle.session.globalScore;
   const phoneTags =
     kind === "phone_call"
@@ -64,11 +63,6 @@ export async function ResultsShell({ session }: { session: SessionRow }) {
             <div className="flex flex-wrap items-center gap-3">
               <Badge label="Score global" value={globalScore !== null ? `${globalScore}/100` : "—"} tone="brand" />
               <Badge label="Insights" value={String(bundle.insights.length)} />
-              <Badge
-                label="Impact estimé"
-                value={impact > 0 ? formatEur(impact) : "—"}
-                tone={impact > 0 ? "brand" : "default"}
-              />
             </div>
           )}
         </div>

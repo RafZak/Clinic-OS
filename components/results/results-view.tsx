@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScoreRadar, type RadarPoint } from "@/components/results/score-radar";
 import { ArtifactsPanel } from "@/components/results/artifacts-panel";
 import { cn } from "@/lib/utils";
-import { formatEur, formatTimestampMs } from "@/lib/format";
+import { formatTimestampMs } from "@/lib/format";
 import type { ResultsBundle, InsightCitation } from "@/lib/types/analysis";
 
 type Bundle = ResultsBundle;
@@ -260,11 +260,6 @@ function InsightCard({
                 · Étape {insight.relatedStep}
               </span>
             )}
-            {insight.estimatedImpactEur ? (
-              <span className="rounded-full bg-brand/10 px-2 py-0.5 text-[10px] font-medium text-brand">
-                {formatEur(insight.estimatedImpactEur)}
-              </span>
-            ) : null}
           </div>
           <h4 className="mt-1 text-sm font-semibold text-ink">{insight.title}</h4>
           <p
@@ -290,15 +285,13 @@ function Citations({ citations }: { citations: InsightCitation[] }) {
       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
         Sources formation
       </p>
-      <ul className="mt-1 flex flex-col gap-1.5">
+      <ul className="mt-1 flex flex-col gap-1">
         {citations.map((c) => (
-          <li key={c.id} className="flex items-start gap-2 text-xs">
-            <MessageSquare className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" aria-hidden />
-            <span className="text-muted-foreground">
+          <li key={c.id} className="flex items-center gap-2 text-xs">
+            <MessageSquare className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+            <span className="truncate text-muted-foreground">
               <span className="text-ink">{c.sourceFile}</span>
               {c.moduleNumber !== null && ` · module ${c.moduleNumber}`}
-              {` · similarité ${(c.similarity * 100).toFixed(0)}%`}
-              <span className="mt-0.5 block italic text-ink/70">{c.excerpt}</span>
             </span>
           </li>
         ))}
@@ -329,11 +322,6 @@ function InlineAnnotation({
           <span className="text-[9px] uppercase tracking-wide opacity-80">{typeLabel}</span>
           <span className="font-medium leading-tight text-ink">{insight.title}</span>
           <span className="text-[11px] leading-snug text-ink/75">{insight.description}</span>
-          {insight.estimatedImpactEur ? (
-            <span className="mt-0.5 inline-flex w-fit items-center rounded-full bg-brand/10 px-1.5 py-0.5 text-[10px] font-medium text-brand">
-              {formatEur(insight.estimatedImpactEur)}
-            </span>
-          ) : null}
         </div>
       </div>
     </div>

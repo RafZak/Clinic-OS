@@ -112,7 +112,7 @@ export default async function PatientDetailPage({
                   className="inline-flex items-center gap-1 text-xs font-medium text-brand hover:text-brand-dark"
                 >
                   <BookOpen className="h-3.5 w-3.5" />
-                  Ouvrir dans /admin/vault
+                  Ouvrir la fiche complète
                 </Link>
               )}
             </div>

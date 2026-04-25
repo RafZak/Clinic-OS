@@ -18,7 +18,7 @@ export function LiveInsights({ latencyMs }: { latencyMs: number | null }) {
           </span>
           <p className="text-sm font-medium text-ink">Analyseur IA en veille</p>
           <p className="text-xs text-muted-foreground">
-            Les insights coaching s'activeront en temps réel à partir de J6
+            Les insights coaching s'activent en temps réel pendant la consultation
             (détection objection, upsell manqué, bonne pratique, rappel module).
           </p>
         </div>

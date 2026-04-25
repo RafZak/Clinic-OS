@@ -80,7 +80,7 @@ export function NewSessionButton({ role }: { role: Role }) {
                     : "Démarrer en direct"}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  Micro + transcription Deepgram streaming — coaching en direct
+                  Micro + transcription en direct — coaching IA pendant la consultation
                 </span>
               </span>
             </button>

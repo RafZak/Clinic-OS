@@ -15,8 +15,8 @@ type Status =
 
 const STEPS: { key: Status[]; label: string }[] = [
   { key: ["pending"], label: "Préparation de l'analyse" },
-  { key: ["transcribing"], label: "Ré-attribution des voix (Deepgram batch)" },
-  { key: ["transcribed", "analyzing"], label: "Analyse de la consultation (Claude Sonnet)" },
+  { key: ["transcribing"], label: "Ré-attribution des voix" },
+  { key: ["transcribed", "analyzing"], label: "Analyse de la consultation par l'IA" },
   { key: ["done"], label: "Résultats prêts" },
 ];
 

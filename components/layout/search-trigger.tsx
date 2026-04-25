@@ -213,7 +213,7 @@ function SearchBody({ onClose }: { onClose: () => void }) {
               <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-brand">
                 <Sparkles className="size-3.5" aria-hidden />
                 {status === "loading"
-                  ? "Claude Haiku rassemble les sources…"
+                  ? "Recherche dans la base formation…"
                   : status === "streaming"
                   ? "Synthèse en cours…"
                   : status === "error"

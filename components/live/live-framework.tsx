@@ -35,7 +35,7 @@ export function LiveFramework({ kind }: { kind: FrameworkKind }) {
           ))}
         </ol>
         <p className="mt-4 text-center text-[11px] text-muted-foreground">
-          Les statuts seront renseignés en temps réel par l'analyseur IA — livré J6.
+          Les statuts sont renseignés en temps réel par l'analyse IA pendant la consultation.
         </p>
       </div>
     </div>

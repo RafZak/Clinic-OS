@@ -11,7 +11,7 @@ function formatMs(ms: number): string {
 }
 
 const DEFAULT_FOOTER_NOTE =
-  "L'attribution des voix sera faite en post-analyse (J6, diarization batch Deepgram).";
+  "L'attribution des voix sera affinée à l'analyse post-consultation.";
 
 export function LiveTranscript({
   lines,

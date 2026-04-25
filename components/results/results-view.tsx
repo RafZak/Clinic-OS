@@ -366,8 +366,8 @@ function MemoryPanel({ bundle }: { bundle: Bundle }) {
       </div>
 
       <div className="rounded-lg border border-dashed border-border bg-surface-muted px-5 py-3 text-xs text-muted-foreground">
-        Tout le vault est consultable dans <a href="/admin/vault" className="text-brand hover:underline">/admin/vault</a>{" "}
-        — graph view + export Obsidian (.zip) pour audit Amplifon.
+        Toute la mémoire est consultable dans <a href="/admin/vault" className="text-brand hover:underline">la section Mémoire</a>{" "}
+        — vue graph et export complet pour audit.
       </div>
     </div>
   );

@@ -34,9 +34,6 @@ export function SidebarFooter() {
           ))}
         </ul>
       </div>
-      <p className="px-3 text-[10px] text-muted-foreground/70">
-        Démo Amplifon · J10 · avr. 2026
-      </p>
     </div>
   );
 }

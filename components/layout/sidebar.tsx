@@ -34,7 +34,7 @@ function badgeFor(item: NavItem, ctx: {
     return {
       count: n,
       tone: "info",
-      tooltip: `${n} fiche${n > 1 ? "s" : ""} Karpathy mise${n > 1 ? "s" : ""} à jour aujourd'hui`,
+      tooltip: `${n} fiche${n > 1 ? "s" : ""} mise${n > 1 ? "s" : ""} à jour aujourd'hui`,
     };
   }
   return null;

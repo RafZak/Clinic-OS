@@ -3,6 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export type NavLinkProps = {
   href: string;
@@ -40,18 +46,24 @@ export function NavLink({
       </span>
       <span className="min-w-0 flex-1 truncate">{label}</span>
       {badge && badge.count > 0 && (
-        <span
-          title={badge.tooltip}
-          aria-label={badge.tooltip}
-          className={cn(
-            "inline-flex h-5 min-w-[1.25rem] shrink-0 cursor-help items-center justify-center rounded-full px-1.5 text-[10px] font-semibold tabular-nums",
-            badge.tone === "alert"
-              ? "bg-red-100 text-red-700"
-              : "bg-brand/10 text-brand"
-          )}
-        >
-          {badge.count}
-        </span>
+        <TooltipProvider delayDuration={150}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span
+                aria-label={badge.tooltip}
+                className={cn(
+                  "inline-flex h-5 min-w-[1.25rem] shrink-0 items-center justify-center rounded-full px-1.5 text-[10px] font-semibold tabular-nums",
+                  badge.tone === "alert"
+                    ? "bg-red-100 text-red-700"
+                    : "bg-brand/10 text-brand"
+                )}
+              >
+                {badge.count}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="right">{badge.tooltip}</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       )}
     </Link>
   );

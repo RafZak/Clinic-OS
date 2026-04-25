@@ -75,7 +75,10 @@ async function findSourceFileFor(
 
 function dispositionHeader(name: string, inline: boolean): string {
   const safe = name.replace(/[\r\n"]/g, "");
-  return `${inline ? "inline" : "attachment"}; filename="${safe}"`;
+  const ascii = safe.replace(/[^\x20-\x7E]/g, "_");
+  const utf8 = encodeURIComponent(safe);
+  const disposition = inline ? "inline" : "attachment";
+  return `${disposition}; filename="${ascii}"; filename*=UTF-8''${utf8}`;
 }
 
 export async function GET(

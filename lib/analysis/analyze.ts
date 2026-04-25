@@ -10,6 +10,15 @@ import {
 import { getAnthropic, CLAUDE_MODELS } from "@/lib/claude";
 import { getFramework, type FrameworkKind, type FrameworkStep } from "@/lib/frameworks";
 import { enrichInsightsWithCitations } from "@/lib/analysis/citations";
+import {
+  PHONE_CALL_TYPES,
+  RECOMMENDED_ACTIONS,
+  LEAD_TEMPERATURES,
+  DATA_CAPTURE_LEVELS,
+  parsePhoneTags,
+  type PhoneCallTags,
+  type SessionMetadata,
+} from "@/lib/phone-tags";
 
 export type AnalyzeOutcome =
   | { ok: true; insights: number; globalScore: number }
@@ -46,6 +55,7 @@ type AnalysisPayload = {
   insights: RawInsight[];
   summary: string;
   global_score: number;
+  phone_tags?: unknown;
 };
 
 export async function analyzeSession(sessionId: string): Promise<AnalyzeOutcome> {
@@ -91,10 +101,11 @@ export async function analyzeSession(sessionId: string): Promise<AnalyzeOutcome>
     }
 
     const framework = getFramework(kind);
-    const transcriptText = formatTranscript(lines);
+    const transcriptText = formatTranscript(lines, kind);
 
     const payload = await callClaude(kind, framework, transcriptText);
     const normalized = normalize(payload, framework);
+    const phoneTags = kind === "phone_call" ? parsePhoneTags(payload.phone_tags) : null;
 
     // Enrichissement citations Layer A (best effort — une panne retrieval
     // ne doit pas faire planter l'analyse)
@@ -137,21 +148,41 @@ export async function analyzeSession(sessionId: string): Promise<AnalyzeOutcome>
         );
       }
 
+      const updatePayload: {
+        analysisStatus: "done";
+        analyzedAt: Date;
+        globalScore: number;
+        summary: string;
+        analysisError: null;
+        metadata?: SessionMetadata;
+      } = {
+        analysisStatus: "done",
+        analyzedAt: new Date(),
+        globalScore: normalized.global_score,
+        summary: normalized.summary,
+        analysisError: null,
+      };
+      if (phoneTags) {
+        const existing = await tx
+          .select({ metadata: sessions.metadata })
+          .from(sessions)
+          .where(eq(sessions.id, sessionId))
+          .limit(1);
+        const prev = (existing[0]?.metadata as SessionMetadata | null) ?? {};
+        updatePayload.metadata = { ...prev, tags: phoneTags };
+      }
       await tx
         .update(sessions)
-        .set({
-          analysisStatus: "done",
-          analyzedAt: new Date(),
-          globalScore: normalized.global_score,
-          summary: normalized.summary,
-          analysisError: null,
-        })
+        .set(updatePayload)
         .where(eq(sessions.id, sessionId));
     });
 
     log(sessionId, "analyze", "ok", Date.now() - t0, {
       insights: insightsWithCitations.length,
       globalScore: normalized.global_score,
+      phoneTags: phoneTags
+        ? `${phoneTags.call_type}/${phoneTags.recommended_action}/${phoneTags.lead_temperature}/${phoneTags.data_capture}`
+        : null,
     });
     return { ok: true, insights: insightsWithCitations.length, globalScore: normalized.global_score };
   } catch (err) {
@@ -165,11 +196,16 @@ export async function analyzeSession(sessionId: string): Promise<AnalyzeOutcome>
   }
 }
 
-function formatTranscript(lines: (typeof transcriptLines.$inferSelect)[]): string {
+function formatTranscript(
+  lines: (typeof transcriptLines.$inferSelect)[],
+  kind: FrameworkKind
+): string {
+  const proLabel = kind === "phone_call" ? "Standardiste" : "Pro";
+  const patientLabel = kind === "phone_call" ? "Appelant" : "Patient";
   return lines
     .map((l) => {
       const ts = formatTs(l.startMs);
-      const who = l.speaker === "practitioner" ? "Pro" : "Patient";
+      const who = l.speaker === "practitioner" ? proLabel : patientLabel;
       return `[${ts}] ${who}: ${l.text}`;
     })
     .join("\n");
@@ -197,6 +233,51 @@ async function callClaude(
     })
     .join("\n\n");
 
+  const phoneTaggingBlock = kind === "phone_call"
+    ? `
+
+PHILOSOPHIE APPEL ENTRANT (validée Jonathan, 25/04/2026) :
+L'appel entrant est un acte de **TRIAGE**, pas un mini-acte de vente. La standardiste doit :
+1. Capturer l'identité tôt (prénom + nom + email idéal, OU téléphone si pas d'email)
+2. Comprendre la raison de l'appel pour router vers la bonne durée de RDV
+3. Poser des questions génériques pour briefer l'audioprothésiste
+4. **JAMAIS** parler gammes / prix / classe 1-2 / 100% santé / forme d'appareil — c'est le job du pro en RDV
+5. **JAMAIS** demander l'ordonnance ORL en début d'appel (vécu comme agressif) — la mentionner en clôture si pertinent
+
+Pour les appels téléphoniques, en plus des scores/insights/summary/global_score, tu dois produire un objet **phone_tags** avec exactement 5 champs :
+
+- **call_type** (1 valeur, raison principale) :
+  * new_patient — premier contact, jamais venu
+  * renewal — patient existant fin de cycle (4 ans)
+  * trial_followup — en essai, question / ajustement
+  * tech_issue — réglage, dôme, pile, panne mineure
+  * info_request — avant décision, prend la température (souvent : prix)
+  * urgency — acouphène brutal, perte soudaine, douleur
+  * admin — devis, facture, mutuelle, attestation
+
+- **recommended_action** (1 valeur, action à prendre) :
+  * rdv_bilan_60min · rdv_renouvellement_45min · rdv_technique_15min · rdv_technique_30min
+  * rappel_pro · resolved_phone · transfer_orl · transfer_admin
+
+- **lead_temperature** : hot (motivé) · warm (en réflexion) · cold (sceptique) · lost (raccroché sans suite)
+
+- **data_capture** :
+  * complete — prénom + nom + (email OU téléphone) capturés
+  * partial — il manque un élément clé (ex: nom seulement, pas de coordonnée de rappel)
+  * anonymous — aucune identité capturée (= LEAD PERDU pour le CRM)
+
+- **data_capture_note** (string ou null) : si data_capture != "complete", explique de façon factuelle ce qui manque et ce que cela implique, SANS jugement sur le standardiste si c'est le patient qui a refusé. Exemples :
+  * "Email non recueilli — relance possible uniquement par téléphone"
+  * "Aucune coordonnée capturée — lead non exploitable, pas de relance possible"
+
+INSIGHTS SUPPLÉMENTAIRES POUR APPEL ENTRANT :
+- Si data_capture == "anonymous" : ajoute systématiquement un insight CRITICAL (~3000€ de panier potentiel perdu pour un new_patient).
+- Si call_type == "info_request" et qu'aucun RDV n'a été proposé : ajoute un insight CRITICAL.
+- Si la standardiste évoque les gammes / prix / classe 1-2 / 100% santé / forme d'appareil : ajoute un insight WARNING ("hors de son rôle, doit rester sur le triage").
+
+`
+    : "";
+
   const system = `Tu es un analyste senior de performance commerciale dans l'audioprothèse. Tu analyses les ${frameworkLabel}s pour coacher l'utilisateur (pas le patient).
 
 Ton : professionnel, factuel, bienveillant sans complaisance. Vouvoie l'utilisateur. Pas de préambule ni de flatterie. Tu t'appuies uniquement sur le verbatim fourni.
@@ -219,7 +300,7 @@ Enfin :
 - summary : synthèse en 2-3 phrases, utile à l'utilisateur
 - global_score : score global 0-100 pondéré selon l'importance des étapes couvertes
 
-Les estimations euros doivent être conservatrices et réalistes pour le marché audioprothèse français (panier moyen classe 1 : 950€, classe 2 : 1800€, upsell typique : 400-800€).`;
+Les estimations euros doivent être conservatrices et réalistes pour le marché audioprothèse français (panier moyen classe 1 : 950€, classe 2 : 1800€, upsell typique : 400-800€).${phoneTaggingBlock}`;
 
   const user = `Framework d'analyse (${framework.length} étapes) :
 
@@ -279,8 +360,43 @@ Analyse cette session selon le framework. Appelle l'outil submit_analysis avec l
             },
             summary: { type: "string" },
             global_score: { type: "integer", minimum: 0, maximum: 100 },
+            phone_tags: kind === "phone_call"
+              ? {
+                  type: "object",
+                  description:
+                    "Tags de triage de l'appel entrant — obligatoire pour kind='phone_call'.",
+                  properties: {
+                    call_type: {
+                      type: "string",
+                      enum: PHONE_CALL_TYPES as unknown as string[],
+                    },
+                    recommended_action: {
+                      type: "string",
+                      enum: RECOMMENDED_ACTIONS as unknown as string[],
+                    },
+                    lead_temperature: {
+                      type: "string",
+                      enum: LEAD_TEMPERATURES as unknown as string[],
+                    },
+                    data_capture: {
+                      type: "string",
+                      enum: DATA_CAPTURE_LEVELS as unknown as string[],
+                    },
+                    data_capture_note: { type: ["string", "null"] },
+                  },
+                  required: [
+                    "call_type",
+                    "recommended_action",
+                    "lead_temperature",
+                    "data_capture",
+                  ],
+                }
+              : { type: ["object", "null"] },
           },
-          required: ["scores", "insights", "summary", "global_score"],
+          required:
+            kind === "phone_call"
+              ? ["scores", "insights", "summary", "global_score", "phone_tags"]
+              : ["scores", "insights", "summary", "global_score"],
         },
       },
     ],

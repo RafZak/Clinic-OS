@@ -147,6 +147,7 @@ export const sessions = pgTable(
     analysisStatus: text("analysis_status").default("pending"),
     analysisError: text("analysis_error"),
     analyzedAt: timestamp("analyzed_at", { withTimezone: true }),
+    metadata: jsonb("metadata"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   },
   (t) => [

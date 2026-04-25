@@ -54,8 +54,8 @@ export default async function AdminKnowledgePage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Admin — Knowledge Layer A"
-        description="Pipeline d'ingestion Google Drive, chunks vectoriels pgvector, test de retrieval et historique des runs."
+        title="Base formation"
+        description="Source de connaissances injectée dans la recherche Cmd+K et le coaching IA. Pipeline d'ingestion Google Drive, chunks vectoriels, test de recherche en direct et historique des runs."
       />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">

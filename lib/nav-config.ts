@@ -41,13 +41,13 @@ export const PRIMARY_NAV: NavItem[] = [
 export const ADMIN_NAV: NavItem[] = [
   {
     href: "/admin/knowledge",
-    label: "Admin Knowledge",
+    label: "Base formation",
     icon: Database,
     roles: ["audioprothesiste", "assistant"],
   },
   {
     href: "/admin/vault",
-    label: "Admin Vault",
+    label: "Mémoire organisationnelle",
     icon: Notebook,
     roles: ["audioprothesiste", "assistant"],
   },

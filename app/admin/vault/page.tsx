@@ -4,18 +4,49 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { listVaultPagesByKind } from "@/lib/vault/ingest";
 
-const KIND_META: Record<string, { label: string; icon: typeof FileText; description: string }> = {
-  index: { label: "Index", icon: FileText, description: "Page racine du vault" },
+const KIND_META: Record<
+  string,
+  { label: string; icon: typeof FileText; description: string }
+> = {
+  index: {
+    label: "Sommaire",
+    icon: FileText,
+    description: "Page d'accueil de la mémoire organisationnelle.",
+  },
   practitioner: {
     label: "Audioprothésistes",
     icon: Users,
-    description: "Fiches Karpathy par audioprothésiste",
+    description:
+      "Une fiche par audioprothésiste — forces, axes d'amélioration, sessions récentes.",
   },
-  assistant: { label: "Assistants accueil", icon: Users, description: "Fiches assistants accueil" },
-  center: { label: "Centres", icon: Building2, description: "Fiches par centre" },
-  patient: { label: "Patients", icon: Users, description: "Fiches par patient suivi" },
-  pattern: { label: "Patterns détectés", icon: Wrench, description: "Comportements récurrents" },
-  session: { label: "Sessions", icon: FileText, description: "Une fiche par session analysée" },
+  assistant: {
+    label: "Assistants accueil",
+    icon: Users,
+    description:
+      "Une fiche par assistant accueil — qualité des appels, patterns identifiés.",
+  },
+  center: {
+    label: "Centres",
+    icon: Building2,
+    description: "Une fiche par centre du réseau.",
+  },
+  patient: {
+    label: "Patients",
+    icon: Users,
+    description:
+      "Profil clinique, parcours et entourage de chaque patient suivi.",
+  },
+  pattern: {
+    label: "Patterns récurrents",
+    icon: Wrench,
+    description:
+      "Situations métier récurrentes identifiées à travers le réseau (objection prix, montée en gamme, etc.).",
+  },
+  session: {
+    label: "Fiches session",
+    icon: FileText,
+    description: "Une fiche générée automatiquement après chaque session analysée.",
+  },
 };
 
 const KIND_ORDER = [
@@ -35,8 +66,8 @@ export default async function AdminVaultPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Admin — Vault Layer B"
-        description="Mémoire organisationnelle pattern Karpathy. Chaque session analysée enrichit automatiquement les fiches concernées (audioprothésiste, centre, patient, patterns)."
+        title="Mémoire organisationnelle"
+        description="Une fiche vivante par audioprothésiste, assistant accueil, patient et centre. Chaque consultation ou appel analysé enrichit automatiquement les fiches concernées — exportable en Obsidian, auditable à tout moment."
         actions={
           <div className="flex items-center gap-2">
             <Link href="/admin/vault/graph">
@@ -56,10 +87,19 @@ export default async function AdminVaultPage() {
       />
 
       <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
-        <Stat label="Fiches totales" value={total} />
-        <Stat label="Audioprothésistes" value={byKind.get("practitioner")?.length ?? 0} />
-        <Stat label="Patients suivis" value={byKind.get("patient")?.length ?? 0} />
-        <Stat label="Sessions analysées" value={byKind.get("session")?.length ?? 0} />
+        <Stat label="Fiches dans la mémoire" value={total} />
+        <Stat
+          label="Audioprothésistes suivis"
+          value={byKind.get("practitioner")?.length ?? 0}
+        />
+        <Stat
+          label="Patients suivis"
+          value={byKind.get("patient")?.length ?? 0}
+        />
+        <Stat
+          label="Sessions analysées"
+          value={byKind.get("session")?.length ?? 0}
+        />
       </div>
 
       <div className="flex flex-col gap-6">
@@ -74,13 +114,20 @@ export default async function AdminVaultPage() {
               key={kind}
               className="rounded-lg border border-border bg-surface px-5 py-4"
             >
-              <div className="mb-3 flex items-center gap-2">
+              <div className="mb-1 flex items-center gap-2">
                 <Icon className="size-4 text-brand" aria-hidden />
                 <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
                   {meta.label}
                 </h2>
-                <span className="text-xs text-muted-foreground">({pages.length})</span>
+                <span className="text-xs text-muted-foreground">
+                  ({pages.length})
+                </span>
               </div>
+              {meta.description && (
+                <p className="mb-3 text-xs text-muted-foreground">
+                  {meta.description}
+                </p>
+              )}
               {pages.length === 0 ? (
                 <p className="text-xs text-muted-foreground">
                   Aucune fiche pour l&apos;instant. Les fiches session sont créées automatiquement

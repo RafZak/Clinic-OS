@@ -58,18 +58,23 @@ export function NudgesPanel({ nudges }: { nudges: Nudge[] }) {
 function NudgeGroup({ kind, nudges }: { kind: NudgeKind; nudges: Nudge[] }) {
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-baseline justify-between gap-3">
+      <div className="flex flex-col gap-0.5">
         <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-foreground">
-          {GROUP_TITLE[kind]}
+          {GROUP_TITLE[kind]}{" "}
+          <span className="ml-1 font-normal tabular-nums text-muted-foreground">
+            ({nudges.length})
+          </span>
         </h3>
-        <span className="text-[11px] tabular-nums text-muted-foreground">
-          {nudges.length}
-        </span>
+        <p className="text-xs text-muted-foreground">
+          {GROUP_DESCRIPTION[kind]}
+        </p>
       </div>
-      <p className="-mt-1 text-xs text-muted-foreground">
-        {GROUP_DESCRIPTION[kind]}
-      </p>
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      <div
+        className={cn(
+          "grid grid-cols-1 gap-3",
+          nudges.length >= 2 && "md:grid-cols-2 md:auto-rows-fr"
+        )}
+      >
         {nudges.map((nudge) => (
           <NudgeCard key={nudge.id} nudge={nudge} />
         ))}
@@ -94,7 +99,7 @@ function NudgeCard({ nudge }: { nudge: Nudge }) {
         </div>
       </div>
       {nudge.cta && (
-        <div className="-mb-1 flex justify-end">
+        <div className="-mb-1 mt-auto flex justify-end pt-1">
           <Link
             href={nudge.cta.href}
             className="inline-flex items-center gap-1 text-xs font-medium text-brand hover:text-brand-dark"

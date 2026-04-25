@@ -1,0 +1,255 @@
+import "server-only";
+import { sql } from "drizzle-orm";
+import { db } from "@/db/client";
+
+export type PatientStatus = "prospect" | "patient" | "lost";
+
+export type PatientRow = {
+  id: string;
+  label: string;
+  age: number | null;
+  status: PatientStatus;
+  firstContactAt: Date | null;
+  centerName: string | null;
+  centerId: string | null;
+  eventsCount: number;
+  lastEventAt: Date | null;
+  consultationsCount: number;
+  avgConsultationScore: number | null;
+  lastConsultationScore: number | null;
+};
+
+type RawPatientRow = {
+  id: string;
+  label: string;
+  age: number | null;
+  status: string;
+  first_contact_at: string | null;
+  center_id: string | null;
+  center_name: string | null;
+  events_count: number;
+  last_event_at: string | null;
+  consultations_count: number;
+  avg_consultation_score: number | null;
+  last_consultation_score: number | null;
+};
+
+function toDate(v: string | null): Date | null {
+  return v ? new Date(v) : null;
+}
+
+export async function listPatients(): Promise<PatientRow[]> {
+  const rows = await db.execute<RawPatientRow>(sql`
+    SELECT
+      p.id,
+      p.label,
+      p.age,
+      p.status,
+      p.first_contact_at,
+      p.center_id,
+      c.name AS center_name,
+      coalesce(ev.events_count, 0)::int AS events_count,
+      ev.last_event_at,
+      coalesce(s.consultations_count, 0)::int AS consultations_count,
+      s.avg_consultation_score::int AS avg_consultation_score,
+      s.last_consultation_score AS last_consultation_score
+    FROM patients p
+    LEFT JOIN centers c ON c.id = p.center_id
+    LEFT JOIN LATERAL (
+      SELECT
+        count(*) AS events_count,
+        max(occurred_at) AS last_event_at
+      FROM patient_events
+      WHERE patient_id = p.id
+    ) ev ON true
+    LEFT JOIN LATERAL (
+      SELECT
+        count(*) FILTER (WHERE kind = 'consultation') AS consultations_count,
+        avg(global_score) FILTER (WHERE kind = 'consultation' AND global_score IS NOT NULL) AS avg_consultation_score,
+        (
+          SELECT global_score FROM sessions
+          WHERE patient_id = p.id AND kind = 'consultation' AND global_score IS NOT NULL
+          ORDER BY started_at DESC NULLS LAST
+          LIMIT 1
+        ) AS last_consultation_score
+      FROM sessions
+      WHERE patient_id = p.id
+    ) s ON true
+    ORDER BY ev.last_event_at DESC NULLS LAST, p.label ASC
+  `);
+
+  return rows.map((r) => ({
+    id: r.id,
+    label: r.label,
+    age: r.age,
+    status: (r.status as PatientStatus) ?? "prospect",
+    firstContactAt: toDate(r.first_contact_at),
+    centerName: r.center_name,
+    centerId: r.center_id,
+    eventsCount: r.events_count,
+    lastEventAt: toDate(r.last_event_at),
+    consultationsCount: r.consultations_count,
+    avgConsultationScore: r.avg_consultation_score,
+    lastConsultationScore: r.last_consultation_score,
+  }));
+}
+
+export type PatientEventKind =
+  | "phone_call"
+  | "appointment_scheduled"
+  | "consultation"
+  | "trial_start"
+  | "delivery"
+  | "follow_up";
+
+export type PatientEventRow = {
+  id: string;
+  kind: PatientEventKind;
+  occurredAt: Date;
+  summary: string | null;
+  metadata: Record<string, unknown> | null;
+  sessionId: string | null;
+  sessionKind: "consultation" | "phone_call" | null;
+  sessionStatus: string | null;
+  sessionGlobalScore: number | null;
+  sessionDurationSeconds: number | null;
+  sessionAnalysisStatus: string | null;
+  sessionHasTranscript: boolean;
+};
+
+export type PatientDetail = {
+  patient: {
+    id: string;
+    label: string;
+    age: number | null;
+    status: PatientStatus;
+    firstContactAt: Date | null;
+    centerName: string | null;
+    centerId: string | null;
+  };
+  events: PatientEventRow[];
+};
+
+type RawEventRow = {
+  id: string;
+  kind: string;
+  occurred_at: string;
+  summary: string | null;
+  metadata: unknown;
+  session_id: string | null;
+  session_kind: string | null;
+  session_status: string | null;
+  session_global_score: number | null;
+  session_duration_seconds: number | null;
+  session_analysis_status: string | null;
+  session_has_transcript: boolean;
+};
+
+type RawPatientDetailRow = {
+  id: string;
+  label: string;
+  age: number | null;
+  status: string;
+  first_contact_at: string | null;
+  center_id: string | null;
+  center_name: string | null;
+};
+
+export async function getPatientDetail(
+  patientId: string
+): Promise<PatientDetail | null> {
+  const headerRows = await db.execute<RawPatientDetailRow>(sql`
+    SELECT
+      p.id,
+      p.label,
+      p.age,
+      p.status,
+      p.first_contact_at,
+      p.center_id,
+      c.name AS center_name
+    FROM patients p
+    LEFT JOIN centers c ON c.id = p.center_id
+    WHERE p.id = ${patientId}
+    LIMIT 1
+  `);
+  const head = headerRows[0];
+  if (!head) return null;
+
+  const eventRows = await db.execute<RawEventRow>(sql`
+    SELECT
+      e.id,
+      e.kind,
+      e.occurred_at,
+      e.summary,
+      e.metadata,
+      e.session_id,
+      s.kind AS session_kind,
+      s.status AS session_status,
+      s.global_score AS session_global_score,
+      s.duration_seconds AS session_duration_seconds,
+      s.analysis_status AS session_analysis_status,
+      EXISTS(
+        SELECT 1 FROM transcript_lines tl WHERE tl.session_id = s.id
+      ) AS session_has_transcript
+    FROM patient_events e
+    LEFT JOIN sessions s ON s.id = e.session_id
+    WHERE e.patient_id = ${patientId}
+    ORDER BY e.occurred_at ASC, e.id ASC
+  `);
+
+  return {
+    patient: {
+      id: head.id,
+      label: head.label,
+      age: head.age,
+      status: (head.status as PatientStatus) ?? "prospect",
+      firstContactAt: toDate(head.first_contact_at),
+      centerName: head.center_name,
+      centerId: head.center_id,
+    },
+    events: eventRows.map((r) => ({
+      id: r.id,
+      kind: r.kind as PatientEventKind,
+      occurredAt: new Date(r.occurred_at),
+      summary: r.summary,
+      metadata:
+        r.metadata && typeof r.metadata === "object"
+          ? (r.metadata as Record<string, unknown>)
+          : null,
+      sessionId: r.session_id,
+      sessionKind:
+        r.session_kind === "consultation" || r.session_kind === "phone_call"
+          ? r.session_kind
+          : null,
+      sessionStatus: r.session_status,
+      sessionGlobalScore: r.session_global_score,
+      sessionDurationSeconds: r.session_duration_seconds,
+      sessionAnalysisStatus: r.session_analysis_status,
+      sessionHasTranscript: Boolean(r.session_has_transcript),
+    })),
+  };
+}
+
+export function patientSlug(label: string): string {
+  return label
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export const STATUS_LABEL: Record<PatientStatus, string> = {
+  prospect: "Prospect",
+  patient: "Patient",
+  lost: "Perdu",
+};
+
+export const EVENT_LABEL: Record<PatientEventKind, string> = {
+  phone_call: "Appel entrant",
+  appointment_scheduled: "RDV pris",
+  consultation: "Consultation",
+  trial_start: "Début d'essai",
+  delivery: "Livraison",
+  follow_up: "Rappel de suivi",
+};

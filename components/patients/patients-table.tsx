@@ -4,15 +4,18 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowUpRight, Phone, Stethoscope, Trash2, X } from "lucide-react";
+import { useTranslations, useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { DeletePatientsDialog } from "@/components/patients/delete-patients-dialog";
 import {
   STATUS_LABEL,
+  STATUS_LABEL_EN,
   type PatientRow,
   type PatientStatus,
 } from "@/lib/patients-shared";
 import {
   LEAD_TEMPERATURE_LABEL,
+  LEAD_TEMPERATURE_LABEL_EN,
   type LeadTemperature,
 } from "@/lib/phone-tags";
 import { cn } from "@/lib/utils";
@@ -31,30 +34,17 @@ const TEMPERATURE_BADGE_CLASS: Record<LeadTemperature, string> = {
 };
 
 function initials(label: string): string {
-  const parts = label.replace(/^(M\.|Mme|Mlle)\s+/i, "").split(/\s+/);
+  const parts = label.replace(/^(M\.|Mme|Mlle|Mr\.|Mrs\.|Ms\.)\s+/i, "").split(/\s+/);
   return parts
     .slice(0, 2)
     .map((p) => p[0]?.toUpperCase() ?? "")
     .join("");
 }
 
-function formatRelative(date: Date | null): string {
-  if (!date) return "—";
-  const now = Date.now();
-  const diffMs = now - date.getTime();
-  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
-  if (diffDays === 0) return "Aujourd'hui";
-  if (diffDays === 1) return "Hier";
-  if (diffDays < 7) return `Il y a ${diffDays} j`;
-  if (diffDays < 30) return `Il y a ${Math.floor(diffDays / 7)} sem`;
-  return date.toLocaleDateString("fr-FR", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
 export function PatientsTable({ rows }: { rows: PatientRow[] }) {
+  const t = useTranslations("patients");
+  const tRecent = useTranslations("recentSessions");
+  const locale = useLocale();
   const router = useRouter();
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -62,6 +52,25 @@ export function PatientsTable({ rows }: { rows: PatientRow[] }) {
   const allIds = useMemo(() => rows.map((r) => r.id), [rows]);
   const allSelected = selected.size > 0 && selected.size === allIds.length;
   const someSelected = selected.size > 0 && selected.size < allIds.length;
+
+  const statusMap = locale === "en" ? STATUS_LABEL_EN : STATUS_LABEL;
+  const tempMap = locale === "en" ? LEAD_TEMPERATURE_LABEL_EN : LEAD_TEMPERATURE_LABEL;
+
+  function formatRelative(date: Date | null): string {
+    if (!date) return "—";
+    const now = Date.now();
+    const diffMs = now - date.getTime();
+    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return tRecent("today");
+    if (diffDays === 1) return tRecent("yesterday");
+    if (diffDays < 7) return tRecent("daysAgo", { n: diffDays });
+    if (diffDays < 30) return tRecent("weeksAgo", { n: Math.floor(diffDays / 7) });
+    return date.toLocaleDateString(locale === "en" ? "en-GB" : "fr-FR", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  }
 
   function toggleAll() {
     if (allSelected) setSelected(new Set());
@@ -86,7 +95,7 @@ export function PatientsTable({ rows }: { rows: PatientRow[] }) {
   if (rows.length === 0) {
     return (
       <div className="flex h-48 items-center justify-center rounded-lg border border-dashed border-border bg-surface text-sm text-muted-foreground">
-        Aucun patient dans cette catégorie.
+        {t("empty")}
       </div>
     );
   }
@@ -100,7 +109,7 @@ export function PatientsTable({ rows }: { rows: PatientRow[] }) {
               <th className="w-10 px-4 py-3">
                 <input
                   type="checkbox"
-                  aria-label="Tout sélectionner"
+                  aria-label={t("filterAll")}
                   className="h-4 w-4 cursor-pointer accent-brand"
                   checked={allSelected}
                   ref={(el) => {
@@ -109,17 +118,17 @@ export function PatientsTable({ rows }: { rows: PatientRow[] }) {
                   onChange={toggleAll}
                 />
               </th>
-              <th className="px-4 py-3 text-left font-medium">Patient</th>
-              <th className="px-4 py-3 text-left font-medium">Statut</th>
-              <th className="px-4 py-3 text-left font-medium">Température</th>
-              <th className="px-4 py-3 text-left font-medium">Centre</th>
-              <th className="px-4 py-3 text-left font-medium">Parcours</th>
+              <th className="px-4 py-3 text-left font-medium">{t("tableLabel")}</th>
+              <th className="px-4 py-3 text-left font-medium">{t("tableStatus")}</th>
               <th className="px-4 py-3 text-left font-medium">
-                Score consult. moyen
+                {locale === "en" ? "Temperature" : "Température"}
               </th>
               <th className="px-4 py-3 text-left font-medium">
-                Dernière interaction
+                {locale === "en" ? "Center" : "Centre"}
               </th>
+              <th className="px-4 py-3 text-left font-medium">{t("timelineTitle")}</th>
+              <th className="px-4 py-3 text-left font-medium">{t("tableScore")}</th>
+              <th className="px-4 py-3 text-left font-medium">{t("tableLast")}</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
@@ -137,7 +146,7 @@ export function PatientsTable({ rows }: { rows: PatientRow[] }) {
                   <td className="px-4 py-3">
                     <input
                       type="checkbox"
-                      aria-label={`Sélectionner ${p.label}`}
+                      aria-label={p.label}
                       className="h-4 w-4 cursor-pointer accent-brand"
                       checked={checked}
                       onChange={() => toggleOne(p.id)}
@@ -155,7 +164,7 @@ export function PatientsTable({ rows }: { rows: PatientRow[] }) {
                         <span>{p.label}</span>
                         {p.age != null && (
                           <span className="text-xs text-muted-foreground">
-                            {p.age} ans
+                            {locale === "en" ? `${p.age} y/o` : `${p.age} ans`}
                           </span>
                         )}
                       </div>
@@ -168,7 +177,7 @@ export function PatientsTable({ rows }: { rows: PatientRow[] }) {
                         STATUS_BADGE_CLASS[p.status]
                       )}
                     >
-                      {STATUS_LABEL[p.status]}
+                      {statusMap[p.status]}
                     </span>
                   </td>
                   <td className="px-4 py-3">
@@ -179,7 +188,7 @@ export function PatientsTable({ rows }: { rows: PatientRow[] }) {
                           TEMPERATURE_BADGE_CLASS[p.lastPhoneTemperature]
                         )}
                       >
-                        {LEAD_TEMPERATURE_LABEL[p.lastPhoneTemperature]}
+                        {tempMap[p.lastPhoneTemperature]}
                       </span>
                     ) : (
                       <span className="text-xs text-muted-foreground">—</span>
@@ -192,14 +201,14 @@ export function PatientsTable({ rows }: { rows: PatientRow[] }) {
                     <div className="flex items-center gap-3 text-muted-foreground">
                       <span
                         className="inline-flex items-center gap-1"
-                        title="Consultations"
+                        title={locale === "en" ? "Consultations" : "Consultations"}
                       >
                         <Stethoscope className="h-3.5 w-3.5" />
                         {p.consultationsCount}
                       </span>
                       <span
                         className="inline-flex items-center gap-1"
-                        title="Appels téléphoniques"
+                        title={locale === "en" ? "Inbound calls" : "Appels téléphoniques"}
                       >
                         <Phone className="h-3.5 w-3.5" />
                         {p.phoneCallsCount}
@@ -228,7 +237,8 @@ export function PatientsTable({ rows }: { rows: PatientRow[] }) {
                       href={`/patients/${p.id}`}
                       className="inline-flex items-center gap-1 text-xs font-medium text-brand hover:text-brand-dark"
                     >
-                      Voir <ArrowUpRight className="h-3.5 w-3.5" />
+                      {locale === "en" ? "View" : "Voir"}{" "}
+                      <ArrowUpRight className="h-3.5 w-3.5" />
                     </Link>
                   </td>
                 </tr>
@@ -242,8 +252,9 @@ export function PatientsTable({ rows }: { rows: PatientRow[] }) {
         <div className="pointer-events-none fixed inset-x-0 bottom-6 z-40 flex justify-center px-4">
           <div className="pointer-events-auto flex items-center gap-3 rounded-full border border-border bg-foreground/95 px-4 py-2 text-sm text-white shadow-lg backdrop-blur">
             <span className="font-medium">
-              {selected.size} patient{selected.size > 1 ? "s" : ""} sélectionné
-              {selected.size > 1 ? "s" : ""}
+              {locale === "en"
+                ? `${selected.size} ${selected.size > 1 ? "patients selected" : "patient selected"}`
+                : `${selected.size} patient${selected.size > 1 ? "s" : ""} sélectionné${selected.size > 1 ? "s" : ""}`}
             </span>
             <span className="h-4 w-px bg-white/30" aria-hidden />
             <Button
@@ -253,7 +264,7 @@ export function PatientsTable({ rows }: { rows: PatientRow[] }) {
               onClick={clearSelection}
             >
               <X className="h-3.5 w-3.5" />
-              Annuler
+              {t("deleteCancel")}
             </Button>
             <Button
               size="sm"
@@ -262,7 +273,7 @@ export function PatientsTable({ rows }: { rows: PatientRow[] }) {
               onClick={() => setDeleteOpen(true)}
             >
               <Trash2 className="h-3.5 w-3.5" />
-              Supprimer
+              {t("deleteOne")}
             </Button>
           </div>
         </div>

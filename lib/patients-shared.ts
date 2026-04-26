@@ -48,6 +48,12 @@ export const STATUS_LABEL: Record<PatientStatus, string> = {
   lost: "Perdu",
 };
 
+export const STATUS_LABEL_EN: Record<PatientStatus, string> = {
+  prospect: "Prospect",
+  patient: "Won",
+  lost: "Lost",
+};
+
 export const EVENT_LABEL: Record<PatientEventKind, string> = {
   phone_call: "Appel entrant",
   appointment_scheduled: "RDV pris",
@@ -55,4 +61,13 @@ export const EVENT_LABEL: Record<PatientEventKind, string> = {
   trial_start: "Début d'essai",
   delivery: "Livraison",
   follow_up: "Rappel de suivi",
+};
+
+export const EVENT_LABEL_EN: Record<PatientEventKind, string> = {
+  phone_call: "Inbound call",
+  appointment_scheduled: "Appointment booked",
+  consultation: "Consultation",
+  trial_start: "Trial start",
+  delivery: "Delivery",
+  follow_up: "Follow-up call",
 };

@@ -1,6 +1,7 @@
 "use client";
 
 import { Play, Square, XOctagon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 
 function formatElapsed(ms: number): string {
@@ -29,6 +30,7 @@ export function ReplayHeader({
   onStop: () => void;
   onAbort: () => void;
 }) {
+  const t = useTranslations("replay");
   const playing = phase === "playing";
 
   return (
@@ -47,7 +49,7 @@ export function ReplayHeader({
           </span>
         </span>
         <span className="text-sm text-muted-foreground">
-          Replay · {patientLabel}
+          {t("header", { label: patientLabel })}
         </span>
       </div>
 
@@ -56,7 +58,7 @@ export function ReplayHeader({
           <>
             <Button size="sm" variant="outline" onClick={onAbort}>
               <XOctagon className="size-4" aria-hidden />
-              Abandonner
+              {t("abort")}
             </Button>
             <Button
               size="sm"
@@ -64,7 +66,7 @@ export function ReplayHeader({
               onClick={onStart}
             >
               <Play className="size-4" aria-hidden />
-              Démarrer le replay
+              {t("start")}
             </Button>
           </>
         )}
@@ -72,7 +74,7 @@ export function ReplayHeader({
           <>
             <Button size="sm" variant="outline" onClick={onAbort}>
               <XOctagon className="size-4" aria-hidden />
-              Abandonner
+              {t("abort")}
             </Button>
             <Button
               size="sm"
@@ -81,12 +83,12 @@ export function ReplayHeader({
               disabled={phase === "ended"}
             >
               <Square className="size-4" aria-hidden />
-              {phase === "ended" ? "Lecture terminée" : "Arrêter et analyser"}
+              {phase === "ended" ? t("ended") : t("stop")}
             </Button>
           </>
         )}
         {phase === "finalizing" && (
-          <span className="text-sm text-muted-foreground">Analyse en cours…</span>
+          <span className="text-sm text-muted-foreground">{t("finalizing")}</span>
         )}
       </div>
     </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import type { LiveLine } from "@/hooks/use-deepgram-live";
 import type { FrameworkKind } from "@/lib/frameworks";
 import { useLiveCoach } from "@/hooks/use-live-coach";
@@ -27,12 +28,25 @@ export function ReplayConsole({
   patientLabel: string;
 }) {
   const router = useRouter();
+  const tReplay = useTranslations("replay");
+  const tResults = useTranslations("results");
   const [phase, setPhase] = useState<ReplayPhase>("idle");
   const [elapsedMs, setElapsedMs] = useState(0);
   const rafRef = useRef<number | null>(null);
   const startPerfRef = useRef<number>(0);
   const baseElapsedRef = useRef<number>(0);
   const endThreshold = totalDurationMs + TAIL_BEFORE_END_MS;
+
+  const labels =
+    kind === "phone_call"
+      ? {
+          pro: tResults("phoneLabels.pro"),
+          patient: tResults("phoneLabels.patient"),
+        }
+      : {
+          pro: tResults("consultationLabels.pro"),
+          patient: tResults("consultationLabels.patient"),
+        };
 
   useEffect(() => {
     if (phase !== "playing") return;
@@ -109,7 +123,7 @@ export function ReplayConsole({
 
       {phase === "finalizing" && (
         <div className="rounded-md border border-border bg-surface-muted px-4 py-3 text-sm text-muted-foreground">
-          Finalisation de la session et lancement de l&apos;analyse…
+          {tReplay("uploadingMessage")}
         </div>
       )}
 
@@ -120,9 +134,9 @@ export function ReplayConsole({
             interim=""
             showSpeaker
             footerNote={null}
-            title="Transcription replay"
-            practitionerLabel={kind === "phone_call" ? "Standardiste" : "Pro"}
-            patientLabel={kind === "phone_call" ? "Appelant" : "Patient"}
+            title={tReplay("transcriptTitle")}
+            practitionerLabel={labels.pro}
+            patientLabel={labels.patient}
           />
         </div>
         <div className="col-span-6 min-w-0">

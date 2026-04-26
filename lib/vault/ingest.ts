@@ -519,8 +519,12 @@ function inferKind(path: string): string {
   return "pattern";
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function pickEntityId(kind: string, meta: VaultMetadata, ctx: SessionContext): string | null {
-  if (typeof meta.entity_id === "string" && meta.entity_id.length > 0) return meta.entity_id;
+  if (typeof meta.entity_id === "string" && UUID_RE.test(meta.entity_id)) {
+    return meta.entity_id;
+  }
   if (kind === "practitioner") return ctx.practitionerId;
   if (kind === "center") return ctx.centerId;
   if (kind === "patient") return ctx.patientId;
@@ -529,9 +533,14 @@ function pickEntityId(kind: string, meta: VaultMetadata, ctx: SessionContext): s
 }
 
 function enrichEntityId(meta: VaultMetadata, kind: string, ctx: SessionContext): void {
-  if (meta.entity_id) return;
+  const existing =
+    typeof meta.entity_id === "string" && UUID_RE.test(meta.entity_id)
+      ? meta.entity_id
+      : null;
+  if (existing) return;
   const id = pickEntityId(kind, meta, ctx);
   if (id) meta.entity_id = id;
+  else if (meta.entity_id) delete meta.entity_id;
 }
 
 function appendUnderHeading(content: string, heading: string, addition: string): string {

@@ -1,7 +1,7 @@
 import "server-only";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db/client";
-import { sessions } from "@/db/schema";
+import { patientEvents, sessions } from "@/db/schema";
 
 export type SessionKind = "consultation" | "phone_call";
 export type SessionStatus = "in_progress" | "completed" | "aborted";
@@ -40,10 +40,45 @@ export async function markSessionCompleted(
     durationSeconds: patch.durationSeconds,
   };
   if ("audioUrl" in patch) set.audioUrl = patch.audioUrl ?? null;
-  await db
+  const updated = await db
     .update(sessions)
     .set(set)
-    .where(and(eq(sessions.id, id), eq(sessions.status, "in_progress")));
+    .where(and(eq(sessions.id, id), eq(sessions.status, "in_progress")))
+    .returning({
+      id: sessions.id,
+      kind: sessions.kind,
+      patientId: sessions.patientId,
+      startedAt: sessions.startedAt,
+    });
+  const row = updated[0];
+  if (!row || !row.patientId) return;
+  if (row.kind !== "consultation" && row.kind !== "phone_call") return;
+  await ensurePatientEventForSession({
+    sessionId: row.id,
+    kind: row.kind,
+    patientId: row.patientId,
+    occurredAt: row.startedAt ?? new Date(),
+  });
+}
+
+async function ensurePatientEventForSession(input: {
+  sessionId: string;
+  kind: SessionKind;
+  patientId: string;
+  occurredAt: Date;
+}): Promise<void> {
+  const existing = await db
+    .select({ id: patientEvents.id })
+    .from(patientEvents)
+    .where(eq(patientEvents.sessionId, input.sessionId))
+    .limit(1);
+  if (existing.length > 0) return;
+  await db.insert(patientEvents).values({
+    patientId: input.patientId,
+    kind: input.kind,
+    sessionId: input.sessionId,
+    occurredAt: input.occurredAt,
+  });
 }
 
 export async function markSessionAborted(id: string): Promise<void> {

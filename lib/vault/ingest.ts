@@ -292,8 +292,8 @@ OPÉRATIONS :
 
 PATCHES OBLIGATOIRES À PRODUIRE :
 1. **Fiche session** (path: sessions/<sessionShort>.md, kind='session', operation='create') — toujours.
-2. **Si une fiche audioprothésiste existe pour cet audioprothésiste** : tu DOIS l'enrichir avec operation='replace' (ou 'append_section' si tu ajoutes une seule section). Met à jour le frontmatter (sessions_analyzed +1, avg_score recalculé, updated_at). Ajoute la session dans "## Sessions récentes". Ajuste "## Forces récurrentes" et "## Points d'amélioration" en fonction des insights de cette session.
-3. **Si la session a un patient lié et que sa fiche existe** : tu DOIS l'enrichir aussi (souvent operation='append_section' sur "## Timeline").
+2. **Fiche audioprothésiste** : si l'audioprothésiste est renseigné, tu DOIS produire un patch sur sa fiche. Si elle existe (operation='replace' ou 'append_section'), met à jour le frontmatter (sessions_analyzed +1, avg_score recalculé, updated_at), ajoute la session dans "## Sessions récentes", ajuste "## Forces récurrentes" et "## Points d'amélioration". Si elle n'existe pas (operation='create'), crée-la avec frontmatter (type='practitioner', sessions_analyzed=1, avg_score=score global, trend='stable', updated_at) et un squelette markdown (synthèse courte, sections "## Forces récurrentes", "## Points d'amélioration", "## Sessions récentes" avec un lien [[session-<sessionShort>]]).
+3. **Fiche patient** : si la session a un patient lié, tu DOIS produire un patch sur sa fiche. Si elle existe (operation='replace' ou 'append_section' sur "## Timeline"), enrichis-la avec cette session. **Si elle n'existe pas, crée-la (operation='create') avec frontmatter (type='patient', entity_id, updated_at) et un squelette markdown : titre du patient, courte synthèse contextuelle, "## Timeline" listant la session courante (date, kind, score, insight clé, lien [[session-<sessionShort>]]), "## Profil & contexte" si des éléments ressortent du transcript ou des insights.** Ne jamais sauter ce patch quand un patient est lié.
 4. **Si tu détectes un pattern récurrent** ou **si une fiche pattern existante est concernée par les insights** : crée la fiche pattern (kind='pattern') ou ajoute à la section "## Sessions où ce pattern a été détecté".
 
 Au TOTAL : minimum 2 patches, idéalement 3-5.`;
@@ -344,7 +344,7 @@ FICHES VAULT EXISTANTES À ENRICHIR (peuvent être vides si rien n'existe encore
 
 ${existingPagesBlock}
 
-Mets à jour le vault en appelant l'outil emit_vault_updates. Au minimum produit la fiche session (path: sessions/${ctx.sessionShort}.md). Si l'audioprothésiste est lié, mets à jour ou crée sa fiche. Si pertinent, propose une fiche pattern.`;
+Mets à jour le vault en appelant l'outil emit_vault_updates. Au minimum produit la fiche session (path: sessions/${ctx.sessionShort}.md)${ctx.patientSlug ? ` ET la fiche patient (path: patients/${ctx.patientSlug}.md — créer si absente, enrichir si existante)` : ""}${ctx.practitionerSlug ? `. Crée ou mets à jour la fiche audioprothésiste (path: practitioners/${ctx.practitionerSlug}.md)` : ""}. Si pertinent, propose une fiche pattern.`;
 
   const response = await anthropic.messages.create({
     model: CLAUDE_MODELS.sonnet,

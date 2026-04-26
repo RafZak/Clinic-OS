@@ -10,6 +10,7 @@ import {
   NotebookPen,
   Sparkles,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScoreRadar, type RadarPoint } from "@/components/results/score-radar";
 import { ArtifactsPanel } from "@/components/results/artifacts-panel";
@@ -18,13 +19,6 @@ import { formatTimestampMs } from "@/lib/format";
 import type { ResultsBundle, InsightCitation } from "@/lib/types/analysis";
 
 type Bundle = ResultsBundle;
-
-const INSIGHT_TYPE_LABEL: Record<string, string> = {
-  missed_objection: "Objection non traitée",
-  upsell_missed: "Montée en gamme manquée",
-  good_practice: "Bonne pratique",
-  improvement: "Axe d'amélioration",
-};
 
 const INSIGHT_ICON: Record<string, typeof AlertTriangle> = {
   missed_objection: AlertTriangle,
@@ -75,10 +69,15 @@ const SEVERITY_ORDER: Record<string, number> = {
 };
 
 export function ResultsView({ bundle }: { bundle: Bundle }) {
+  const t = useTranslations("results");
   const { session, lines, scores, insights } = bundle;
   const isPhoneCall = session.kind === "phone_call";
-  const proLabel = isPhoneCall ? "Standardiste" : "Pro";
-  const patientLabel = isPhoneCall ? "Appelant" : "Patient";
+  const proLabel = isPhoneCall
+    ? t("phoneLabels.pro")
+    : t("consultationLabels.pro");
+  const patientLabel = isPhoneCall
+    ? t("phoneLabels.patient")
+    : t("consultationLabels.patient");
 
   const radarPoints: RadarPoint[] = useMemo(
     () =>
@@ -143,18 +142,20 @@ export function ResultsView({ bundle }: { bundle: Bundle }) {
   return (
     <Tabs defaultValue="overview" className="w-full">
       <TabsList className="flex w-full justify-start gap-1 bg-surface-muted">
-        <TabsTrigger value="overview">Vue d&apos;ensemble</TabsTrigger>
-        <TabsTrigger value="transcript">Transcription</TabsTrigger>
-        <TabsTrigger value="coaching">Coaching ({insights.length})</TabsTrigger>
-        <TabsTrigger value="artifacts">Livrables</TabsTrigger>
-        <TabsTrigger value="memory">Mémoire</TabsTrigger>
+        <TabsTrigger value="overview">{t("tabs.overview")}</TabsTrigger>
+        <TabsTrigger value="transcript">{t("tabs.transcript")}</TabsTrigger>
+        <TabsTrigger value="coaching">
+          {t("tabs.coaching", { count: insights.length })}
+        </TabsTrigger>
+        <TabsTrigger value="artifacts">{t("tabs.deliverables")}</TabsTrigger>
+        <TabsTrigger value="memory">{t("tabs.memory")}</TabsTrigger>
       </TabsList>
 
       <TabsContent value="overview">
         <div className="grid gap-6 lg:grid-cols-5">
           <div className="rounded-lg border border-border bg-surface px-5 py-5 lg:col-span-3">
             <h3 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-              Scoring par étape
+              {t("radarTitle")}
             </h3>
             <ScoreRadar points={radarPoints} />
             {session.summary && (
@@ -166,10 +167,10 @@ export function ResultsView({ bundle }: { bundle: Bundle }) {
 
           <div className="flex flex-col gap-3 lg:col-span-2">
             <h3 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-              Insights majeurs
+              {t("insightsTitle")}
             </h3>
             {topInsights.length === 0 && (
-              <p className="text-sm text-muted-foreground">Aucun insight détecté.</p>
+              <p className="text-sm text-muted-foreground">{t("noInsights")}</p>
             )}
             {topInsights.map((i) => (
               <InsightCard key={i.id} insight={i} />
@@ -182,17 +183,17 @@ export function ResultsView({ bundle }: { bundle: Bundle }) {
         <div className="rounded-lg border border-border bg-surface px-5 py-5">
           <div className="flex items-center justify-between gap-3">
             <h3 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-              Transcription ({lines.length} lignes)
+              {t("transcriptHeader", { count: lines.length })}
             </h3>
             {insights.length > 0 && (
               <span className="text-xs text-muted-foreground">
-                {insights.length} annotation{insights.length > 1 ? "s" : ""} IA en marge
+                {t("annotations", { count: insights.length })}
               </span>
             )}
           </div>
           <div className="mt-4 flex max-h-[600px] flex-col gap-3 overflow-y-auto pr-2">
             {lines.length === 0 && (
-              <p className="text-sm text-muted-foreground">Aucune transcription disponible.</p>
+              <p className="text-sm text-muted-foreground">{t("noTranscript")}</p>
             )}
             {lines.map((l) => {
               const lineAnnotations = annotations.byLineId.get(l.id) ?? [];
@@ -226,7 +227,7 @@ export function ResultsView({ bundle }: { bundle: Bundle }) {
           {annotations.unattached.length > 0 && (
             <div className="mt-6 border-t border-border pt-4">
               <h4 className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                Annotations générales (non rattachées à un moment précis)
+                {t("annotationsUnattached")}
               </h4>
               <div className="mt-2 flex flex-col gap-1.5">
                 {annotations.unattached.map((a) => (
@@ -242,7 +243,7 @@ export function ResultsView({ bundle }: { bundle: Bundle }) {
         <div className="flex flex-col gap-3">
           {sortedInsights.length === 0 && (
             <p className="rounded-lg border border-border bg-surface px-5 py-8 text-center text-sm text-muted-foreground">
-              Aucun insight détecté.
+              {t("noInsights")}
             </p>
           )}
           {sortedInsights.map((i) => (
@@ -273,8 +274,16 @@ function InsightCard({
   insight: Bundle["insights"][number];
   detailed?: boolean;
 }) {
+  const t = useTranslations("results");
   const Icon = INSIGHT_ICON[insight.type] ?? Sparkles;
-  const typeLabel = INSIGHT_TYPE_LABEL[insight.type] ?? insight.type;
+  const typeLabel =
+    (() => {
+      try {
+        return t(`insightTypes.${insight.type}` as `insightTypes.${"missed_objection" | "upsell_missed" | "good_practice" | "improvement"}`);
+      } catch {
+        return insight.type;
+      }
+    })();
   const tone = INSIGHT_TONE[insight.type] ?? NEUTRAL_TONE;
 
   return (
@@ -288,7 +297,7 @@ function InsightCard({
             </span>
             {insight.relatedStep && (
               <span className="text-[10px] text-muted-foreground">
-                · Étape {insight.relatedStep}
+                · {t("step", { number: insight.relatedStep })}
               </span>
             )}
           </div>
@@ -319,10 +328,11 @@ function citationHref(c: InsightCitation): string | null {
 }
 
 function Citations({ citations }: { citations: InsightCitation[] }) {
+  const t = useTranslations("results");
   return (
     <div className="mt-3 border-t border-border/60 pt-2">
       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-        Sources formation
+        {t("trainingSources")}
       </p>
       <ul className="mt-1 flex flex-col gap-1">
         {citations.map((c) => {
@@ -364,8 +374,16 @@ function InlineAnnotation({
 }: {
   insight: Bundle["insights"][number];
 }) {
+  const t = useTranslations("results");
   const Icon = INSIGHT_ICON[insight.type] ?? Sparkles;
-  const typeLabel = INSIGHT_TYPE_LABEL[insight.type] ?? insight.type;
+  const typeLabel =
+    (() => {
+      try {
+        return t(`insightTypes.${insight.type}` as `insightTypes.${"missed_objection" | "upsell_missed" | "good_practice" | "improvement"}`);
+      } catch {
+        return insight.type;
+      }
+    })();
   const tone = INSIGHT_TONE[insight.type] ?? NEUTRAL_TONE;
 
   return (
@@ -383,6 +401,8 @@ function InlineAnnotation({
 }
 
 function MemoryPanel({ bundle }: { bundle: Bundle }) {
+  const t = useTranslations("results.memory");
+  const tNav = useTranslations("nav");
   const recentlyUpdated = (link: { updatedAt: Date | null } | null) => {
     if (!link?.updatedAt) return false;
     const ageMs = Date.now() - new Date(link.updatedAt).getTime();
@@ -395,33 +415,33 @@ function MemoryPanel({ bundle }: { bundle: Bundle }) {
         <div className="flex items-start gap-3">
           <NotebookPen className="mt-0.5 size-5 text-brand" aria-hidden />
           <div>
-            <h3 className="text-sm font-medium text-ink">Mémoire</h3>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Cette session a enrichi automatiquement la mémoire — patterns détectés,
-              forces, axes d&apos;amélioration. Le réseau apprend collectivement.
-            </p>
+            <h3 className="text-sm font-medium text-ink">{t("title")}</h3>
+            <p className="mt-1 text-xs text-muted-foreground">{t("description")}</p>
           </div>
         </div>
       </div>
 
       <div className="grid gap-3 lg:grid-cols-2">
         <VaultLinkCard
-          title="Fiche audioprothésiste"
-          description="Synthèse, forces récurrentes, axes d'amélioration et sessions récentes."
+          title={t("practitionerCardTitle")}
+          description={t("practitionerCardDescription")}
           link={bundle.practitionerVault}
           recent={recentlyUpdated(bundle.practitionerVault)}
         />
         <VaultLinkCard
-          title="Fiche session"
-          description="Snapshot complet de cette consultation, traçable et auditable."
+          title={t("sessionCardTitle")}
+          description={t("sessionCardDescription")}
           link={bundle.sessionVault}
           recent={recentlyUpdated(bundle.sessionVault)}
         />
       </div>
 
       <div className="rounded-lg border border-dashed border-border bg-surface-muted px-5 py-3 text-xs text-muted-foreground">
-        Toute la mémoire est consultable dans <a href="/admin/vault" className="text-brand hover:underline">la section Mémoire</a>{" "}
-        — vue graph et export complet pour audit.
+        {t("fullVault")}{" "}
+        <a href="/admin/vault" className="text-brand hover:underline">
+          {tNav("memory")}
+        </a>
+        .
       </div>
     </div>
   );
@@ -438,13 +458,14 @@ function VaultLinkCard({
   link: { path: string; title: string; updatedAt: Date | null } | null;
   recent: boolean;
 }) {
+  const t = useTranslations("results.memory");
   if (!link) {
     return (
       <div className="rounded-lg border border-dashed border-border bg-surface-muted px-4 py-4">
         <h4 className="text-sm font-medium text-ink">{title}</h4>
         <p className="mt-1 text-xs text-muted-foreground">{description}</p>
         <p className="mt-3 text-xs italic text-muted-foreground">
-          Génération en cours — la fiche sera créée quelques secondes après l&apos;analyse.
+          {t("comingSoon")}
         </p>
       </div>
     );
@@ -459,7 +480,7 @@ function VaultLinkCard({
         <h4 className="text-sm font-semibold text-ink">{title}</h4>
         {recent && (
           <span className="rounded-full bg-brand/10 px-2 py-0.5 text-[10px] font-medium text-brand">
-            Mis à jour à l&apos;instant
+            {t("justUpdated")}
           </span>
         )}
       </div>
@@ -470,4 +491,3 @@ function VaultLinkCard({
     </a>
   );
 }
-

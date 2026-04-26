@@ -15,6 +15,7 @@ import {
   Sparkles,
   Stethoscope,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -25,36 +26,14 @@ import type { ArtifactRow, ArtifactType } from "@/lib/types/analysis";
 
 type ArtifactDef = {
   type: ArtifactType;
-  title: string;
-  destination: string;
   icon: typeof FileText;
 };
 
 const ARTIFACT_DEFS: ArtifactDef[] = [
-  {
-    type: "clinical_notes",
-    title: "Notes cliniques",
-    destination: "Cosium / Otoaccess",
-    icon: Stethoscope,
-  },
-  {
-    type: "patient_email",
-    title: "Email patient",
-    destination: "Outlook / Gmail",
-    icon: Mail,
-  },
-  {
-    type: "patient_sms",
-    title: "SMS patient",
-    destination: "SMS Gateway",
-    icon: MessageSquare,
-  },
-  {
-    type: "orl_letter",
-    title: "Courrier ORL",
-    destination: "Courrier médical",
-    icon: FileText,
-  },
+  { type: "clinical_notes", icon: Stethoscope },
+  { type: "patient_email", icon: Mail },
+  { type: "patient_sms", icon: MessageSquare },
+  { type: "orl_letter", icon: FileText },
 ];
 
 export function ArtifactsPanel({
@@ -66,13 +45,12 @@ export function ArtifactsPanel({
   artifacts: ArtifactRow[];
   analysisDone: boolean;
 }) {
+  const t = useTranslations("artifacts");
   const router = useRouter();
   const byType = useMemo(() => new Map(artifacts.map((a) => [a.type, a])), [artifacts]);
   const okCount = artifacts.length;
   const allReady = okCount === ARTIFACT_DEFS.length;
 
-  // Polling client si l'analyse est done mais les artefacts manquent encore.
-  // Toutes les 3 s pendant max 90 s puis on lâche.
   useEffect(() => {
     if (!analysisDone) return;
     if (allReady) return;
@@ -92,12 +70,9 @@ export function ArtifactsPanel({
     return (
       <div className="rounded-lg border border-dashed border-border bg-surface-muted px-6 py-10 text-center">
         <Sparkles className="mx-auto size-5 text-muted-foreground" aria-hidden />
-        <h3 className="mt-3 text-sm font-medium text-ink">
-          Livrables disponibles à la fin de l&apos;analyse
-        </h3>
+        <h3 className="mt-3 text-sm font-medium text-ink">{t("preparingTitle")}</h3>
         <p className="mx-auto mt-1 max-w-md text-xs text-muted-foreground">
-          Les 4 livrables (notes cliniques, email, SMS, courrier ORL) seront générés
-          automatiquement dès que l&apos;analyse de la session sera terminée.
+          {t("preparingDescription")}
         </p>
       </div>
     );
@@ -108,12 +83,12 @@ export function ArtifactsPanel({
       <div className="flex items-center justify-between gap-3">
         <div>
           <h3 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-            Livrables post-consultation
+            {t("title")}
           </h3>
           <p className="mt-1 text-xs text-muted-foreground">
             {allReady
-              ? "Tous prêts à envoyer. Ce bouton lance une nouvelle génération."
-              : `Génération en cours · ${okCount}/${ARTIFACT_DEFS.length} prêts.`}
+              ? t("subtitleAllReady")
+              : t("subtitleProgress", { ok: okCount, total: ARTIFACT_DEFS.length })}
           </p>
         </div>
         <Button
@@ -132,7 +107,7 @@ export function ArtifactsPanel({
           ) : (
             <RefreshCw className="size-4" aria-hidden />
           )}
-          Tout régénérer
+          {t("regenerateAll")}
         </Button>
       </div>
 
@@ -159,6 +134,7 @@ function ArtifactCard({
   def: ArtifactDef;
   artifact: ArtifactRow | null;
 }) {
+  const t = useTranslations("artifacts");
   const Icon = def.icon;
   const router = useRouter();
   const [isRegenerating, startRegenerate] = useTransition();
@@ -166,7 +142,7 @@ function ArtifactCard({
 
   const onCopy = async () => {
     if (!artifact) return;
-    const plain = artifactToPlainText(artifact);
+    const plain = artifactToPlainText(artifact, t("subjectPrefix"));
     try {
       await navigator.clipboard.writeText(plain);
       setCopied(true);
@@ -188,9 +164,9 @@ function ArtifactCard({
         <div className="flex items-center gap-2">
           <Icon className="size-4 text-brand" aria-hidden />
           <div>
-            <h4 className="text-sm font-semibold text-ink">{def.title}</h4>
+            <h4 className="text-sm font-semibold text-ink">{t(def.type)}</h4>
             <p className="text-[11px] text-muted-foreground">
-              Prêt à envoyer vers {def.destination}
+              {t("destination", { destination: t(`destinations.${def.type}`) })}
             </p>
           </div>
         </div>
@@ -207,7 +183,7 @@ function ArtifactCard({
             ) : (
               <Copy className="size-3.5" aria-hidden />
             )}
-            {copied ? "Copié" : "Copier"}
+            {copied ? t("copied") : t("copy")}
           </Button>
           <Button
             variant="ghost"
@@ -221,7 +197,7 @@ function ArtifactCard({
             ) : (
               <RefreshCw className="size-3.5" aria-hidden />
             )}
-            Régénérer
+            {t("regenerate")}
           </Button>
         </div>
       </div>
@@ -238,11 +214,12 @@ function ArtifactCard({
 }
 
 function ArtifactSkeleton() {
+  const t = useTranslations("artifacts");
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <Loader2 className="size-3.5 animate-spin" aria-hidden />
-        Génération en cours…
+        {t("generating")}
       </div>
       <div className="h-2 w-3/4 animate-pulse rounded bg-surface-muted" />
       <div className="h-2 w-2/3 animate-pulse rounded bg-surface-muted" />
@@ -252,13 +229,16 @@ function ArtifactSkeleton() {
 }
 
 function ArtifactContent({ type, content }: { type: ArtifactType; content: string }) {
+  const t = useTranslations("artifacts");
   if (type === "patient_email") {
     return <EmailRenderer content={content} />;
   }
   if (type === "patient_sms") {
     return (
       <div className="flex flex-col gap-1">
-        <p className="text-xs text-muted-foreground">{content.length} caractères</p>
+        <p className="text-xs text-muted-foreground">
+          {t("smsCharacters", { count: content.length })}
+        </p>
         <p className="text-sm text-ink">{content}</p>
       </div>
     );
@@ -280,6 +260,7 @@ function ArtifactContent({ type, content }: { type: ArtifactType; content: strin
 }
 
 function EmailRenderer({ content }: { content: string }) {
+  const t = useTranslations("artifacts");
   const parsed = useMemo<{ subject: string; bodyMd: string } | null>(() => {
     try {
       const obj = JSON.parse(content) as { subject?: string; body_html?: string };
@@ -291,13 +272,15 @@ function EmailRenderer({ content }: { content: string }) {
   }, [content]);
 
   if (!parsed) {
-    return <p className="text-xs text-muted-foreground">Format email invalide.</p>;
+    return <p className="text-xs text-muted-foreground">{t("emailInvalid")}</p>;
   }
 
   return (
     <div className="flex flex-col gap-2">
       <div>
-        <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Objet</span>
+        <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          {t("subjectLabel")}
+        </span>
         <p className="text-sm font-medium text-ink">{parsed.subject}</p>
       </div>
       <div className="border-t border-border/60 pt-2">
@@ -316,9 +299,6 @@ function EmailRenderer({ content }: { content: string }) {
   );
 }
 
-// Conversion HTML simple → markdown : Claude est instruit de n'utiliser que
-// <p> <br/> <strong> <em> <ul> <ol> <li> <a>. On évite dangerouslySetInnerHTML
-// en passant par ReactMarkdown sur la version markdown rebuilt.
 function htmlToMarkdown(html: string): string {
   let md = html;
   md = md.replace(/<br\s*\/?>/gi, "\n");
@@ -329,9 +309,7 @@ function htmlToMarkdown(html: string): string {
   md = md.replace(/<\/?ul[^>]*>/gi, "\n");
   md = md.replace(/<\/?ol[^>]*>/gi, "\n");
   md = md.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, "- $1\n");
-  // Strip tout autre tag résiduel
   md = md.replace(/<[^>]+>/g, "");
-  // Decode entités basiques
   md = md
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
@@ -342,13 +320,13 @@ function htmlToMarkdown(html: string): string {
   return md.trim().replace(/\n{3,}/g, "\n\n");
 }
 
-function artifactToPlainText(artifact: ArtifactRow): string {
+function artifactToPlainText(artifact: ArtifactRow, subjectPrefix: string): string {
   if (artifact.type === "patient_email") {
     try {
       const obj = JSON.parse(artifact.content) as { subject?: string; body_html?: string };
       const subject = obj.subject ?? "";
       const body = htmlToMarkdown(obj.body_html ?? "");
-      return `Objet : ${subject}\n\n${body}`;
+      return `${subjectPrefix}${subject}\n\n${body}`;
     } catch {
       return artifact.content;
     }

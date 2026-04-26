@@ -200,8 +200,8 @@
     "backPatient": "Patient journey",
     "tabs": {
       "overview": "Overview",
-      "transcription": "Transcript",
-      "coaching": "Coaching",
+      "transcript": "Transcript",
+      "coaching": "Coaching ({count})",
       "deliverables": "Deliverables",
       "memory": "Memory"
     },
@@ -211,10 +211,33 @@
     "sessionFallback": "Session {short}…",
     "frameworkDuration": "{framework} · duration {duration}",
     "opportunities": "+{amount} opportunities detected",
-    "radarTitle": "Per-step performance",
+    "radarTitle": "Per-step scoring",
     "insightsTitle": "Key insights",
-    "noInsights": "No insight for this session.",
+    "noInsights": "No insight detected.",
     "noScores": "No score available.",
+    "transcriptHeader": "Transcript ({count} lines)",
+    "annotations": "{count, plural, one {# AI annotation} other {# AI annotations}}",
+    "noTranscript": "No transcript available.",
+    "annotationsUnattached": "General annotations (not tied to a specific moment)",
+    "insightTypes": {
+      "missed_objection": "Unaddressed objection",
+      "upsell_missed": "Upsell missed",
+      "good_practice": "Good practice",
+      "improvement": "Improvement area"
+    },
+    "step": "Step {number}",
+    "trainingSources": "Training sources",
+    "memory": {
+      "title": "Memory",
+      "description": "This session automatically enriched the memory — detected patterns, strengths, improvement areas. The network learns collectively.",
+      "practitionerCardTitle": "Audiologist entry",
+      "practitionerCardDescription": "Synthesis, recurring strengths, improvement areas and recent sessions.",
+      "sessionCardTitle": "Session entry",
+      "sessionCardDescription": "Full snapshot of this consultation, traceable and auditable.",
+      "comingSoon": "Generating — the entry will be created a few seconds after analysis.",
+      "justUpdated": "Just updated",
+      "fullVault": "The full memory is available in"
+    },
     "consultationLabels": {
       "pro": "Practitioner",
       "patient": "Patient"
@@ -233,8 +256,19 @@
     }
   },
   "artifacts": {
-    "title": "Deliverables ready to send",
-    "subtitle": "Clinical notes, patient email, SMS and ENT specialist letter — generated from this session.",
+    "title": "Post-session deliverables",
+    "subtitleAllReady": "All ready to send. This button triggers a new generation.",
+    "subtitleProgress": "Generating · {ok}/{total} ready.",
+    "regenerateAll": "Regenerate all",
+    "preparingTitle": "Deliverables available once analysis completes",
+    "preparingDescription": "The 4 deliverables (clinical notes, email, SMS, ENT specialist letter) will be generated automatically once the session analysis is done.",
+    "destination": "Ready to send to {destination}",
+    "destinations": {
+      "clinical_notes": "Cosium / Otoaccess",
+      "patient_email": "Outlook / Gmail",
+      "patient_sms": "SMS Gateway",
+      "orl_letter": "Medical correspondence"
+    },
     "clinical_notes": "Clinical notes",
     "patient_email": "Patient email",
     "patient_sms": "Patient SMS",
@@ -242,26 +276,27 @@
     "copy": "Copy",
     "copied": "Copied",
     "regenerate": "Regenerate",
-    "regenerating": "Regenerating…",
-    "viewSource": "View source",
-    "preparing": "Preparing deliverable…",
-    "failed": "Generation failed",
+    "generating": "Generating…",
     "subjectLabel": "Subject",
-    "smsLength": "{count}/140 characters"
+    "subjectPrefix": "Subject: ",
+    "smsCharacters": "{count} characters",
+    "emailInvalid": "Invalid email format."
   },
   "analysisLoading": {
     "title": "Analysis in progress",
-    "subtitle": "Claude is reviewing the session and preparing the deliverables.",
-    "preparingTranscript": "Preparing transcript…",
-    "analyzing": "AI analysis in progress…",
-    "almostDone": "Almost done…",
-    "elapsed": "{seconds}s elapsed"
+    "elapsed": "Elapsed: {seconds}s · estimated 20-40s total",
+    "stepPreparation": "Preparing analysis",
+    "stepDiarization": "Speaker re-attribution",
+    "stepAnalysis": "AI analysis of the session",
+    "stepResults": "Results ready",
+    "autoReload": "The page will reload automatically when analysis is ready."
   },
   "analysisFailed": {
     "title": "Analysis failed",
-    "description": "An error occurred during analysis. You can re-run the analysis.",
+    "description": "The audio and transcript are still stored. You can retry the analysis without losing any data.",
     "retry": "Retry analysis",
-    "errorLabel": "Technical details"
+    "retried": "Analysis re-launched…",
+    "sending": "Sending…"
   },
   "live": {
     "transcriptTitle": "Live transcript",

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, CheckCircle2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 type Status =
@@ -13,11 +14,11 @@ type Status =
   | "done"
   | "failed";
 
-const STEPS: { key: Status[]; label: string }[] = [
-  { key: ["pending"], label: "Préparation de l'analyse" },
-  { key: ["transcribing"], label: "Ré-attribution des voix" },
-  { key: ["transcribed", "analyzing"], label: "Analyse de la consultation par l'IA" },
-  { key: ["done"], label: "Résultats prêts" },
+const STEP_KEYS: { key: Status[]; labelKey: string }[] = [
+  { key: ["pending"], labelKey: "stepPreparation" },
+  { key: ["transcribing"], labelKey: "stepDiarization" },
+  { key: ["transcribed", "analyzing"], labelKey: "stepAnalysis" },
+  { key: ["done"], labelKey: "stepResults" },
 ];
 
 export function AnalysisLoading({
@@ -27,6 +28,7 @@ export function AnalysisLoading({
   sessionId: string;
   initialStatus: Status;
 }) {
+  const t = useTranslations("analysisLoading");
   const router = useRouter();
   const [status, setStatus] = useState<Status>(initialStatus);
   const [elapsed, setElapsed] = useState(0);
@@ -66,7 +68,7 @@ export function AnalysisLoading({
     };
   }, [sessionId, router]);
 
-  const currentIdx = STEPS.findIndex((s) => s.key.includes(status));
+  const currentIdx = STEP_KEYS.findIndex((s) => s.key.includes(status));
   const elapsedSec = Math.floor(elapsed / 1000);
 
   return (
@@ -74,20 +76,20 @@ export function AnalysisLoading({
       <div className="flex items-center gap-3">
         <Loader2 className="size-5 animate-spin text-brand" aria-hidden />
         <div>
-          <h2 className="text-lg font-semibold text-ink">Analyse en cours</h2>
+          <h2 className="text-lg font-semibold text-ink">{t("title")}</h2>
           <p className="text-sm text-muted-foreground">
-            Durée écoulée : {elapsedSec}s · estimation 20-40s au total
+            {t("elapsed", { seconds: elapsedSec })}
           </p>
         </div>
       </div>
 
       <ol className="mt-6 space-y-3">
-        {STEPS.map((step, idx) => {
+        {STEP_KEYS.map((step, idx) => {
           const state =
             idx < currentIdx ? "done" : idx === currentIdx ? "active" : "pending";
           return (
             <li
-              key={step.label}
+              key={step.labelKey}
               className={cn(
                 "flex items-center gap-3 rounded-md border px-4 py-3 text-sm",
                 state === "done" && "border-border bg-light/40 text-ink",
@@ -106,15 +108,13 @@ export function AnalysisLoading({
                   <span className="size-2 rounded-full bg-border" />
                 )}
               </span>
-              <span>{step.label}</span>
+              <span>{t(step.labelKey as "stepPreparation" | "stepDiarization" | "stepAnalysis" | "stepResults")}</span>
             </li>
           );
         })}
       </ol>
 
-      <p className="mt-6 text-xs text-muted-foreground">
-        La page se rechargera automatiquement quand l&apos;analyse sera prête.
-      </p>
+      <p className="mt-6 text-xs text-muted-foreground">{t("autoReload")}</p>
     </div>
   );
 }

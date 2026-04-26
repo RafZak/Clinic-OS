@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, RefreshCw } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { retryAnalysis } from "@/app/actions/sessions";
 
@@ -13,6 +14,7 @@ export function AnalysisFailed({
   sessionId: string;
   error: string | null;
 }) {
+  const t = useTranslations("analysisFailed");
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [retried, setRetried] = useState(false);
@@ -21,7 +23,6 @@ export function AnalysisFailed({
     startTransition(async () => {
       await retryAnalysis(sessionId);
       setRetried(true);
-      // laisse 1 s à l'action pour que la DB flip le status avant refresh
       setTimeout(() => router.refresh(), 1200);
     });
   };
@@ -31,11 +32,8 @@ export function AnalysisFailed({
       <div className="flex items-start gap-3">
         <AlertTriangle className="mt-0.5 size-5 text-destructive" aria-hidden />
         <div className="flex-1">
-          <h2 className="text-lg font-semibold text-ink">L&apos;analyse a échoué</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            L&apos;audio et la transcription restent stockés. Vous pouvez relancer
-            l&apos;analyse sans perdre de données.
-          </p>
+          <h2 className="text-lg font-semibold text-ink">{t("title")}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t("description")}</p>
           {error && (
             <pre className="mt-3 whitespace-pre-wrap rounded-md border border-destructive/20 bg-white/60 px-3 py-2 font-mono text-xs text-destructive">
               {error}
@@ -44,7 +42,7 @@ export function AnalysisFailed({
           <div className="mt-4">
             <Button onClick={onRetry} disabled={pending || retried} size="sm">
               <RefreshCw className="mr-2 size-4" aria-hidden />
-              {retried ? "Analyse relancée…" : pending ? "Envoi…" : "Relancer l'analyse"}
+              {retried ? t("retried") : pending ? t("sending") : t("retry")}
             </Button>
           </div>
         </div>

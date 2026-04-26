@@ -200,8 +200,8 @@
     "backPatient": "Parcours patient",
     "tabs": {
       "overview": "Vue d'ensemble",
-      "transcription": "Transcription",
-      "coaching": "Coaching",
+      "transcript": "Transcription",
+      "coaching": "Coaching ({count})",
       "deliverables": "Livrables",
       "memory": "Mémoire"
     },
@@ -211,10 +211,33 @@
     "sessionFallback": "Session {short}…",
     "frameworkDuration": "{framework} · durée {duration}",
     "opportunities": "+{amount} opportunités détectées",
-    "radarTitle": "Performance par étape",
+    "radarTitle": "Scoring par étape",
     "insightsTitle": "Insights majeurs",
-    "noInsights": "Aucun insight pour cette session.",
+    "noInsights": "Aucun insight détecté.",
     "noScores": "Aucun score disponible.",
+    "transcriptHeader": "Transcription ({count} lignes)",
+    "annotations": "{count, plural, one {# annotation IA en marge} other {# annotations IA en marge}}",
+    "noTranscript": "Aucune transcription disponible.",
+    "annotationsUnattached": "Annotations générales (non rattachées à un moment précis)",
+    "insightTypes": {
+      "missed_objection": "Objection non traitée",
+      "upsell_missed": "Montée en gamme manquée",
+      "good_practice": "Bonne pratique",
+      "improvement": "Axe d'amélioration"
+    },
+    "step": "Étape {number}",
+    "trainingSources": "Sources formation",
+    "memory": {
+      "title": "Mémoire",
+      "description": "Cette session a enrichi automatiquement la mémoire — patterns détectés, forces, axes d'amélioration. Le réseau apprend collectivement.",
+      "practitionerCardTitle": "Fiche audioprothésiste",
+      "practitionerCardDescription": "Synthèse, forces récurrentes, axes d'amélioration et sessions récentes.",
+      "sessionCardTitle": "Fiche session",
+      "sessionCardDescription": "Snapshot complet de cette consultation, traçable et auditable.",
+      "comingSoon": "Génération en cours — la fiche sera créée quelques secondes après l'analyse.",
+      "justUpdated": "Mis à jour à l'instant",
+      "fullVault": "Toute la mémoire est consultable dans"
+    },
     "consultationLabels": {
       "pro": "Pro",
       "patient": "Patient"
@@ -233,8 +256,19 @@
     }
   },
   "artifacts": {
-    "title": "Livrables prêts à envoyer",
-    "subtitle": "Notes cliniques, email patient, SMS et courrier ORL — générés à partir de la session.",
+    "title": "Livrables post-consultation",
+    "subtitleAllReady": "Tous prêts à envoyer. Ce bouton lance une nouvelle génération.",
+    "subtitleProgress": "Génération en cours · {ok}/{total} prêts.",
+    "regenerateAll": "Tout régénérer",
+    "preparingTitle": "Livrables disponibles à la fin de l'analyse",
+    "preparingDescription": "Les 4 livrables (notes cliniques, email, SMS, courrier ORL) seront générés automatiquement dès que l'analyse de la session sera terminée.",
+    "destination": "Prêt à envoyer vers {destination}",
+    "destinations": {
+      "clinical_notes": "Cosium / Otoaccess",
+      "patient_email": "Outlook / Gmail",
+      "patient_sms": "SMS Gateway",
+      "orl_letter": "Courrier médical"
+    },
     "clinical_notes": "Notes cliniques",
     "patient_email": "Email patient",
     "patient_sms": "SMS patient",
@@ -242,26 +276,27 @@
     "copy": "Copier",
     "copied": "Copié",
     "regenerate": "Régénérer",
-    "regenerating": "Régénération…",
-    "viewSource": "Voir la source",
-    "preparing": "Préparation du livrable…",
-    "failed": "Échec de génération",
+    "generating": "Génération en cours…",
     "subjectLabel": "Objet",
-    "smsLength": "{count}/140 caractères"
+    "subjectPrefix": "Objet : ",
+    "smsCharacters": "{count} caractères",
+    "emailInvalid": "Format email invalide."
   },
   "analysisLoading": {
     "title": "Analyse en cours",
-    "subtitle": "Claude examine la session et prépare les livrables.",
-    "preparingTranscript": "Préparation du transcript…",
-    "analyzing": "Analyse de la session par l'IA…",
-    "almostDone": "Presque prêt…",
-    "elapsed": "{seconds}s écoulées"
+    "elapsed": "Durée écoulée : {seconds}s · estimation 20-40s au total",
+    "stepPreparation": "Préparation de l'analyse",
+    "stepDiarization": "Ré-attribution des voix",
+    "stepAnalysis": "Analyse de la consultation par l'IA",
+    "stepResults": "Résultats prêts",
+    "autoReload": "La page se rechargera automatiquement quand l'analyse sera prête."
   },
   "analysisFailed": {
-    "title": "Analyse échouée",
-    "description": "Une erreur s'est produite pendant l'analyse. Vous pouvez relancer l'analyse.",
+    "title": "L'analyse a échoué",
+    "description": "L'audio et la transcription restent stockés. Vous pouvez relancer l'analyse sans perdre de données.",
     "retry": "Relancer l'analyse",
-    "errorLabel": "Détail technique"
+    "retried": "Analyse relancée…",
+    "sending": "Envoi…"
   },
   "live": {
     "transcriptTitle": "Transcription en direct",

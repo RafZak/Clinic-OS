@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -309,6 +310,14 @@ function InsightCard({
   );
 }
 
+function citationHref(c: InsightCitation): string | null {
+  if (!c.programSlug) return null;
+  if (c.moduleNumber !== null) {
+    return `/catalogue/${c.programSlug}#module-${c.moduleNumber}`;
+  }
+  return `/catalogue/${c.programSlug}`;
+}
+
 function Citations({ citations }: { citations: InsightCitation[] }) {
   return (
     <div className="mt-3 border-t border-border/60 pt-2">
@@ -316,15 +325,35 @@ function Citations({ citations }: { citations: InsightCitation[] }) {
         Sources formation
       </p>
       <ul className="mt-1 flex flex-col gap-1">
-        {citations.map((c) => (
-          <li key={c.id} className="flex items-center gap-2 text-xs">
-            <MessageSquare className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
-            <span className="truncate text-muted-foreground">
-              <span className="text-ink">{c.sourceFile}</span>
-              {c.moduleNumber !== null && ` · module ${c.moduleNumber}`}
-            </span>
-          </li>
-        ))}
+        {citations.map((c) => {
+          const href = citationHref(c);
+          const inner = (
+            <>
+              <MessageSquare
+                className="size-3.5 shrink-0 text-muted-foreground"
+                aria-hidden
+              />
+              <span className="truncate text-muted-foreground">
+                <span className="text-ink">{c.sourceFile}</span>
+                {c.moduleNumber !== null && ` · module ${c.moduleNumber}`}
+              </span>
+            </>
+          );
+          return (
+            <li key={c.id} className="text-xs">
+              {href ? (
+                <Link
+                  href={href}
+                  className="flex items-center gap-2 rounded hover:bg-muted/40 -mx-1 px-1 py-0.5 transition-colors [&>span>span:first-child]:hover:underline"
+                >
+                  {inner}
+                </Link>
+              ) : (
+                <div className="flex items-center gap-2">{inner}</div>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

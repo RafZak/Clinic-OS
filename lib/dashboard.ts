@@ -557,7 +557,10 @@ async function loadHeatmap(
       AND s.analysis_status = 'done'
       AND s.patient_id IS NOT NULL
       AND COALESCE(s.metadata->>'locale', 'fr') = ${locale}
-      AND ss.step_number = ANY(${scorableNumbers})
+      AND ss.step_number IN (${sql.join(
+        scorableNumbers.map((n) => sql`${n}`),
+        sql`, `
+      )})
     GROUP BY ss.step_number
     ORDER BY ss.step_number ASC
   `);

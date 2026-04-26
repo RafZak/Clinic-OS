@@ -227,6 +227,8 @@
     },
     "step": "Étape {number}",
     "trainingSources": "Sources formation",
+    "stepNotEvaluated": "Étape non évaluée",
+    "scoreOver": "Score : {score}/100",
     "memory": {
       "title": "Mémoire",
       "description": "Cette session a enrichi automatiquement la mémoire — patterns détectés, forces, axes d'amélioration. Le réseau apprend collectivement.",
@@ -492,12 +494,43 @@
   "admin": {
     "knowledge": {
       "title": "Base formation",
-      "description": "Programmes ingérés depuis Google Drive.",
+      "description": "Source de connaissances injectée dans la recherche Cmd+K et le coaching IA. Pipeline d'ingestion Google Drive, chunks vectoriels, test de recherche en direct et historique des runs.",
+      "kpiTotal": "Chunks totaux",
+      "kpiPdf": "PDF",
+      "kpiVideo": "Vidéos",
+      "kpiDocx": "DOCX",
+      "perProgramTitle": "Volume par programme",
+      "perProgramDescription": "Une ligne par programme actif. Les programmes sans données n'ont pas été ingérés (ou le programme n'est pas un programme actif côté métier).",
+      "slugFiles": "slug : {slug} · {count, plural, one {# fichier} other {# fichiers}}",
+      "chunksValue": "{count} chunks",
+      "runsTitle": "Derniers runs d'ingestion",
+      "runsDescription": "Déclencher depuis le CLI : ",
+      "runsEmpty": "Aucun run enregistré.",
+      "runFiles": "{files} fichiers · {chunks} chunks",
       "filesTab": "Fichiers",
       "chunksTab": "Chunks",
       "runsTab": "Historique",
       "testTab": "Test retrieval",
-      "reingest": "Re-ingérer"
+      "reingest": "Re-ingérer",
+      "filesTitle": "Fichiers ingérés",
+      "filesDescription": "{count, plural, one {# fichier} other {# fichiers}} distincts en base, dédupliqués par drive_file_id. Ordre stable par programme puis par nom de fichier.",
+      "filesGroupSummary": "{files, plural, one {# fichier} other {# fichiers}} · {chunks} chunks",
+      "filesEmpty": "Aucun fichier en base. Lancer une ingestion avec ",
+      "fileChunks": "{count, plural, one {# chunk} other {# chunks}}",
+      "videoLabel": "Vidéo",
+      "retrievalTitle": "Test de retrieval",
+      "retrievalDescription": "Soumets une requête en langage naturel. Top 12 chunks par similarité cosinus, puis collapse des doublons à 0.92.",
+      "retrievalPlaceholder": "Ex. objection prix classe 2",
+      "retrievalSearching": "Recherche…",
+      "retrievalSearch": "Chercher",
+      "retrievalSamples": [
+        "objection prix classe 2",
+        "patient qui refuse la recommandation",
+        "accueillir une objection",
+        "script pour demander la présence d'un tiers"
+      ],
+      "retrievalCount": "{count, plural, one {# résultat} other {# résultats}} · {ms} ms",
+      "retrievalQueryLabel": "query : \"{query}\""
     }
   }
 }

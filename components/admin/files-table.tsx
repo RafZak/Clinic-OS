@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import { getTranslations } from "next-intl/server";
 import { db } from "@/db/client";
 import { FileText, Mic, Sheet, Folder } from "lucide-react";
 
@@ -19,13 +20,14 @@ const TYPE_ICON = {
   video_transcript: Mic,
 } as const;
 
-const TYPE_LABEL = {
-  pdf: "PDF",
-  docx: "DOCX",
-  video_transcript: "Vidéo",
-} as const;
-
 export async function FilesTable() {
+  const t = await getTranslations("admin.knowledge");
+  const TYPE_LABEL = {
+    pdf: "PDF",
+    docx: "DOCX",
+    video_transcript: t("videoLabel"),
+  } as const;
+
   const rows = await db.execute<IngestedFile>(sql`
     SELECT
       drive_file_id,
@@ -58,11 +60,9 @@ export async function FilesTable() {
   return (
     <div className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5">
       <div>
-        <h2 className="text-base font-semibold">Fichiers ingérés</h2>
+        <h2 className="text-base font-semibold">{t("filesTitle")}</h2>
         <p className="text-xs text-muted-foreground">
-          {rows.length} fichier{rows.length > 1 ? "s" : ""} distincts en base,{" "}
-          dédupliqués par <code className="rounded bg-surface-muted px-1 py-0.5">drive_file_id</code>.
-          Ordre stable par programme puis par nom de fichier.
+          {t("filesDescription", { count: rows.length })}
         </p>
       </div>
 
@@ -77,7 +77,7 @@ export async function FilesTable() {
                   {slug}
                 </h3>
                 <span className="text-xs tabular-nums text-muted-foreground">
-                  {files.length} fichier{files.length > 1 ? "s" : ""} · {totalChunks} chunks
+                  {t("filesGroupSummary", { files: files.length, chunks: totalChunks })}
                 </span>
               </div>
               <ul className="flex flex-col divide-y divide-border rounded-md border border-border bg-surface-muted">
@@ -108,7 +108,7 @@ export async function FilesTable() {
                         {f.module_number ? `m${f.module_number}` : "—"}
                       </span>
                       <span className="w-16 text-right text-xs tabular-nums text-ink">
-                        {f.chunk_count} chunk{f.chunk_count > 1 ? "s" : ""}
+                        {t("fileChunks", { count: f.chunk_count })}
                       </span>
                     </li>
                   );
@@ -119,7 +119,7 @@ export async function FilesTable() {
         })}
         {rows.length === 0 && (
           <p className="rounded-md border border-dashed border-border bg-surface-muted px-4 py-6 text-center text-sm text-muted-foreground">
-            Aucun fichier en base. Lancer une ingestion avec{" "}
+            {t("filesEmpty")}
             <code className="rounded bg-surface px-1 py-0.5">pnpm ingest</code>.
           </p>
         )}

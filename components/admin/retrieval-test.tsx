@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { Search } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -9,41 +10,37 @@ import { runRetrievalTest, type SearchState } from "@/app/admin/knowledge/action
 
 const INITIAL: SearchState = { query: "", results: [] };
 
-const SAMPLE_QUERIES = [
-  "objection prix classe 2",
-  "patient qui refuse la recommandation",
-  "accueillir une objection",
-  "script pour demander la présence d'un tiers",
-];
-
 export function RetrievalTest() {
+  const t = useTranslations("admin.knowledge");
   const [state, action, pending] = useActionState(runRetrievalTest, INITIAL);
+  const samples = (t.raw("retrievalSamples") as string[]) ?? [];
 
   return (
     <div className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5">
       <div>
-        <h2 className="text-base font-semibold">Test de retrieval</h2>
-        <p className="text-sm text-muted-foreground">
-          Soumets une requête en langage naturel. Top 12 chunks par similarité
-          cosinus, puis collapse des doublons à 0.92.
-        </p>
+        <h2 className="text-base font-semibold">{t("retrievalTitle")}</h2>
+        <p className="text-sm text-muted-foreground">{t("retrievalDescription")}</p>
       </div>
 
       <form action={action} className="flex gap-2">
         <Input
           name="query"
           defaultValue={state.query}
-          placeholder="Ex. objection prix classe 2"
+          placeholder={t("retrievalPlaceholder")}
           className="flex-1"
         />
-        <Button type="submit" disabled={pending} className="bg-brand text-primary-foreground hover:bg-brand-dark">
+        <Button
+          type="submit"
+          disabled={pending}
+          className="bg-brand text-primary-foreground hover:bg-brand-dark"
+        >
           <Search className="size-4" aria-hidden />
-          {pending ? "Recherche…" : "Chercher"}
+          {pending ? t("retrievalSearching") : t("retrievalSearch")}
         </Button>
       </form>
 
       <div className="flex flex-wrap gap-2">
-        {SAMPLE_QUERIES.map((q) => (
+        {samples.map((q) => (
           <form key={q} action={action}>
             <input type="hidden" name="query" value={q} />
             <button
@@ -65,11 +62,12 @@ export function RetrievalTest() {
       {state.query && !state.error && (
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>
-            {state.results.length} résultat{state.results.length > 1 ? "s" : ""}
-            {" · "}
-            {state.durationMs} ms
+            {t("retrievalCount", {
+              count: state.results.length,
+              ms: state.durationMs ?? 0,
+            })}
           </span>
-          <span>query : "{state.query}"</span>
+          <span>{t("retrievalQueryLabel", { query: state.query })}</span>
         </div>
       )}
 

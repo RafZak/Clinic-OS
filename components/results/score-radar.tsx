@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
+import { useTranslations } from "next-intl";
 
 export type RadarPoint = {
   step: number;
@@ -18,6 +19,7 @@ export type RadarPoint = {
 };
 
 export function ScoreRadar({ points }: { points: RadarPoint[] }) {
+  const t = useTranslations("results");
   const data = points.map((p) => ({
     step: p.step,
     label: `${p.step}. ${p.label}`,
@@ -54,7 +56,14 @@ export function ScoreRadar({ points }: { points: RadarPoint[] }) {
             fillOpacity={0.18}
             isAnimationActive
           />
-          <Tooltip content={<RadarTooltip />} />
+          <Tooltip
+            content={
+              <RadarTooltip
+                scoreLabel={(score) => t("scoreOver", { score })}
+                notEvaluated={t("stepNotEvaluated")}
+              />
+            }
+          />
         </RadarChart>
       </ResponsiveContainer>
     </div>
@@ -71,9 +80,16 @@ type RadarTooltipProps = {
       covered: boolean;
     };
   }>;
+  scoreLabel?: (score: number) => string;
+  notEvaluated?: string;
 };
 
-function RadarTooltip({ active, payload }: RadarTooltipProps) {
+function RadarTooltip({
+  active,
+  payload,
+  scoreLabel,
+  notEvaluated,
+}: RadarTooltipProps) {
   if (!active || !payload || payload.length === 0) return null;
   const p = payload[0]?.payload;
   if (!p) return null;
@@ -81,7 +97,9 @@ function RadarTooltip({ active, payload }: RadarTooltipProps) {
     <div className="max-w-xs rounded-md border border-border bg-white px-3 py-2 text-xs shadow-md">
       <div className="font-medium text-ink">{p.label}</div>
       <div className="mt-0.5 text-muted-foreground">
-        {p.covered ? `Score : ${p.scoredDisplay}/100` : "Étape non évaluée"}
+        {p.covered && p.scoredDisplay !== null && scoreLabel
+          ? scoreLabel(p.scoredDisplay)
+          : notEvaluated ?? ""}
       </div>
       {p.rationale && (
         <div className="mt-1 text-ink/80 leading-snug">{p.rationale}</div>

@@ -1,4 +1,5 @@
 import { desc, eq, sql } from "drizzle-orm";
+import { getTranslations, getLocale } from "next-intl/server";
 import { db } from "@/db/client";
 import { ingestionRuns, knowledgeChunks, programs } from "@/db/schema";
 import { PageHeader } from "@/components/layout/page-header";
@@ -7,7 +8,14 @@ import { RetrievalTest } from "@/components/admin/retrieval-test";
 
 export const dynamic = "force-dynamic";
 
+function formatNumber(n: number, locale: string): string {
+  return n.toLocaleString(locale === "en" ? "en-GB" : "fr-FR");
+}
+
 export default async function AdminKnowledgePage() {
+  const t = await getTranslations("admin.knowledge");
+  const locale = await getLocale();
+
   const [totalRow] = await db.execute<{ total: number }>(
     sql`SELECT count(*)::int as total FROM knowledge_chunks`
   );
@@ -53,42 +61,39 @@ export default async function AdminKnowledgePage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader
-        title="Base formation"
-        description="Source de connaissances injectée dans la recherche Cmd+K et le coaching IA. Pipeline d'ingestion Google Drive, chunks vectoriels, test de recherche en direct et historique des runs."
-      />
+      <PageHeader title={t("title")} description={t("description")} />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-        <Kpi label="Chunks totaux" value={totalChunks.toLocaleString("fr-FR")} />
+        <Kpi label={t("kpiTotal")} value={formatNumber(totalChunks, locale)} />
         <Kpi
-          label="PDF"
-          value={
-            (perType.find((p) => p.source_type === "pdf")?.chunks ?? 0).toLocaleString("fr-FR")
-          }
+          label={t("kpiPdf")}
+          value={formatNumber(
+            perType.find((p) => p.source_type === "pdf")?.chunks ?? 0,
+            locale
+          )}
         />
         <Kpi
-          label="Vidéos"
-          value={
-            (
-              perType.find((p) => p.source_type === "video_transcript")?.chunks ?? 0
-            ).toLocaleString("fr-FR")
-          }
+          label={t("kpiVideo")}
+          value={formatNumber(
+            perType.find((p) => p.source_type === "video_transcript")?.chunks ?? 0,
+            locale
+          )}
         />
         <Kpi
-          label="DOCX"
-          value={
-            (perType.find((p) => p.source_type === "docx")?.chunks ?? 0).toLocaleString("fr-FR")
-          }
+          label={t("kpiDocx")}
+          value={formatNumber(
+            perType.find((p) => p.source_type === "docx")?.chunks ?? 0,
+            locale
+          )}
         />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr,1fr]">
         <div className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5">
           <div>
-            <h2 className="text-base font-semibold">Volume par programme</h2>
+            <h2 className="text-base font-semibold">{t("perProgramTitle")}</h2>
             <p className="text-xs text-muted-foreground">
-              Une ligne par programme actif. Les programmes sans données n'ont pas été
-              ingérés (ou le programme n'est pas un programme actif côté métier).
+              {t("perProgramDescription")}
             </p>
           </div>
           <div className="flex flex-col gap-2">
@@ -106,11 +111,11 @@ export default async function AdminKnowledgePage() {
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{p.title}</p>
                     <p className="truncate text-xs text-muted-foreground">
-                      slug : {p.slug} · {files} fichier{files > 1 ? "s" : ""}
+                      {t("slugFiles", { slug: p.slug, count: files })}
                     </p>
                   </div>
                   <div className="w-24 text-right text-xs tabular-nums text-muted-foreground">
-                    {chunks.toLocaleString("fr-FR")} chunks
+                    {t("chunksValue", { count: formatNumber(chunks, locale) })}
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="h-1.5 w-24 overflow-hidden rounded-full bg-surface">
@@ -131,14 +136,15 @@ export default async function AdminKnowledgePage() {
 
         <div className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5">
           <div>
-            <h2 className="text-base font-semibold">Derniers runs d'ingestion</h2>
+            <h2 className="text-base font-semibold">{t("runsTitle")}</h2>
             <p className="text-xs text-muted-foreground">
-              Déclencher depuis le CLI : <code className="rounded bg-surface-muted px-1 py-0.5">pnpm ingest</code>.
+              {t("runsDescription")}
+              <code className="rounded bg-surface-muted px-1 py-0.5">pnpm ingest</code>.
             </p>
           </div>
           <div className="flex flex-col gap-2">
             {recentRuns.length === 0 && (
-              <p className="text-xs text-muted-foreground">Aucun run enregistré.</p>
+              <p className="text-xs text-muted-foreground">{t("runsEmpty")}</p>
             )}
             {recentRuns.map((run) => (
               <div
@@ -150,7 +156,10 @@ export default async function AdminKnowledgePage() {
                     {run.startedAt?.toISOString().replace("T", " ").slice(0, 19)}
                   </p>
                   <p className="truncate text-muted-foreground">
-                    {run.filesProcessed ?? 0} fichiers · {run.chunksCreated ?? 0} chunks
+                    {t("runFiles", {
+                      files: run.filesProcessed ?? 0,
+                      chunks: run.chunksCreated ?? 0,
+                    })}
                   </p>
                 </div>
                 <StatusPill status={run.status ?? "running"} />

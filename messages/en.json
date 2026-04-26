@@ -227,6 +227,8 @@
     },
     "step": "Step {number}",
     "trainingSources": "Training sources",
+    "stepNotEvaluated": "Step not evaluated",
+    "scoreOver": "Score: {score}/100",
     "memory": {
       "title": "Memory",
       "description": "This session automatically enriched the memory — detected patterns, strengths, improvement areas. The network learns collectively.",
@@ -492,12 +494,43 @@
   "admin": {
     "knowledge": {
       "title": "Knowledge base",
-      "description": "Programs ingested from Google Drive.",
+      "description": "Knowledge source injected into Cmd+K search and AI coaching. Google Drive ingestion pipeline, vector chunks, live retrieval test and run history.",
+      "kpiTotal": "Total chunks",
+      "kpiPdf": "PDF",
+      "kpiVideo": "Videos",
+      "kpiDocx": "DOCX",
+      "perProgramTitle": "Volume by program",
+      "perProgramDescription": "One row per active program. Programs without data haven't been ingested (or aren't active in the business catalogue).",
+      "slugFiles": "slug: {slug} · {count, plural, one {# file} other {# files}}",
+      "chunksValue": "{count} chunks",
+      "runsTitle": "Latest ingestion runs",
+      "runsDescription": "Trigger from the CLI: ",
+      "runsEmpty": "No run recorded.",
+      "runFiles": "{files} files · {chunks} chunks",
       "filesTab": "Files",
       "chunksTab": "Chunks",
       "runsTab": "History",
       "testTab": "Test retrieval",
-      "reingest": "Re-ingest"
+      "reingest": "Re-ingest",
+      "filesTitle": "Ingested files",
+      "filesDescription": "{count, plural, one {# distinct file} other {# distinct files}} in the database, deduplicated by drive_file_id. Stable order by program then by file name.",
+      "filesGroupSummary": "{files, plural, one {# file} other {# files}} · {chunks} chunks",
+      "filesEmpty": "No file in the database. Run an ingestion with ",
+      "fileChunks": "{count, plural, one {# chunk} other {# chunks}}",
+      "videoLabel": "Video",
+      "retrievalTitle": "Retrieval test",
+      "retrievalDescription": "Submit a natural-language query. Top 12 chunks by cosine similarity, then duplicates collapsed at 0.92.",
+      "retrievalPlaceholder": "e.g. premium price objection",
+      "retrievalSearching": "Searching…",
+      "retrievalSearch": "Search",
+      "retrievalSamples": [
+        "premium price objection",
+        "patient refusing the recommendation",
+        "welcoming an objection",
+        "script for asking for a companion to be present"
+      ],
+      "retrievalCount": "{count, plural, one {# result} other {# results}} · {ms} ms",
+      "retrievalQueryLabel": "query: \"{query}\""
     }
   }
 }

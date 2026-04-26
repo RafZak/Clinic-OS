@@ -10,12 +10,18 @@ import {
   NotebookPen,
   Sparkles,
 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScoreRadar, type RadarPoint } from "@/components/results/score-radar";
 import { ArtifactsPanel } from "@/components/results/artifacts-panel";
 import { cn } from "@/lib/utils";
 import { formatTimestampMs } from "@/lib/format";
+import {
+  getFramework,
+  getStepName,
+  type FrameworkKind,
+} from "@/lib/frameworks";
+import type { Locale } from "@/lib/locale";
 import type { ResultsBundle, InsightCitation } from "@/lib/types/analysis";
 
 type Bundle = ResultsBundle;
@@ -70,8 +76,10 @@ const SEVERITY_ORDER: Record<string, number> = {
 
 export function ResultsView({ bundle }: { bundle: Bundle }) {
   const t = useTranslations("results");
+  const locale = useLocale() as Locale;
   const { session, lines, scores, insights } = bundle;
   const isPhoneCall = session.kind === "phone_call";
+  const kind = (session.kind as FrameworkKind) ?? "consultation";
   const proLabel = isPhoneCall
     ? t("phoneLabels.pro")
     : t("consultationLabels.pro");
@@ -79,15 +87,21 @@ export function ResultsView({ bundle }: { bundle: Bundle }) {
     ? t("phoneLabels.patient")
     : t("consultationLabels.patient");
 
+  // Le radar utilise toujours les noms d'étape de la locale UI courante
+  // (le step_name stocké en DB est figé dans la langue de la session).
+  const framework = useMemo(() => getFramework(kind), [kind]);
   const radarPoints: RadarPoint[] = useMemo(
     () =>
-      scores.map((s) => ({
-        step: s.stepNumber,
-        label: s.stepName,
-        score: s.score,
-        rationale: s.rationale,
-      })),
-    [scores]
+      framework.map((step) => {
+        const score = scores.find((s) => s.stepNumber === step.number);
+        return {
+          step: step.number,
+          label: getStepName(step, locale),
+          score: score?.score ?? null,
+          rationale: score?.rationale ?? null,
+        };
+      }),
+    [framework, scores, locale]
   );
 
   const sortedInsights = useMemo(

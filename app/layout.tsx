@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 import { AppShell } from "@/components/layout/app-shell";
 import "./globals.css";
 
@@ -15,15 +17,20 @@ export const metadata: Metadata = {
     "Plateforme d'enablement du réseau d'audioprothèse — couche de renseignement ambiant pour audioprothésistes et assistants accueil.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="fr" className={`${inter.variable} h-full antialiased`}>
+    <html lang={locale} className={`${inter.variable} h-full antialiased`}>
       <body className="min-h-full bg-surface text-ink">
-        <AppShell>{children}</AppShell>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <AppShell>{children}</AppShell>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

@@ -8,9 +8,16 @@ import {
 } from "lucide-react";
 import type { Role } from "./role";
 
+export type NavKey =
+  | "dashboard"
+  | "patients"
+  | "catalogue"
+  | "knowledge"
+  | "memory";
+
 export type NavItem = {
+  key: NavKey;
   href: string;
-  label: string;
   icon: LucideIcon;
   roles: Role[];
   match?: "exact" | "prefix";
@@ -18,21 +25,21 @@ export type NavItem = {
 
 export const PRIMARY_NAV: NavItem[] = [
   {
+    key: "dashboard",
     href: "/",
-    label: "Tableau de bord",
     icon: LayoutDashboard,
     roles: ["audioprothesiste", "assistant"],
     match: "exact",
   },
   {
+    key: "patients",
     href: "/patients",
-    label: "Patients",
     icon: Users,
     roles: ["audioprothesiste", "assistant"],
   },
   {
+    key: "catalogue",
     href: "/catalogue",
-    label: "Catalogue",
     icon: BookOpen,
     roles: ["audioprothesiste", "assistant"],
   },
@@ -40,14 +47,14 @@ export const PRIMARY_NAV: NavItem[] = [
 
 export const ADMIN_NAV: NavItem[] = [
   {
+    key: "knowledge",
     href: "/admin/knowledge",
-    label: "Base formation",
     icon: Database,
     roles: ["audioprothesiste", "assistant"],
   },
   {
+    key: "memory",
     href: "/admin/vault",
-    label: "Mémoire",
     icon: Notebook,
     roles: ["audioprothesiste", "assistant"],
   },

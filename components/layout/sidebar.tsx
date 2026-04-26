@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import {
   ADMIN_NAV,
   PRIMARY_NAV,
@@ -17,33 +18,38 @@ type Badge = {
   tooltip: string;
 } | null;
 
-function badgeFor(item: NavItem, ctx: {
-  patientsAlerts: number;
-  vaultUpdatesToday: number;
-}): Badge {
+function badgeFor(
+  item: NavItem,
+  ctx: { patientsAlerts: number; vaultUpdatesToday: number },
+  tooltips: { patients: (n: number) => string; memory: (n: number) => string }
+): Badge {
   if (item.href === "/patients" && ctx.patientsAlerts > 0) {
-    const n = ctx.patientsAlerts;
     return {
-      count: n,
+      count: ctx.patientsAlerts,
       tone: "alert",
-      tooltip: `${n} patient${n > 1 ? "s" : ""} perdu${n > 1 ? "s" : ""} — à rappeler`,
+      tooltip: tooltips.patients(ctx.patientsAlerts),
     };
   }
   if (item.href === "/admin/vault" && ctx.vaultUpdatesToday > 0) {
-    const n = ctx.vaultUpdatesToday;
     return {
-      count: n,
+      count: ctx.vaultUpdatesToday,
       tone: "info",
-      tooltip: `${n} fiche${n > 1 ? "s" : ""} mise${n > 1 ? "s" : ""} à jour aujourd'hui`,
+      tooltip: tooltips.memory(ctx.vaultUpdatesToday),
     };
   }
   return null;
 }
 
 export async function Sidebar({ role }: { role: Role }) {
+  const t = await getTranslations("nav");
   const primary = filterNavByRole(PRIMARY_NAV, role);
   const admin = filterNavByRole(ADMIN_NAV, role);
   const ctx = await loadSidebarContext();
+
+  const tooltips = {
+    patients: (count: number) => t("patientsBadgeTooltip", { count }),
+    memory: (count: number) => t("memoryBadgeTooltip", { count }),
+  };
 
   return (
     <aside className="flex h-screen w-[220px] shrink-0 flex-col overflow-y-auto border-r border-border bg-surface px-3 py-4">
@@ -59,10 +65,10 @@ export async function Sidebar({ role }: { role: Role }) {
           <NavLink
             key={item.href}
             href={item.href}
-            label={item.label}
+            label={t(item.key)}
             match={item.match}
             icon={<Icon className="size-4" />}
-            badge={badgeFor(item as NavItem, ctx)}
+            badge={badgeFor(item as NavItem, ctx, tooltips)}
           />
         ))}
       </nav>
@@ -77,17 +83,17 @@ export async function Sidebar({ role }: { role: Role }) {
       {admin.length > 0 && (
         <div className="mt-6 border-t border-border pt-4">
           <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-            Admin
+            {t("admin")}
           </p>
           <div className="flex flex-col gap-0.5">
             {admin.map(({ icon: Icon, ...item }) => (
               <NavLink
                 key={item.href}
                 href={item.href}
-                label={item.label}
+                label={t(item.key)}
                 match={item.match}
                 icon={<Icon className="size-4" />}
-                badge={badgeFor(item as NavItem, ctx)}
+                badge={badgeFor(item as NavItem, ctx, tooltips)}
               />
             ))}
           </div>

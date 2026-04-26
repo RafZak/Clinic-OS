@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Sparkles, Stethoscope, PhoneIncoming } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import type {
   SidebarRecentPatient,
   SidebarRecentSession,
@@ -21,7 +22,7 @@ function initials(label: string): string {
     .join("");
 }
 
-export function SidebarRecents({
+export async function SidebarRecents({
   patients,
   lastSession,
 }: {
@@ -30,12 +31,15 @@ export function SidebarRecents({
 }) {
   if (patients.length === 0 && !lastSession) return null;
 
+  const tNav = await getTranslations("nav");
+  const tCommon = await getTranslations("common");
+
   return (
     <div className="mt-6 flex flex-col gap-3">
       {patients.length > 0 && (
         <div className="flex flex-col gap-1">
           <p className="px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-            Patients récents
+            {tNav("patientsRecent")}
           </p>
           <ul className="flex flex-col gap-0.5">
             {patients.map((p) => (
@@ -65,7 +69,7 @@ export function SidebarRecents({
       {lastSession && (
         <div className="flex flex-col gap-1">
           <p className="px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-            Dernière analyse
+            {tNav("lastAnalysis")}
           </p>
           <Link
             href={
@@ -92,7 +96,7 @@ export function SidebarRecents({
                   )}
                 >
                   <Sparkles className="size-2.5" />
-                  Score {lastSession.globalScore}/100
+                  {tCommon("scoreOf100", { score: lastSession.globalScore })}
                 </span>
               )}
             </div>

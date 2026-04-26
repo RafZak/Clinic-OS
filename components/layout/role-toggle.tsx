@@ -1,25 +1,24 @@
 "use client";
 
 import { useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { setRole } from "@/app/actions/set-role";
 import type { Role } from "@/lib/role";
 import { cn } from "@/lib/utils";
 
-const ROLES: { value: Role; label: string }[] = [
-  { value: "audioprothesiste", label: "Audioprothésiste" },
-  { value: "assistant", label: "Assistant accueil" },
-];
+const ROLES: Role[] = ["audioprothesiste", "assistant"];
 
 export function RoleToggle({ current }: { current: Role }) {
   const [isPending, startTransition] = useTransition();
+  const t = useTranslations("roles");
 
   return (
     <div
       role="tablist"
-      aria-label="Changer de rôle"
+      aria-label={t("ariaToggle")}
       className="inline-flex items-center rounded-full border border-border bg-surface-muted p-0.5 text-xs font-medium"
     >
-      {ROLES.map(({ value, label }) => {
+      {ROLES.map((value) => {
         const active = value === current;
         return (
           <button
@@ -36,7 +35,7 @@ export function RoleToggle({ current }: { current: Role }) {
                 : "text-muted-foreground hover:text-ink"
             )}
           >
-            {label}
+            {t(value)}
           </button>
         );
       })}

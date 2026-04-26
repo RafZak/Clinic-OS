@@ -1,0 +1,90 @@
+{
+  "common": {
+    "loading": "Loading…",
+    "search": "Search",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "edit": "Edit",
+    "save": "Save",
+    "back": "Back",
+    "close": "Close",
+    "open": "Open",
+    "copy": "Copy",
+    "copied": "Copied",
+    "regenerate": "Regenerate",
+    "retry": "Retry",
+    "ok": "OK",
+    "yes": "Yes",
+    "no": "No",
+    "error": "Error",
+    "scoreOf100": "Score {score}/100",
+    "globalScore": "Overall score"
+  },
+  "roles": {
+    "audioprothesiste": "Audiologist",
+    "assistant": "Front desk assistant",
+    "ariaToggle": "Switch role"
+  },
+  "locale": {
+    "fr": "Français",
+    "en": "English",
+    "ariaToggle": "Switch language"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "patients": "Patients",
+    "catalogue": "Catalogue",
+    "knowledge": "Knowledge base",
+    "memory": "Memory",
+    "admin": "Admin",
+    "patientsBadgeTooltip": "{count, plural, one {# lost patient — to call back} other {# lost patients — to call back}}",
+    "memoryBadgeTooltip": "{count, plural, one {# entry updated today} other {# entries updated today}}",
+    "patientsRecent": "Recent patients",
+    "lastAnalysis": "Latest analysis",
+    "systemStatus": "System status",
+    "transcription": "Transcription",
+    "aiCoach": "AI coach",
+    "memorySystem": "Memory",
+    "ok": "OK",
+    "down": "down"
+  },
+  "search": {
+    "placeholderTrigger": "Search a real-world situation…",
+    "placeholderInput": "A situation, a question, a keyword…",
+    "title": "Knowledge search",
+    "description": "Semantic search across Audio Académie training programs.",
+    "examplesLabel": "Sample questions",
+    "loading": "Searching the training library…",
+    "streaming": "Synthesizing the answer…",
+    "answer": "Answer",
+    "searching": "Searching…",
+    "sources": "Sources ({count})",
+    "examples": [
+      "How to ask for a recommendation in the booth?",
+      "How to handle a premium price objection?",
+      "Script for an inbound prospect call",
+      "The 3 themes of the 'Un Cœur En Or' program"
+    ]
+  },
+  "newSession": {
+    "consultationLabel": "New consultation",
+    "phoneLabel": "New call",
+    "consultationDescription": "Select or create a patient, then start the consultation.",
+    "phoneDescription": "Select or create a caller, then start the call.",
+    "startLive": "Start live",
+    "patientPlaceholder": "Patient name (e.g. Mrs. Davis)",
+    "callerPlaceholder": "Caller name",
+    "creating": "Creating session…",
+    "startWith": "Start with {label}",
+    "createAndStart": "Create « {label} » and start",
+    "startWithout": "Start without a patient",
+    "noPatientFound": "No patient found — a new record will be created.",
+    "replayConsultation": "Replay a sample case",
+    "replayPhone": "Replay a sample call",
+    "launching": "launching…",
+    "patientStatusWon": "won",
+    "patientStatusLost": "lost",
+    "patientStatusProspect": "prospect"
+  }
+}

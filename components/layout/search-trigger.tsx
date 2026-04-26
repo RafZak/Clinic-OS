@@ -2,6 +2,7 @@
 
 import { Search, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -29,15 +30,9 @@ type StreamEvent =
   | { type: "done" }
   | { type: "error"; message: string };
 
-const SAMPLE_QUESTIONS = [
-  "Comment demander une recommandation en cabine ?",
-  "Comment traiter une objection prix classe 2 ?",
-  "Script pour un appel entrant de prospect",
-  "Les 3 thèmes du programme Un Cœur En Or",
-];
-
 export function SearchTrigger() {
   const [open, setOpen] = useState(false);
+  const t = useTranslations("search");
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -58,7 +53,7 @@ export function SearchTrigger() {
         className="flex w-full max-w-md items-center gap-3 rounded-md border border-border bg-surface-muted px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-surface hover:text-ink"
       >
         <Search className="size-4" aria-hidden />
-        <span className="flex-1 text-left">Rechercher une situation métier…</span>
+        <span className="flex-1 text-left">{t("placeholderTrigger")}</span>
         <kbd className="rounded border border-border bg-surface px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
           ⌘K
         </kbd>
@@ -66,9 +61,9 @@ export function SearchTrigger() {
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-2xl">
-          <DialogTitle className="sr-only">Recherche knowledge</DialogTitle>
+          <DialogTitle className="sr-only">{t("title")}</DialogTitle>
           <DialogDescription className="sr-only">
-            Moteur de recherche sémantique sur les formations Audio Académie.
+            {t("description")}
           </DialogDescription>
           <SearchBody onClose={() => setOpen(false)} />
         </DialogContent>
@@ -78,6 +73,8 @@ export function SearchTrigger() {
 }
 
 function SearchBody({ onClose }: { onClose: () => void }) {
+  const t = useTranslations("search");
+  const tCommon = useTranslations("common");
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
   const [status, setStatus] = useState<
@@ -88,10 +85,11 @@ function SearchBody({ onClose }: { onClose: () => void }) {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const examples = t.raw("examples") as string[];
 
   useEffect(() => {
-    const t = setTimeout(() => inputRef.current?.focus(), 0);
-    return () => clearTimeout(t);
+    const tt = setTimeout(() => inputRef.current?.focus(), 0);
+    return () => clearTimeout(tt);
   }, []);
 
   const runSearch = useCallback(async (q: string) => {
@@ -118,7 +116,7 @@ function SearchBody({ onClose }: { onClose: () => void }) {
         const text = await res.text().catch(() => res.statusText);
         throw new Error(text || `HTTP ${res.status}`);
       }
-      if (!res.body) throw new Error("Pas de stream renvoyé");
+      if (!res.body) throw new Error("No stream returned");
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -172,7 +170,7 @@ function SearchBody({ onClose }: { onClose: () => void }) {
           ref={inputRef}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Une situation métier, une question, un mot-clé…"
+          placeholder={t("placeholderInput")}
           className="flex-1 bg-transparent text-base text-ink outline-none placeholder:text-muted-foreground"
           onKeyDown={(e) => {
             if (e.key === "Escape") onClose();
@@ -187,10 +185,10 @@ function SearchBody({ onClose }: { onClose: () => void }) {
         {status === "idle" && (
           <div className="flex flex-col gap-3">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Exemples de questions
+              {t("examplesLabel")}
             </p>
             <div className="flex flex-wrap gap-2">
-              {SAMPLE_QUESTIONS.map((q) => (
+              {examples.map((q) => (
                 <button
                   key={q}
                   type="button"
@@ -213,12 +211,12 @@ function SearchBody({ onClose }: { onClose: () => void }) {
               <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-brand">
                 <Sparkles className="size-3.5" aria-hidden />
                 {status === "loading"
-                  ? "Recherche dans la base formation…"
+                  ? t("loading")
                   : status === "streaming"
-                  ? "Synthèse en cours…"
+                  ? t("streaming")
                   : status === "error"
-                  ? "Erreur"
-                  : "Réponse"}
+                  ? tCommon("error")
+                  : t("answer")}
               </div>
               <div className="whitespace-pre-wrap text-sm text-ink">
                 {answer}
@@ -226,7 +224,7 @@ function SearchBody({ onClose }: { onClose: () => void }) {
                   <span className="inline-block h-4 w-[2px] translate-y-[2px] animate-pulse bg-brand" />
                 )}
                 {status === "loading" && !answer && (
-                  <span className="text-muted-foreground">Recherche en cours…</span>
+                  <span className="text-muted-foreground">{t("searching")}</span>
                 )}
                 {status === "error" && errorMsg && (
                   <span className="text-destructive">{errorMsg}</span>
@@ -237,7 +235,7 @@ function SearchBody({ onClose }: { onClose: () => void }) {
             {sources.length > 0 && (
               <div className="flex flex-col gap-2">
                 <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Sources ({sources.length})
+                  {t("sources", { count: sources.length })}
                 </p>
                 <ol className="flex flex-col gap-1.5">
                   {sources.map((s, idx) => (

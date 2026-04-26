@@ -8,6 +8,7 @@ import {
   useState,
   useTransition,
 } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -34,6 +35,7 @@ function formatDuration(totalSec: number): string {
 }
 
 export function NewSessionButton({ role }: { role: Role }) {
+  const t = useTranslations("newSession");
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [replayPendingSlug, setReplayPendingSlug] = useState<string | null>(null);
@@ -42,8 +44,9 @@ export function NewSessionButton({ role }: { role: Role }) {
   const [pickedId, setPickedId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const label = role === "audioprothesiste" ? "Nouvelle consultation" : "Nouvel appel";
-  const kind = role === "audioprothesiste" ? "consultation" : "phone_call";
+  const isPro = role === "audioprothesiste";
+  const label = isPro ? t("consultationLabel") : t("phoneLabel");
+  const kind = isPro ? "consultation" : "phone_call";
 
   useEffect(() => {
     if (open) {
@@ -84,12 +87,12 @@ export function NewSessionButton({ role }: { role: Role }) {
   };
 
   const startLabel = pickedPatient
-    ? `Démarrer avec ${pickedPatient.label}`
+    ? t("startWith", { label: pickedPatient.label })
     : exactMatch
-      ? `Démarrer avec ${exactMatch.label}`
+      ? t("startWith", { label: exactMatch.label })
       : trimmed.length > 0
-        ? `Créer « ${trimmed} » et démarrer`
-        : "Démarrer sans patient";
+        ? t("createAndStart", { label: trimmed })
+        : t("startWithout");
 
   const onStart = () => {
     startTransition(async () => {
@@ -131,9 +134,7 @@ export function NewSessionButton({ role }: { role: Role }) {
           <DialogHeader>
             <DialogTitle>{label}</DialogTitle>
             <DialogDescription>
-              {role === "audioprothesiste"
-                ? "Sélectionnez ou créez un patient, puis démarrez la consultation."
-                : "Sélectionnez ou créez un appelant, puis démarrez l'appel."}
+              {isPro ? t("consultationDescription") : t("phoneDescription")}
             </DialogDescription>
           </DialogHeader>
 
@@ -141,7 +142,7 @@ export function NewSessionButton({ role }: { role: Role }) {
             <div className="rounded-md border border-border bg-surface px-4 py-3">
               <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 <Mic className="size-3.5" aria-hidden />
-                Démarrer en direct
+                {t("startLive")}
               </div>
 
               <div className="relative">
@@ -160,9 +161,7 @@ export function NewSessionButton({ role }: { role: Role }) {
                     }
                   }}
                   placeholder={
-                    role === "audioprothesiste"
-                      ? "Nom du patient (ex. Mme Durand)"
-                      : "Nom de l'appelant"
+                    isPro ? t("patientPlaceholder") : t("callerPlaceholder")
                   }
                   className="pl-9"
                   disabled={pending}
@@ -181,10 +180,10 @@ export function NewSessionButton({ role }: { role: Role }) {
                           <span className="flex-1 truncate">{p.label}</span>
                           <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
                             {p.status === "patient"
-                              ? "gagné"
+                              ? t("patientStatusWon")
                               : p.status === "lost"
-                                ? "perdu"
-                                : "prospect"}
+                                ? t("patientStatusLost")
+                                : t("patientStatusProspect")}
                           </span>
                         </button>
                       </li>
@@ -196,7 +195,7 @@ export function NewSessionButton({ role }: { role: Role }) {
               {trimmed.length > 0 && !exactMatch && !pickedId && (
                 <p className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
                   <UserPlus className="size-3" aria-hidden />
-                  Aucun patient trouvé — un nouveau dossier sera créé.
+                  {t("noPatientFound")}
                 </p>
               )}
 
@@ -206,15 +205,15 @@ export function NewSessionButton({ role }: { role: Role }) {
                 disabled={pending}
                 className="mt-3 w-full bg-brand text-primary-foreground hover:bg-brand-dark"
               >
-                {pending && !replayPendingSlug ? "Création de la session…" : startLabel}
+                {pending && !replayPendingSlug ? t("creating") : startLabel}
               </Button>
             </div>
 
-            {role === "audioprothesiste" && (
+            {isPro && (
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-2 pt-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   <Radio className="size-3.5" aria-hidden />
-                  Rejouer un cas-école
+                  {t("replayConsultation")}
                 </div>
                 <div className="grid gap-2 sm:grid-cols-3">
                   {REPLAY_SCENARIOS.map((scenario) => {
@@ -229,7 +228,7 @@ export function NewSessionButton({ role }: { role: Role }) {
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-sm font-medium text-ink">
-                            {scenario.patientLabel.replace(/^Mme |^M\. /, "")}
+                            {scenario.patientLabel.replace(/^Mme |^M\. |^Mrs\. |^Mr\. /, "")}
                           </span>
                           <span className="inline-flex items-center rounded-full bg-brand/10 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-brand">
                             {scenario.targetScore}
@@ -240,7 +239,7 @@ export function NewSessionButton({ role }: { role: Role }) {
                         </span>
                         <span className="text-[11px] text-muted-foreground">
                           {formatDuration(scenario.targetDurationSeconds)}
-                          {isPending ? " · lancement…" : ""}
+                          {isPending ? ` · ${t("launching")}` : ""}
                         </span>
                       </button>
                     );
@@ -249,11 +248,11 @@ export function NewSessionButton({ role }: { role: Role }) {
               </div>
             )}
 
-            {role === "assistant" && (
+            {!isPro && (
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-2 pt-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   <Radio className="size-3.5" aria-hidden />
-                  Rejouer un appel-école
+                  {t("replayPhone")}
                 </div>
                 <div className="grid gap-2 sm:grid-cols-2">
                   {REPLAY_PHONE_SCENARIOS.map((scenario) => {
@@ -268,7 +267,7 @@ export function NewSessionButton({ role }: { role: Role }) {
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-sm font-medium text-ink">
-                            {scenario.callerLabel.replace(/^Mme |^M\. /, "")}
+                            {scenario.callerLabel.replace(/^Mme |^M\. |^Mrs\. |^Mr\. /, "")}
                           </span>
                           <span className="inline-flex items-center rounded-full bg-brand/10 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-brand">
                             {scenario.targetScore}
@@ -279,7 +278,7 @@ export function NewSessionButton({ role }: { role: Role }) {
                         </span>
                         <span className="text-[11px] text-muted-foreground">
                           {formatDuration(scenario.targetDurationSeconds)}
-                          {isPending ? " · lancement…" : ""}
+                          {isPending ? ` · ${t("launching")}` : ""}
                         </span>
                       </button>
                     );

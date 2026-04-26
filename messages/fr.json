@@ -1,0 +1,90 @@
+{
+  "common": {
+    "loading": "Chargement…",
+    "search": "Rechercher",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "save": "Enregistrer",
+    "back": "Retour",
+    "close": "Fermer",
+    "open": "Ouvrir",
+    "copy": "Copier",
+    "copied": "Copié",
+    "regenerate": "Régénérer",
+    "retry": "Réessayer",
+    "ok": "OK",
+    "yes": "Oui",
+    "no": "Non",
+    "error": "Erreur",
+    "scoreOf100": "Score {score}/100",
+    "globalScore": "Score global"
+  },
+  "roles": {
+    "audioprothesiste": "Audioprothésiste",
+    "assistant": "Assistant accueil",
+    "ariaToggle": "Changer de rôle"
+  },
+  "locale": {
+    "fr": "Français",
+    "en": "English",
+    "ariaToggle": "Changer de langue"
+  },
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "patients": "Patients",
+    "catalogue": "Catalogue",
+    "knowledge": "Base formation",
+    "memory": "Mémoire",
+    "admin": "Admin",
+    "patientsBadgeTooltip": "{count, plural, one {# patient perdu — à rappeler} other {# patients perdus — à rappeler}}",
+    "memoryBadgeTooltip": "{count, plural, one {# fiche mise à jour aujourd'hui} other {# fiches mises à jour aujourd'hui}}",
+    "patientsRecent": "Patients récents",
+    "lastAnalysis": "Dernière analyse",
+    "systemStatus": "Statut système",
+    "transcription": "Transcription",
+    "aiCoach": "IA coach",
+    "memorySystem": "Mémoire",
+    "ok": "OK",
+    "down": "panne"
+  },
+  "search": {
+    "placeholderTrigger": "Rechercher une situation métier…",
+    "placeholderInput": "Une situation métier, une question, un mot-clé…",
+    "title": "Recherche knowledge",
+    "description": "Moteur de recherche sémantique sur les formations Audio Académie.",
+    "examplesLabel": "Exemples de questions",
+    "loading": "Recherche dans la base formation…",
+    "streaming": "Synthèse en cours…",
+    "answer": "Réponse",
+    "searching": "Recherche en cours…",
+    "sources": "Sources ({count})",
+    "examples": [
+      "Comment demander une recommandation en cabine ?",
+      "Comment traiter une objection prix classe 2 ?",
+      "Script pour un appel entrant de prospect",
+      "Les 3 thèmes du programme Un Cœur En Or"
+    ]
+  },
+  "newSession": {
+    "consultationLabel": "Nouvelle consultation",
+    "phoneLabel": "Nouvel appel",
+    "consultationDescription": "Sélectionnez ou créez un patient, puis démarrez la consultation.",
+    "phoneDescription": "Sélectionnez ou créez un appelant, puis démarrez l'appel.",
+    "startLive": "Démarrer en direct",
+    "patientPlaceholder": "Nom du patient (ex. Mme Durand)",
+    "callerPlaceholder": "Nom de l'appelant",
+    "creating": "Création de la session…",
+    "startWith": "Démarrer avec {label}",
+    "createAndStart": "Créer « {label} » et démarrer",
+    "startWithout": "Démarrer sans patient",
+    "noPatientFound": "Aucun patient trouvé — un nouveau dossier sera créé.",
+    "replayConsultation": "Rejouer un cas-école",
+    "replayPhone": "Rejouer un appel-école",
+    "launching": "lancement…",
+    "patientStatusWon": "gagné",
+    "patientStatusLost": "perdu",
+    "patientStatusProspect": "prospect"
+  }
+}

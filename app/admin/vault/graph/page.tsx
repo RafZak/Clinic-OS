@@ -25,15 +25,28 @@ export default async function VaultGraphPage() {
     kind: r.kind,
   }));
 
-  const slugToPath = new Map(nodes.map((n) => [n.slug, n.id]));
+  const slugToPath = new Map<string, string>();
+  for (const n of nodes) {
+    slugToPath.set(n.slug, n.id);
+    slugToPath.set(`${n.kind}-${n.slug}`, n.id);
+  }
+
+  const edgeSet = new Set<string>();
   const edges: { source: string; target: string }[] = [];
   for (const r of rows) {
     const slugs = Array.isArray(r.backlinks) ? (r.backlinks as string[]) : [];
-    for (const slug of slugs) {
-      const target = slugToPath.get(slug);
-      if (target && target !== r.path) {
-        edges.push({ source: r.path, target });
+    for (const raw of slugs) {
+      const slug = raw.trim();
+      let target = slugToPath.get(slug);
+      if (!target) {
+        const stripped = slug.replace(/^(session|patient|practitioner|assistant|center|pattern|index)-/, "");
+        if (stripped !== slug) target = slugToPath.get(stripped);
       }
+      if (!target || target === r.path) continue;
+      const key = r.path < target ? `${r.path}|${target}` : `${target}|${r.path}`;
+      if (edgeSet.has(key)) continue;
+      edgeSet.add(key);
+      edges.push({ source: r.path, target });
     }
   }
 
@@ -51,7 +64,7 @@ export default async function VaultGraphPage() {
           </Link>
         }
       />
-      <div className="rounded-lg border border-border bg-surface" style={{ height: "640px" }}>
+      <div className="rounded-lg border border-border bg-surface" style={{ height: "calc(100vh - 260px)", minHeight: "560px" }}>
         <VaultGraph nodes={nodes} edges={edges} />
       </div>
       <p className="text-xs text-muted-foreground">

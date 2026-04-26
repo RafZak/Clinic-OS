@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { PatientTimeline } from "@/components/patients/patient-timeline";
 import { MemoryView } from "@/components/patients/memory-view";
+import { DeletePatientButton } from "@/components/patients/delete-patient-button";
 import { db } from "@/db/client";
 import { vaultPages } from "@/db/schema";
 import {
@@ -82,6 +83,7 @@ export default async function PatientDetailPage({
             >
               {STATUS_LABEL[patient.status]}
             </span>
+            <DeletePatientButton patientId={patient.id} />
             <Link href="/patients">
               <Button variant="ghost" size="sm">
                 <ArrowLeft className="h-4 w-4" aria-hidden />

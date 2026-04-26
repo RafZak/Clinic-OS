@@ -10,6 +10,7 @@ import {
   STATUS_LABEL,
   type PatientEventKind,
   type PatientEventRow,
+  type PatientRow,
   type PatientStatus,
 } from "@/lib/patients-shared";
 
@@ -17,24 +18,7 @@ export {
   EVENT_LABEL,
   STATUS_LABEL,
 };
-export type { PatientEventKind, PatientEventRow, PatientStatus };
-
-export type PatientRow = {
-  id: string;
-  label: string;
-  age: number | null;
-  status: PatientStatus;
-  firstContactAt: Date | null;
-  centerName: string | null;
-  centerId: string | null;
-  eventsCount: number;
-  lastEventAt: Date | null;
-  consultationsCount: number;
-  phoneCallsCount: number;
-  avgConsultationScore: number | null;
-  lastConsultationScore: number | null;
-  lastPhoneTemperature: LeadTemperature | null;
-};
+export type { PatientEventKind, PatientEventRow, PatientRow, PatientStatus };
 
 type RawPatientRow = {
   id: string;

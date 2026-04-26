@@ -449,26 +449,43 @@
     }
   },
   "catalogue": {
-    "title": "Catalogue",
-    "description": "The Audio Académie training programs available.",
+    "title": "Training catalogue",
+    "description": "{active, plural, one {# active program} other {# active programs}} · {coming} coming soon. Designed by Audio Académie, ingested into Clinic OS to power Cmd+K search and consultation coaching.",
+    "available": "{ready}/{total} available",
+    "filesCount": "{count, plural, one {# file} other {# files}} · {chunks} chunks",
+    "open": "Open →",
     "comingSoon": "Coming soon",
     "modulesCount": "{count, plural, one {# module} other {# modules}}",
     "openModule": "Open"
   },
   "vault": {
-    "title": "Organizational memory",
-    "description": "The living memory of the network, automatically updated after every interaction.",
-    "exportObsidian": "Export to Obsidian",
+    "title": "Memory",
+    "description": "The network learns collectively. Every session automatically enriches the related entries — Obsidian-exportable, auditable.",
     "graphView": "Graph view",
-    "listView": "List view",
+    "exportZip": "Export to Obsidian (.zip)",
+    "statTotal": "Entries in memory",
+    "statPractitioners": "Audiologists tracked",
+    "statPatients": "Patients tracked",
+    "statSessions": "Sessions integrated",
     "byKind": {
+      "index": "Index",
       "practitioner": "Audiologists",
-      "assistant": "Front desk",
+      "assistant": "Front desk staff",
       "center": "Centers",
       "patient": "Patients",
-      "pattern": "Patterns",
-      "session": "Sessions"
+      "pattern": "Recurring patterns",
+      "session": "Session entries"
     },
+    "byKindDescription": {
+      "index": "Index page.",
+      "practitioner": "Strengths, improvement areas, recent sessions.",
+      "assistant": "Call quality, patterns identified.",
+      "center": "Profile of each center.",
+      "patient": "Profile, journey, context.",
+      "pattern": "Recurring situations across the network.",
+      "session": "Snapshot per analyzed session."
+    },
+    "noPagesYet": "No entry yet. Session entries are created automatically after each analysis.",
     "backlinksTitle": "Backlinks",
     "noBacklinks": "No backlinks"
   },

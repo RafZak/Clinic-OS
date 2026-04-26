@@ -449,26 +449,43 @@
     }
   },
   "catalogue": {
-    "title": "Catalogue",
-    "description": "Les programmes Audio Académie disponibles.",
+    "title": "Catalogue de formation",
+    "description": "{active, plural, one {# programme actif} other {# programmes actifs}} · {coming} à venir. Conçus par Audio Académie, ingérés dans Clinic OS pour servir la recherche Cmd+K et le coaching des consultations.",
+    "available": "{ready}/{total} disponibles",
+    "filesCount": "{count, plural, one {# fichier} other {# fichiers}} · {chunks} chunks",
+    "open": "Ouvrir →",
     "comingSoon": "Bientôt disponible",
     "modulesCount": "{count, plural, one {# module} other {# modules}}",
     "openModule": "Ouvrir"
   },
   "vault": {
-    "title": "Mémoire organisationnelle",
-    "description": "La mémoire vivante du réseau, mise à jour automatiquement après chaque interaction.",
-    "exportObsidian": "Export Obsidian",
-    "graphView": "Vue graphique",
-    "listView": "Vue liste",
+    "title": "Mémoire",
+    "description": "Le réseau apprend collectivement. Chaque session enrichit automatiquement les fiches concernées — exportable Obsidian, auditable.",
+    "graphView": "Vue graph",
+    "exportZip": "Export Obsidian (.zip)",
+    "statTotal": "Fiches en mémoire",
+    "statPractitioners": "Audioprothésistes suivis",
+    "statPatients": "Patients suivis",
+    "statSessions": "Sessions intégrées",
     "byKind": {
+      "index": "Sommaire",
       "practitioner": "Audioprothésistes",
-      "assistant": "Assistants",
+      "assistant": "Assistants accueil",
       "center": "Centres",
       "patient": "Patients",
-      "pattern": "Patterns",
-      "session": "Sessions"
+      "pattern": "Patterns récurrents",
+      "session": "Fiches session"
     },
+    "byKindDescription": {
+      "index": "Page d'accueil.",
+      "practitioner": "Forces, axes d'amélioration, sessions récentes.",
+      "assistant": "Qualité des appels, patterns identifiés.",
+      "center": "Profil de chaque centre.",
+      "patient": "Profil, parcours, entourage.",
+      "pattern": "Situations métier récurrentes du réseau.",
+      "session": "Snapshot par session analysée."
+    },
+    "noPagesYet": "Aucune fiche pour l'instant. Les fiches session sont créées automatiquement après chaque analyse.",
     "backlinksTitle": "Liens entrants",
     "noBacklinks": "Aucun lien entrant"
   },

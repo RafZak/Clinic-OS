@@ -14,6 +14,7 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { cn } from "@/lib/utils";
 
 const ICONS: Record<string, LucideIcon> = {
@@ -41,7 +42,8 @@ export type ProgramCardProps = {
   fileCount?: number;
 };
 
-export function ProgramCard(props: ProgramCardProps) {
+export async function ProgramCard(props: ProgramCardProps) {
+  const t = await getTranslations("catalogue");
   const Icon = ICONS[props.icon ?? ""] ?? BookOpen;
   const { isAvailable, slug, title, description, chunkCount, fileCount } = props;
 
@@ -81,16 +83,15 @@ export function ProgramCard(props: ProgramCardProps) {
         {isAvailable ? (
           <>
             <span className="text-muted-foreground">
-              {fileCount ?? 0} fichier{(fileCount ?? 0) > 1 ? "s" : ""} ·{" "}
-              <span className="tabular-nums text-ink">{chunkCount ?? 0}</span> chunks
+              {t("filesCount", { count: fileCount ?? 0, chunks: chunkCount ?? 0 })}
             </span>
             <span className="text-brand transition-transform group-hover:translate-x-0.5">
-              Ouvrir →
+              {t("open")}
             </span>
           </>
         ) : (
           <span className="rounded-full bg-surface-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-            Bientôt disponible
+            {t("comingSoon")}
           </span>
         )}
       </div>

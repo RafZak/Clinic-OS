@@ -1,48 +1,18 @@
 import Link from "next/link";
 import { Building2, Download, FileText, Network, Users, Wrench } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { listVaultPagesByKind } from "@/lib/vault/ingest";
 
-const KIND_META: Record<
-  string,
-  { label: string; icon: typeof FileText; description: string }
-> = {
-  index: {
-    label: "Sommaire",
-    icon: FileText,
-    description: "Page d'accueil.",
-  },
-  practitioner: {
-    label: "Audioprothésistes",
-    icon: Users,
-    description: "Forces, axes d'amélioration, sessions récentes.",
-  },
-  assistant: {
-    label: "Assistants accueil",
-    icon: Users,
-    description: "Qualité des appels, patterns identifiés.",
-  },
-  center: {
-    label: "Centres",
-    icon: Building2,
-    description: "Profil de chaque centre.",
-  },
-  patient: {
-    label: "Patients",
-    icon: Users,
-    description: "Profil, parcours, entourage.",
-  },
-  pattern: {
-    label: "Patterns récurrents",
-    icon: Wrench,
-    description: "Situations métier récurrentes du réseau.",
-  },
-  session: {
-    label: "Fiches session",
-    icon: FileText,
-    description: "Snapshot par session analysée.",
-  },
+const KIND_ICON: Record<string, typeof FileText> = {
+  index: FileText,
+  practitioner: Users,
+  assistant: Users,
+  center: Building2,
+  patient: Users,
+  pattern: Wrench,
+  session: FileText,
 };
 
 const KIND_ORDER = [
@@ -53,29 +23,32 @@ const KIND_ORDER = [
   "patient",
   "pattern",
   "session",
-];
+] as const;
+
+type Kind = (typeof KIND_ORDER)[number];
 
 export default async function AdminVaultPage() {
+  const t = await getTranslations("vault");
   const byKind = await listVaultPagesByKind();
   const total = Array.from(byKind.values()).reduce((acc, arr) => acc + arr.length, 0);
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Mémoire"
-        description="Le réseau apprend collectivement. Chaque session enrichit automatiquement les fiches concernées — exportable Obsidian, auditable."
+        title={t("title")}
+        description={t("description")}
         actions={
           <div className="flex items-center gap-2">
             <Link href="/admin/vault/graph">
               <Button variant="outline" size="sm">
                 <Network className="size-4" aria-hidden />
-                Vue graph
+                {t("graphView")}
               </Button>
             </Link>
             <a href="/api/admin/vault/export" download>
               <Button size="sm">
                 <Download className="size-4" aria-hidden />
-                Export Obsidian (.zip)
+                {t("exportZip")}
               </Button>
             </a>
           </div>
@@ -83,17 +56,17 @@ export default async function AdminVaultPage() {
       />
 
       <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
-        <Stat label="Fiches en mémoire" value={total} />
+        <Stat label={t("statTotal")} value={total} />
         <Stat
-          label="Audioprothésistes suivis"
+          label={t("statPractitioners")}
           value={byKind.get("practitioner")?.length ?? 0}
         />
         <Stat
-          label="Patients suivis"
+          label={t("statPatients")}
           value={byKind.get("patient")?.length ?? 0}
         />
         <Stat
-          label="Sessions intégrées"
+          label={t("statSessions")}
           value={byKind.get("session")?.length ?? 0}
         />
       </div>
@@ -102,8 +75,9 @@ export default async function AdminVaultPage() {
         {KIND_ORDER.map((kind) => {
           const pages = byKind.get(kind) ?? [];
           if (pages.length === 0 && kind !== "session") return null;
-          const meta = KIND_META[kind] ?? { label: kind, icon: FileText, description: "" };
-          const Icon = meta.icon;
+          const Icon = KIND_ICON[kind] ?? FileText;
+          const label = t(`byKind.${kind as Kind}`);
+          const description = t(`byKindDescription.${kind as Kind}`);
 
           return (
             <section
@@ -113,22 +87,17 @@ export default async function AdminVaultPage() {
               <div className="mb-1 flex items-center gap-2">
                 <Icon className="size-4 text-brand" aria-hidden />
                 <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-                  {meta.label}
+                  {label}
                 </h2>
                 <span className="text-xs text-muted-foreground">
                   ({pages.length})
                 </span>
               </div>
-              {meta.description && (
-                <p className="mb-3 text-xs text-muted-foreground">
-                  {meta.description}
-                </p>
+              {description && (
+                <p className="mb-3 text-xs text-muted-foreground">{description}</p>
               )}
               {pages.length === 0 ? (
-                <p className="text-xs text-muted-foreground">
-                  Aucune fiche pour l&apos;instant. Les fiches session sont créées automatiquement
-                  après chaque analyse.
-                </p>
+                <p className="text-xs text-muted-foreground">{t("noPagesYet")}</p>
               ) : (
                 <ul className="flex flex-col divide-y divide-border/60">
                   {pages.map((p) => (

@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { PageHeader } from "@/components/layout/page-header";
 import { ProgramCard } from "@/components/catalogue/program-card";
 import {
@@ -11,6 +12,7 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function CataloguePage() {
+  const t = await getTranslations("catalogue");
   const [programs, stats] = await Promise.all([
     listPrograms(),
     getProgramChunkStats(),
@@ -28,10 +30,11 @@ export default async function CataloguePage() {
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
-        title="Catalogue de formation"
-        description={`${activeCount} programme${activeCount > 1 ? "s" : ""} actif${
-          activeCount > 1 ? "s" : ""
-        } · ${totalCount - activeCount} à venir. Conçus par Audio Académie, ingérés dans Clinic OS pour servir la recherche Cmd+K et le coaching des consultations.`}
+        title={t("title")}
+        description={t("description", {
+          active: activeCount,
+          coming: totalCount - activeCount,
+        })}
       />
 
       <div className="flex flex-col gap-10">
@@ -42,8 +45,10 @@ export default async function CataloguePage() {
                 {section.label}
               </h2>
               <span className="text-[11px] tabular-nums text-muted-foreground">
-                {section.programs.filter((p) => p.isAvailable).length}/
-                {section.programs.length} disponibles
+                {t("available", {
+                  ready: section.programs.filter((p) => p.isAvailable).length,
+                  total: section.programs.length,
+                })}
               </span>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

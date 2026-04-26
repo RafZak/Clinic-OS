@@ -1,9 +1,11 @@
 import "server-only";
 import { sql } from "drizzle-orm";
+import { getTranslations } from "next-intl/server";
 import { db } from "@/db/client";
 import type { Role } from "@/lib/role";
+import type { Locale } from "@/lib/locale";
 import type { FrameworkKind } from "@/lib/frameworks";
-import { getFramework, FRAMEWORK_LABEL } from "@/lib/frameworks";
+import { getFramework, getStepName } from "@/lib/frameworks";
 
 export type DashboardKpi = {
   label: string;
@@ -71,6 +73,7 @@ export type DashboardContext = {
 
 export type DashboardData = {
   role: Role;
+  locale: Locale;
   frameworkKind: FrameworkKind;
   frameworkLabel: string;
   kpis: DashboardKpi[];
@@ -92,12 +95,29 @@ function startOfWeek(d: Date): Date {
   return x;
 }
 
-export async function loadDashboard(role: Role): Promise<DashboardData> {
+function eurFormat(locale: Locale, n: number): string {
+  return new Intl.NumberFormat(locale === "en" ? "en-GB" : "fr-FR", {
+    style: "currency",
+    currency: "EUR",
+    maximumFractionDigits: 0,
+  }).format(n);
+}
+
+export async function loadDashboard(
+  role: Role,
+  locale: Locale
+): Promise<DashboardData> {
   const frameworkKind: FrameworkKind =
     role === "audioprothesiste" ? "consultation" : "phone_call";
 
+  const [tFw, tDash, tWeek] = await Promise.all([
+    getTranslations("framework"),
+    getTranslations("dashboard"),
+    getTranslations("dashboard"),
+  ]);
+
   const ctxBase = await loadContext();
-  const heatmap = await loadHeatmap(frameworkKind);
+  const heatmap = await loadHeatmap(frameworkKind, locale);
 
   const lowestStep = heatmap.reduce<DashboardContext["lowestStep"]>(
     (acc, cell) => {
@@ -117,18 +137,19 @@ export async function loadDashboard(role: Role): Promise<DashboardData> {
 
   const kpis =
     role === "audioprothesiste"
-      ? buildPractitionerKpis(context)
-      : buildAssistantKpis(context);
+      ? buildPractitionerKpis(context, locale, tDash)
+      : buildAssistantKpis(context, locale, tDash);
 
   const [weekly, recentSessions] = await Promise.all([
-    loadWeeklyScores(frameworkKind),
+    loadWeeklyScores(frameworkKind, tWeek),
     loadRecentSessions(frameworkKind),
   ]);
 
   return {
     role,
+    locale,
     frameworkKind,
-    frameworkLabel: FRAMEWORK_LABEL[frameworkKind],
+    frameworkLabel: tFw(frameworkKind),
     kpis,
     weekly,
     heatmap,
@@ -329,61 +350,74 @@ function pct(num: number, den: number): string {
   return `${Math.round((num / den) * 100)} %`;
 }
 
-function buildPractitionerKpis(ctx: DashboardContext): DashboardKpi[] {
+type DashTrans = (key: string, params?: Record<string, string | number>) => string;
+
+function buildPractitionerKpis(
+  ctx: DashboardContext,
+  locale: Locale,
+  t: DashTrans
+): DashboardKpi[] {
   const fittedDen = ctx.consultationsCount > 0 ? ctx.consultationsCount : 0;
+  const den = fittedDen || ctx.totalPatients;
   return [
     {
-      label: "Taux de concrétisation",
-      value: pct(ctx.fittedPatients, fittedDen || ctx.totalPatients),
-      hint: `${ctx.fittedPatients} patients équipés sur ${
-        fittedDen || ctx.totalPatients
-      } consultés`,
+      label: t("kpiPractitionerConversion"),
+      value: pct(ctx.fittedPatients, den),
+      hint: t("kpiPractitionerConversionHint", {
+        fitted: ctx.fittedPatients,
+        total: den,
+      }),
     },
     {
-      label: "Panier moyen",
+      label: t("kpiPractitionerBasket"),
       value:
-        ctx.basketAvgEur != null
-          ? `${ctx.basketAvgEur.toLocaleString("fr-FR")} €`
-          : "—",
-      hint: "Prix moyen par patient appareillé",
+        ctx.basketAvgEur != null ? eurFormat(locale, ctx.basketAvgEur) : "—",
+      hint: t("kpiPractitionerBasketHint"),
     },
     {
-      label: "Score consultations moyen",
+      label: t("kpiPractitionerScore"),
       value:
         ctx.practitionerAvgScore != null
           ? `${ctx.practitionerAvgScore}/100`
           : "—",
       hint: ctx.lastConsultation?.patientLabel
-        ? `Dernière : ${ctx.lastConsultation.patientLabel}`
-        : "Sur consultations analysées",
+        ? t("kpiPractitionerScoreHintLast", {
+            label: ctx.lastConsultation.patientLabel,
+          })
+        : t("kpiPractitionerScoreHintGeneric"),
     },
   ];
 }
 
-function buildAssistantKpis(ctx: DashboardContext): DashboardKpi[] {
+function buildAssistantKpis(
+  ctx: DashboardContext,
+  _locale: Locale,
+  t: DashTrans
+): DashboardKpi[] {
   const dur = ctx.callDurationAvgSec;
   return [
     {
-      label: "Durée moyenne appel",
+      label: t("kpiAssistantDuration"),
       value:
         dur != null
           ? `${Math.floor(dur / 60)}m ${(dur % 60).toString().padStart(2, "0")}s`
           : "—",
-      hint: "Cible : ≤ 2 min",
+      hint: t("kpiAssistantDurationHint"),
     },
     {
-      label: "Score qualité accueil",
+      label: t("kpiAssistantScore"),
       value:
         ctx.assistantAvgScore != null
           ? `${ctx.assistantAvgScore}/100`
           : "—",
-      hint: "Framework appel — 6 étapes",
+      hint: t("kpiAssistantScoreHint"),
     },
   ];
 }
 
 async function loadWeeklyScores(
-  kind: FrameworkKind
+  kind: FrameworkKind,
+  t: DashTrans
 ): Promise<WeeklyScorePoint[]> {
   const rows = await db.execute<{
     week_start: string;
@@ -418,7 +452,7 @@ async function loadWeeklyScores(
     const hit = map.get(key);
     points.push({
       weekStart,
-      weekLabel: i === 0 ? "Cette sem." : `S-${i}`,
+      weekLabel: i === 0 ? t("weekThis") : t("weekShort", { n: i }),
       consultations: hit?.count ?? 0,
       avgScore: hit?.avg ?? null,
     });
@@ -426,7 +460,10 @@ async function loadWeeklyScores(
   return points;
 }
 
-async function loadHeatmap(kind: FrameworkKind): Promise<StepHeatmapCell[]> {
+async function loadHeatmap(
+  kind: FrameworkKind,
+  locale: Locale
+): Promise<StepHeatmapCell[]> {
   const framework = getFramework(kind);
 
   const rows = await db.execute<{
@@ -465,7 +502,7 @@ async function loadHeatmap(kind: FrameworkKind): Promise<StepHeatmapCell[]> {
     const hit = map.get(step.number);
     return {
       number: step.number,
-      name: step.name,
+      name: getStepName(step, locale),
       avgScore: hit?.avg ?? null,
       coverageRatio: hit && hit.total > 0 ? hit.coverage / hit.total : 0,
     };

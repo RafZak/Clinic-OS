@@ -1,5 +1,7 @@
 import "server-only";
+import { getTranslations } from "next-intl/server";
 import type { Role } from "@/lib/role";
+import type { Locale } from "@/lib/locale";
 import type { DashboardContext } from "@/lib/dashboard";
 import {
   moduleHrefForStep,
@@ -18,13 +20,32 @@ export type Nudge = {
   cta?: { label: string; href: string };
 };
 
-export function buildNudges(role: Role, ctx: DashboardContext): Nudge[] {
-  return role === "audioprothesiste"
-    ? buildPractitionerNudges(ctx)
-    : buildAssistantNudges(ctx);
+function eurFormat(locale: Locale, n: number): string {
+  return new Intl.NumberFormat(locale === "en" ? "en-GB" : "fr-FR", {
+    style: "currency",
+    currency: "EUR",
+    maximumFractionDigits: 0,
+  }).format(n);
 }
 
-function buildPractitionerNudges(ctx: DashboardContext): Nudge[] {
+export async function buildNudges(
+  role: Role,
+  ctx: DashboardContext,
+  locale: Locale
+): Promise<Nudge[]> {
+  const t = await getTranslations("nudges");
+  return role === "audioprothesiste"
+    ? buildPractitionerNudges(ctx, locale, t)
+    : buildAssistantNudges(ctx, locale, t);
+}
+
+type Trans = (key: string, params?: Record<string, string | number>) => string;
+
+function buildPractitionerNudges(
+  ctx: DashboardContext,
+  locale: Locale,
+  t: Trans
+): Nudge[] {
   const nudges: Nudge[] = [];
 
   if (ctx.uncalledLostPatient) {
@@ -32,11 +53,13 @@ function buildPractitionerNudges(ctx: DashboardContext): Nudge[] {
       id: "uncalled-lost",
       kind: "alert",
       severity: "critical",
-      title: `${ctx.uncalledLostPatient.label} pas rappelée depuis ${ctx.uncalledLostPatient.daysSinceContact} j`,
-      description:
-        "Patiente perdue après objection prix non traitée — un rappel téléphonique permettrait peut-être de relancer le parcours.",
+      title: t("uncalledLostPro.title", {
+        label: ctx.uncalledLostPatient.label,
+        days: ctx.uncalledLostPatient.daysSinceContact,
+      }),
+      description: t("uncalledLostPro.description"),
       cta: {
-        label: "Voir le parcours",
+        label: t("uncalledLostPro.cta"),
         href: `/patients/${ctx.uncalledLostPatient.id}`,
       },
     });
@@ -47,13 +70,17 @@ function buildPractitionerNudges(ctx: DashboardContext): Nudge[] {
       id: "last-consult",
       kind: "alert",
       severity: "info",
-      title: `Consultation analysée il y a ${
-        ctx.lastConsultation.daysAgo === 0 ? "moins d'1 jour" : "1 jour"
-      } — ${ctx.lastConsultation.patientLabel}`,
-      description:
-        "4 livrables prêts à envoyer (notes cliniques, email, SMS, courrier ORL). La fiche audioprothésiste a été enrichie automatiquement.",
+      title:
+        ctx.lastConsultation.daysAgo === 0
+          ? t("lastConsult.titleZeroDay", {
+              label: ctx.lastConsultation.patientLabel,
+            })
+          : t("lastConsult.titleOneDay", {
+              label: ctx.lastConsultation.patientLabel,
+            }),
+      description: t("lastConsult.description"),
       cta: {
-        label: "Voir l'analyse",
+        label: t("lastConsult.cta"),
         href: `/consultations/${ctx.lastConsultation.id}`,
       },
     });
@@ -64,10 +91,15 @@ function buildPractitionerNudges(ctx: DashboardContext): Nudge[] {
       id: "weak-step",
       kind: "improvement",
       severity: "warning",
-      title: `Étape ${ctx.lowestStep.number} sous tension : ${ctx.lowestStep.name}`,
-      description: `Score moyen ${ctx.lowestStep.avgScore}/100 sur vos consultations analysées. Revoir le module formation correspondant aiderait à remonter cette étape.`,
+      title: t("weakStep.title", {
+        number: ctx.lowestStep.number,
+        name: ctx.lowestStep.name,
+      }),
+      description: t("weakStep.description", {
+        score: ctx.lowestStep.avgScore,
+      }),
       cta: {
-        label: `Revoir le module ${ctx.lowestStep.number}`,
+        label: t("weakStep.cta", { number: ctx.lowestStep.number }),
         href: moduleHrefForStep("consultation", ctx.lowestStep.number),
       },
     });
@@ -79,10 +111,13 @@ function buildPractitionerNudges(ctx: DashboardContext): Nudge[] {
       id: "upsell",
       kind: "improvement",
       severity: "info",
-      title: `Opportunité de montée en gamme — ${ctx.upsellOpportunity.patientLabel}`,
-      description: `Essai en classe 1 sur ${ctx.upsellOpportunity.product} alors que le profil correspond à une classe 2. Reproposer un essai comparatif au prochain RDV (potentiel +${delta.toLocaleString("fr-FR")} € panier).`,
+      title: t("upsell.title", { label: ctx.upsellOpportunity.patientLabel }),
+      description: t("upsell.description", {
+        product: ctx.upsellOpportunity.product,
+        delta: eurFormat(locale, delta),
+      }),
       cta: {
-        label: "Voir le parcours",
+        label: t("upsell.cta"),
         href: `/patients/${ctx.upsellOpportunity.patientId}`,
       },
     });
@@ -91,7 +126,11 @@ function buildPractitionerNudges(ctx: DashboardContext): Nudge[] {
   return nudges.slice(0, 4);
 }
 
-function buildAssistantNudges(ctx: DashboardContext): Nudge[] {
+function buildAssistantNudges(
+  ctx: DashboardContext,
+  _locale: Locale,
+  t: Trans
+): Nudge[] {
   const nudges: Nudge[] = [];
 
   if (ctx.uncalledLostPatient) {
@@ -99,24 +138,30 @@ function buildAssistantNudges(ctx: DashboardContext): Nudge[] {
       id: "uncalled-lost",
       kind: "alert",
       severity: "critical",
-      title: `Relance recommandée — ${ctx.uncalledLostPatient.label}`,
-      description: `Patiente perdue depuis ${ctx.uncalledLostPatient.daysSinceContact} j après une objection prix au téléphone. Un rappel en valorisant le 100% santé peut sauver le RDV.`,
+      title: t("uncalledLostAssistant.title", {
+        label: ctx.uncalledLostPatient.label,
+      }),
+      description: t("uncalledLostAssistant.description", {
+        days: ctx.uncalledLostPatient.daysSinceContact,
+      }),
       cta: {
-        label: "Voir le parcours",
+        label: t("uncalledLostAssistant.cta"),
         href: `/patients/${ctx.uncalledLostPatient.id}`,
       },
     });
   }
 
-  if (ctx.appointmentsCount > 0 && ctx.honoredAppointments < ctx.appointmentsCount) {
+  if (
+    ctx.appointmentsCount > 0 &&
+    ctx.honoredAppointments < ctx.appointmentsCount
+  ) {
     const lost = ctx.appointmentsCount - ctx.honoredAppointments;
     nudges.push({
       id: "no-show",
       kind: "alert",
       severity: "warning",
-      title: `${lost} RDV pris sans consultation venue à terme`,
-      description:
-        "Ancrage à renforcer en fin d'appel : répéter date/heure 2× et envoyer SMS de confirmation systématique le matin du RDV.",
+      title: t("noShow.title", { count: lost }),
+      description: t("noShow.description"),
     });
   }
 
@@ -127,10 +172,13 @@ function buildAssistantNudges(ctx: DashboardContext): Nudge[] {
       id: "long-calls",
       kind: "improvement",
       severity: "info",
-      title: "Durée d'appel au-dessus de la cible",
-      description: `Moyenne ${m}m ${s.toString().padStart(2, "0")}s — la cible interne est ≤ 2 min. Revoir le module "Découverte ciblée" pour resserrer cette phase.`,
+      title: t("longCalls.title"),
+      description: t("longCalls.description", {
+        m,
+        s: s.toString().padStart(2, "0"),
+      }),
       cta: {
-        label: "Voir le module Découverte",
+        label: t("longCalls.cta"),
         href: moduleHrefForStep("phone_call", 4),
       },
     });
@@ -141,11 +189,10 @@ function buildAssistantNudges(ctx: DashboardContext): Nudge[] {
       id: "objection-prix",
       kind: "improvement",
       severity: "info",
-      title: "Pattern récurrent — objection prix au téléphone",
-      description:
-        "Plusieurs appels perdus avec une objection financière éludée. Le programme \"Convaincre au téléphone\" rappelle qu'au téléphone l'objectif est le triage, pas la vente — l'objection prix se traite en RDV.",
+      title: t("objectionPrix.title"),
+      description: t("objectionPrix.description"),
       cta: {
-        label: "Voir le programme téléphone",
+        label: t("objectionPrix.cta"),
         href: programHrefBySlug("convaincre-au-telephone"),
       },
     });

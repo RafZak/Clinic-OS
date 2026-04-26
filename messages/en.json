@@ -19,7 +19,13 @@
     "no": "No",
     "error": "Error",
     "scoreOf100": "Score {score}/100",
-    "globalScore": "Overall score"
+    "globalScore": "Overall score",
+    "out": "/ 100",
+    "noData": "—",
+    "minutesShort": "{m}m",
+    "minutesSecondsShort": "{m}m {s}s",
+    "minutesSecondsCompact": "{m}m{s}",
+    "viewAll": "View all"
   },
   "roles": {
     "audioprothesiste": "Audiologist",
@@ -86,5 +92,166 @@
     "patientStatusWon": "won",
     "patientStatusLost": "lost",
     "patientStatusProspect": "prospect"
+  },
+  "framework": {
+    "consultation": "Consultation",
+    "phone_call": "Inbound call",
+    "consultation_short": "Consultation",
+    "phone_call_short": "Call"
+  },
+  "dashboard": {
+    "title": "Dashboard — {role}",
+    "descriptionPro": "Conversion rate, average basket and quality of your consultations — actions recommended by Clinic OS.",
+    "descriptionAssistant": "Average call duration and quality — actions recommended by Clinic OS.",
+    "kpiPractitionerConversion": "Conversion rate",
+    "kpiPractitionerConversionHint": "{fitted} patients fitted out of {total} consulted",
+    "kpiPractitionerBasket": "Average basket",
+    "kpiPractitionerBasketHint": "Average price per fitted patient",
+    "kpiPractitionerScore": "Avg. consultation score",
+    "kpiPractitionerScoreHintLast": "Latest: {label}",
+    "kpiPractitionerScoreHintGeneric": "Across analyzed consultations",
+    "kpiAssistantDuration": "Avg. call duration",
+    "kpiAssistantDurationHint": "Target: ≤ 2 min",
+    "kpiAssistantScore": "Front desk quality score",
+    "kpiAssistantScoreHint": "Call framework — 6 steps",
+    "weeklyTitle": "{framework} score trend — last 4 weeks",
+    "heatmapTitle": "Per-step performance — {framework} framework",
+    "heatmapDescription": "Average score per step across analyzed sessions.",
+    "actionsTitle": "Recommended actions",
+    "recentTitleConsultations": "Latest analyzed consultations",
+    "recentTitleCalls": "Latest analyzed calls",
+    "weekThis": "This wk",
+    "weekShort": "W-{n}"
+  },
+  "nudges": {
+    "uncalledLostPro": {
+      "title": "{label} not called back for {days} days",
+      "description": "Patient lost after an unaddressed price objection — a follow-up call could revive the journey.",
+      "cta": "View journey"
+    },
+    "lastConsult": {
+      "titleZeroDay": "Consultation analyzed less than 1 day ago — {label}",
+      "titleOneDay": "Consultation analyzed 1 day ago — {label}",
+      "description": "4 deliverables ready to send (clinical notes, email, SMS, ENT specialist letter). The audiologist's vault entry was enriched automatically.",
+      "cta": "View analysis"
+    },
+    "weakStep": {
+      "title": "Step {number} under stress: {name}",
+      "description": "Avg. score {score}/100 across your analyzed consultations. Revisiting the related training module would help raise this step.",
+      "cta": "Review module {number}"
+    },
+    "upsell": {
+      "title": "Upsell opportunity — {label}",
+      "description": "Trial on a tier-1 fitting for {product} while the profile matches a tier-2. Re-propose a side-by-side trial at next appointment (potential +{delta} basket).",
+      "cta": "View journey"
+    },
+    "uncalledLostAssistant": {
+      "title": "Follow-up recommended — {label}",
+      "description": "Patient lost {days} days ago after a price objection on the phone. A call back highlighting full-coverage tier-1 hearing aids may save the appointment.",
+      "cta": "View journey"
+    },
+    "noShow": {
+      "title": "{count} appointments booked without consultation",
+      "description": "Strengthen anchoring at end of call: repeat date/time 2× and send a confirmation SMS the morning of the appointment."
+    },
+    "longCalls": {
+      "title": "Call duration above target",
+      "description": "Average {m}m {s}s — internal target is ≤ 2 min. Revisit the \"Targeted discovery\" module to tighten this phase.",
+      "cta": "View Discovery module"
+    },
+    "objectionPrix": {
+      "title": "Recurring pattern — price objection on the phone",
+      "description": "Several calls lost with a financial objection brushed aside. The \"Phone conversion\" program reminds us that on the phone the goal is triage, not selling — price objections belong in the consultation room.",
+      "cta": "View phone program"
+    }
+  },
+  "results": {
+    "backDashboard": "Dashboard",
+    "backPatient": "Patient journey",
+    "tabs": {
+      "overview": "Overview",
+      "transcription": "Transcript",
+      "coaching": "Coaching",
+      "deliverables": "Deliverables",
+      "memory": "Memory"
+    },
+    "globalScore": "Overall score",
+    "duration": "Duration",
+    "opportunities": "+{amount} opportunities detected",
+    "radarTitle": "Per-step performance",
+    "insightsTitle": "Key insights",
+    "consultationLabels": {
+      "pro": "Practitioner",
+      "patient": "Patient"
+    },
+    "phoneLabels": {
+      "pro": "Front desk",
+      "patient": "Caller"
+    }
+  },
+  "live": {
+    "transcriptTitle": "Live transcript",
+    "frameworkTitle": "Analysis framework",
+    "coachingTitle": "Real-time coaching",
+    "stop": "End",
+    "starting": "Starting…",
+    "analyzing": "Analysis in progress…"
+  },
+  "patients": {
+    "title": "Patients",
+    "description": "All your patients and prospects, sorted by latest interaction.",
+    "filterAll": "All",
+    "filterActive": "Active",
+    "filterProspect": "Prospects",
+    "filterLost": "Lost",
+    "tableLabel": "Patient",
+    "tableScore": "Avg. score",
+    "tableLast": "Latest interaction",
+    "tableStatus": "Status",
+    "deleteOne": "Delete",
+    "deleteSelected": "Delete selection ({count})",
+    "deleteConfirm": "Confirm deletion",
+    "deleteCancel": "Cancel",
+    "empty": "No patient",
+    "statusProspect": "Prospect",
+    "statusPatient": "Patient",
+    "statusLost": "Lost",
+    "timelineTitle": "Journey",
+    "vaultTitle": "Memory entry"
+  },
+  "catalogue": {
+    "title": "Catalogue",
+    "description": "The Audio Académie training programs available.",
+    "comingSoon": "Coming soon",
+    "modulesCount": "{count, plural, one {# module} other {# modules}}",
+    "openModule": "Open"
+  },
+  "vault": {
+    "title": "Organizational memory",
+    "description": "The living memory of the network, automatically updated after every interaction.",
+    "exportObsidian": "Export to Obsidian",
+    "graphView": "Graph view",
+    "listView": "List view",
+    "byKind": {
+      "practitioner": "Audiologists",
+      "assistant": "Front desk",
+      "center": "Centers",
+      "patient": "Patients",
+      "pattern": "Patterns",
+      "session": "Sessions"
+    },
+    "backlinksTitle": "Backlinks",
+    "noBacklinks": "No backlinks"
+  },
+  "admin": {
+    "knowledge": {
+      "title": "Knowledge base",
+      "description": "Programs ingested from Google Drive.",
+      "filesTab": "Files",
+      "chunksTab": "Chunks",
+      "runsTab": "History",
+      "testTab": "Test retrieval",
+      "reingest": "Re-ingest"
+    }
   }
 }

@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { PageHeader } from "@/components/layout/page-header";
 import { WeeklyScoreChart } from "@/components/dashboard/weekly-score-chart";
 import { StepHeatmap } from "@/components/dashboard/step-heatmap";
@@ -5,15 +6,20 @@ import { RecentSessionsTable } from "@/components/dashboard/recent-sessions-tabl
 import { NudgesPanel } from "@/components/dashboard/nudges-panel";
 import { loadDashboard } from "@/lib/dashboard";
 import { buildNudges } from "@/lib/nudges";
-import { getRole, ROLE_LABEL } from "@/lib/role";
+import { getRole } from "@/lib/role";
+import { getLocale } from "@/lib/locale";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const role = await getRole();
-  const dashboard = await loadDashboard(role);
-  const nudges = buildNudges(role, dashboard.context);
+  const locale = await getLocale();
+  const dashboard = await loadDashboard(role, locale);
+  const nudges = await buildNudges(role, dashboard.context, locale);
+
+  const tDash = await getTranslations("dashboard");
+  const tRoles = await getTranslations("roles");
 
   const isPractitioner = role === "audioprothesiste";
   const kpiCount = dashboard.kpis.length;
@@ -21,11 +27,11 @@ export default async function DashboardPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title={`Tableau de bord — ${ROLE_LABEL[role]}`}
+        title={tDash("title", { role: tRoles(role) })}
         description={
           isPractitioner
-            ? "Taux de concrétisation, panier moyen et qualité de vos consultations — actions recommandées par Clinic OS."
-            : "Durée moyenne et qualité de vos appels — actions recommandées par Clinic OS."
+            ? tDash("descriptionPro")
+            : tDash("descriptionAssistant")
         }
       />
 
@@ -59,7 +65,9 @@ export default async function DashboardPage() {
         <div className="rounded-lg border border-border bg-surface p-5">
           <div className="flex items-baseline justify-between">
             <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-              Évolution score {dashboard.frameworkLabel.toLowerCase()} — 4 semaines
+              {tDash("weeklyTitle", {
+                framework: dashboard.frameworkLabel.toLowerCase(),
+              })}
             </h2>
             <span className="text-xs text-muted-foreground">/ 100</span>
           </div>
@@ -70,10 +78,10 @@ export default async function DashboardPage() {
 
         <div className="rounded-lg border border-border bg-surface p-5">
           <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-            Performance par étape — Framework {dashboard.frameworkLabel}
+            {tDash("heatmapTitle", { framework: dashboard.frameworkLabel })}
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            Score moyen par étape sur les sessions analysées.
+            {tDash("heatmapDescription")}
           </p>
           <div className="mt-4">
             <StepHeatmap cells={dashboard.heatmap} />
@@ -83,7 +91,7 @@ export default async function DashboardPage() {
 
       <section className="rounded-lg border border-border bg-surface p-5">
         <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-          Actions recommandées
+          {tDash("actionsTitle")}
         </h2>
         <div className="mt-4">
           <NudgesPanel nudges={nudges} />
@@ -92,7 +100,9 @@ export default async function DashboardPage() {
 
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-          Dernières {isPractitioner ? "consultations analysées" : "appels analysés"}
+          {isPractitioner
+            ? tDash("recentTitleConsultations")
+            : tDash("recentTitleCalls")}
         </h2>
         <RecentSessionsTable
           rows={dashboard.recentSessions}

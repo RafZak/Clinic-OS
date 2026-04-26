@@ -19,7 +19,13 @@
     "no": "Non",
     "error": "Erreur",
     "scoreOf100": "Score {score}/100",
-    "globalScore": "Score global"
+    "globalScore": "Score global",
+    "out": "/ 100",
+    "noData": "—",
+    "minutesShort": "{m}m",
+    "minutesSecondsShort": "{m}m {s}s",
+    "minutesSecondsCompact": "{m}m{s}",
+    "viewAll": "Tout voir"
   },
   "roles": {
     "audioprothesiste": "Audioprothésiste",
@@ -86,5 +92,166 @@
     "patientStatusWon": "gagné",
     "patientStatusLost": "perdu",
     "patientStatusProspect": "prospect"
+  },
+  "framework": {
+    "consultation": "Consultation",
+    "phone_call": "Appel entrant",
+    "consultation_short": "Consultation",
+    "phone_call_short": "Appel"
+  },
+  "dashboard": {
+    "title": "Tableau de bord — {role}",
+    "descriptionPro": "Taux de concrétisation, panier moyen et qualité de vos consultations — actions recommandées par Clinic OS.",
+    "descriptionAssistant": "Durée moyenne et qualité de vos appels — actions recommandées par Clinic OS.",
+    "kpiPractitionerConversion": "Taux de concrétisation",
+    "kpiPractitionerConversionHint": "{fitted} patients équipés sur {total} consultés",
+    "kpiPractitionerBasket": "Panier moyen",
+    "kpiPractitionerBasketHint": "Prix moyen par patient appareillé",
+    "kpiPractitionerScore": "Score consultations moyen",
+    "kpiPractitionerScoreHintLast": "Dernière : {label}",
+    "kpiPractitionerScoreHintGeneric": "Sur consultations analysées",
+    "kpiAssistantDuration": "Durée moyenne appel",
+    "kpiAssistantDurationHint": "Cible : ≤ 2 min",
+    "kpiAssistantScore": "Score qualité accueil",
+    "kpiAssistantScoreHint": "Framework appel — 6 étapes",
+    "weeklyTitle": "Évolution score {framework} — 4 semaines",
+    "heatmapTitle": "Performance par étape — Framework {framework}",
+    "heatmapDescription": "Score moyen par étape sur les sessions analysées.",
+    "actionsTitle": "Actions recommandées",
+    "recentTitleConsultations": "Dernières consultations analysées",
+    "recentTitleCalls": "Derniers appels analysés",
+    "weekThis": "Cette sem.",
+    "weekShort": "S-{n}"
+  },
+  "nudges": {
+    "uncalledLostPro": {
+      "title": "{label} pas rappelée depuis {days} j",
+      "description": "Patiente perdue après objection prix non traitée — un rappel téléphonique permettrait peut-être de relancer le parcours.",
+      "cta": "Voir le parcours"
+    },
+    "lastConsult": {
+      "titleZeroDay": "Consultation analysée il y a moins d'1 jour — {label}",
+      "titleOneDay": "Consultation analysée il y a 1 jour — {label}",
+      "description": "4 livrables prêts à envoyer (notes cliniques, email, SMS, courrier ORL). La fiche audioprothésiste a été enrichie automatiquement.",
+      "cta": "Voir l'analyse"
+    },
+    "weakStep": {
+      "title": "Étape {number} sous tension : {name}",
+      "description": "Score moyen {score}/100 sur vos consultations analysées. Revoir le module formation correspondant aiderait à remonter cette étape.",
+      "cta": "Revoir le module {number}"
+    },
+    "upsell": {
+      "title": "Opportunité de montée en gamme — {label}",
+      "description": "Essai en classe 1 sur {product} alors que le profil correspond à une classe 2. Reproposer un essai comparatif au prochain RDV (potentiel +{delta} panier).",
+      "cta": "Voir le parcours"
+    },
+    "uncalledLostAssistant": {
+      "title": "Relance recommandée — {label}",
+      "description": "Patiente perdue depuis {days} j après une objection prix au téléphone. Un rappel en valorisant le 100% santé peut sauver le RDV.",
+      "cta": "Voir le parcours"
+    },
+    "noShow": {
+      "title": "{count} RDV pris sans consultation venue à terme",
+      "description": "Ancrage à renforcer en fin d'appel : répéter date/heure 2× et envoyer SMS de confirmation systématique le matin du RDV."
+    },
+    "longCalls": {
+      "title": "Durée d'appel au-dessus de la cible",
+      "description": "Moyenne {m}m {s}s — la cible interne est ≤ 2 min. Revoir le module \"Découverte ciblée\" pour resserrer cette phase.",
+      "cta": "Voir le module Découverte"
+    },
+    "objectionPrix": {
+      "title": "Pattern récurrent — objection prix au téléphone",
+      "description": "Plusieurs appels perdus avec une objection financière éludée. Le programme \"Convaincre au téléphone\" rappelle qu'au téléphone l'objectif est le triage, pas la vente — l'objection prix se traite en RDV.",
+      "cta": "Voir le programme téléphone"
+    }
+  },
+  "results": {
+    "backDashboard": "Tableau de bord",
+    "backPatient": "Parcours patient",
+    "tabs": {
+      "overview": "Vue d'ensemble",
+      "transcription": "Transcription",
+      "coaching": "Coaching",
+      "deliverables": "Livrables",
+      "memory": "Mémoire"
+    },
+    "globalScore": "Score global",
+    "duration": "Durée",
+    "opportunities": "+{amount} opportunités détectées",
+    "radarTitle": "Performance par étape",
+    "insightsTitle": "Insights majeurs",
+    "consultationLabels": {
+      "pro": "Pro",
+      "patient": "Patient"
+    },
+    "phoneLabels": {
+      "pro": "Standardiste",
+      "patient": "Appelant"
+    }
+  },
+  "live": {
+    "transcriptTitle": "Transcription en direct",
+    "frameworkTitle": "Framework d'analyse",
+    "coachingTitle": "Coaching temps réel",
+    "stop": "Terminer",
+    "starting": "Démarrage…",
+    "analyzing": "Analyse en cours…"
+  },
+  "patients": {
+    "title": "Patients",
+    "description": "Tous vos patients et prospects, classés par dernière interaction.",
+    "filterAll": "Tous",
+    "filterActive": "Actifs",
+    "filterProspect": "Prospects",
+    "filterLost": "Perdus",
+    "tableLabel": "Patient",
+    "tableScore": "Score moyen",
+    "tableLast": "Dernière interaction",
+    "tableStatus": "Statut",
+    "deleteOne": "Supprimer",
+    "deleteSelected": "Supprimer la sélection ({count})",
+    "deleteConfirm": "Confirmer la suppression",
+    "deleteCancel": "Annuler",
+    "empty": "Aucun patient",
+    "statusProspect": "Prospect",
+    "statusPatient": "Patient",
+    "statusLost": "Perdu",
+    "timelineTitle": "Parcours",
+    "vaultTitle": "Fiche mémoire"
+  },
+  "catalogue": {
+    "title": "Catalogue",
+    "description": "Les programmes Audio Académie disponibles.",
+    "comingSoon": "Bientôt disponible",
+    "modulesCount": "{count, plural, one {# module} other {# modules}}",
+    "openModule": "Ouvrir"
+  },
+  "vault": {
+    "title": "Mémoire organisationnelle",
+    "description": "La mémoire vivante du réseau, mise à jour automatiquement après chaque interaction.",
+    "exportObsidian": "Export Obsidian",
+    "graphView": "Vue graphique",
+    "listView": "Vue liste",
+    "byKind": {
+      "practitioner": "Audioprothésistes",
+      "assistant": "Assistants",
+      "center": "Centres",
+      "patient": "Patients",
+      "pattern": "Patterns",
+      "session": "Sessions"
+    },
+    "backlinksTitle": "Liens entrants",
+    "noBacklinks": "Aucun lien entrant"
+  },
+  "admin": {
+    "knowledge": {
+      "title": "Base formation",
+      "description": "Programmes ingérés depuis Google Drive.",
+      "filesTab": "Fichiers",
+      "chunksTab": "Chunks",
+      "runsTab": "Historique",
+      "testTab": "Test retrieval",
+      "reingest": "Re-ingérer"
+    }
   }
 }

@@ -1,6 +1,7 @@
 import "server-only";
 import { sql } from "drizzle-orm";
 import { db } from "@/db/client";
+import type { Locale } from "@/lib/locale";
 import type { PatientStatus } from "@/lib/patients-shared";
 
 export type SidebarRecentPatient = {
@@ -23,7 +24,22 @@ export type SidebarContext = {
   vaultUpdatesToday: number;
 };
 
-export async function loadSidebarContext(): Promise<SidebarContext> {
+export async function loadSidebarContext(
+  locale: Locale = "fr"
+): Promise<SidebarContext> {
+  const patientLocaleFilter = sql`
+    COALESCE(
+      (
+        SELECT metadata->>'locale'
+        FROM sessions
+        WHERE patient_id = p.id
+        ORDER BY started_at DESC NULLS LAST
+        LIMIT 1
+      ),
+      'fr'
+    ) = ${locale}
+  `;
+
   const [
     alertsRow,
     recents,
@@ -31,7 +47,10 @@ export async function loadSidebarContext(): Promise<SidebarContext> {
     vaultRow,
   ] = await Promise.all([
     db.execute<{ n: number }>(sql`
-      SELECT count(*)::int AS n FROM patients WHERE status = 'lost'
+      SELECT count(*)::int AS n
+      FROM patients p
+      WHERE status = 'lost'
+        AND ${patientLocaleFilter}
     `),
     db.execute<{
       id: string;
@@ -46,6 +65,7 @@ export async function loadSidebarContext(): Promise<SidebarContext> {
         WHERE patient_id = p.id
       ) ev ON true
       WHERE ev.last_at IS NOT NULL
+        AND ${patientLocaleFilter}
       ORDER BY ev.last_at DESC NULLS LAST
       LIMIT 3
     `),
@@ -60,6 +80,7 @@ export async function loadSidebarContext(): Promise<SidebarContext> {
       LEFT JOIN patients p ON p.id = s.patient_id
       WHERE s.analysis_status = 'done'
         AND s.patient_id IS NOT NULL
+        AND COALESCE(s.metadata->>'locale', 'fr') = ${locale}
       ORDER BY s.analyzed_at DESC NULLS LAST
       LIMIT 1
     `),

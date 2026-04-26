@@ -116,7 +116,7 @@ export async function loadDashboard(
     getTranslations("dashboard"),
   ]);
 
-  const ctxBase = await loadContext();
+  const ctxBase = await loadContext(locale);
   const heatmap = await loadHeatmap(frameworkKind, locale);
 
   const lowestStep = heatmap.reduce<DashboardContext["lowestStep"]>(
@@ -141,8 +141,8 @@ export async function loadDashboard(
       : buildAssistantKpis(context, locale, tDash);
 
   const [weekly, recentSessions] = await Promise.all([
-    loadWeeklyScores(frameworkKind, tWeek),
-    loadRecentSessions(frameworkKind),
+    loadWeeklyScores(frameworkKind, locale, tWeek),
+    loadRecentSessions(frameworkKind, locale),
   ]);
 
   return {
@@ -158,7 +158,40 @@ export async function loadDashboard(
   };
 }
 
-async function loadContext(): Promise<Omit<DashboardContext, "lowestStep">> {
+async function loadContext(
+  locale: Locale
+): Promise<Omit<DashboardContext, "lowestStep">> {
+  // A patient belongs to the current locale if their latest session's
+  // metadata.locale matches — defaulting to 'fr' for legacy patients
+  // that have no session at all (or sessions without metadata.locale).
+  const patientLocaleFilter = sql`
+    COALESCE(
+      (
+        SELECT metadata->>'locale'
+        FROM sessions
+        WHERE patient_id = patients.id
+        ORDER BY started_at DESC NULLS LAST
+        LIMIT 1
+      ),
+      'fr'
+    ) = ${locale}
+  `;
+  const sessionLocaleFilter = sql`
+    COALESCE(metadata->>'locale', 'fr') = ${locale}
+  `;
+  const eventLocaleFilter = sql`
+    COALESCE(
+      (
+        SELECT metadata->>'locale'
+        FROM sessions
+        WHERE patient_id = patient_events.patient_id
+        ORDER BY started_at DESC NULLS LAST
+        LIMIT 1
+      ),
+      'fr'
+    ) = ${locale}
+  `;
+
   const [
     patientsRow,
     eventsRow,
@@ -177,6 +210,7 @@ async function loadContext(): Promise<Omit<DashboardContext, "lowestStep">> {
         count(*) FILTER (WHERE status = 'patient')::int AS fitted,
         count(*) FILTER (WHERE status = 'lost')::int AS lost
       FROM patients
+      WHERE ${patientLocaleFilter}
     `),
     db.execute<{
       phone_calls: number;
@@ -188,6 +222,7 @@ async function loadContext(): Promise<Omit<DashboardContext, "lowestStep">> {
         count(*) FILTER (WHERE kind = 'appointment_scheduled')::int AS appointments,
         count(*) FILTER (WHERE kind = 'consultation')::int AS consultations
       FROM patient_events
+      WHERE ${eventLocaleFilter}
     `),
     db.execute<{ honored: number }>(sql`
       SELECT count(DISTINCT pa.patient_id)::int AS honored
@@ -197,15 +232,36 @@ async function loadContext(): Promise<Omit<DashboardContext, "lowestStep">> {
        AND pc.kind = 'consultation'
        AND pc.occurred_at >= pa.occurred_at
       WHERE pa.kind = 'appointment_scheduled'
+        AND COALESCE(
+          (
+            SELECT metadata->>'locale'
+            FROM sessions
+            WHERE patient_id = pa.patient_id
+            ORDER BY started_at DESC NULLS LAST
+            LIMIT 1
+          ),
+          'fr'
+        ) = ${locale}
     `),
     db.execute<{ avg: number | null }>(sql`
       SELECT avg(price_eur)::int AS avg
       FROM (
         SELECT DISTINCT ON (patient_id)
+          patient_id,
           (metadata->>'price_eur')::int AS price_eur
         FROM patient_events
         WHERE kind IN ('trial_start', 'delivery')
           AND metadata->>'price_eur' IS NOT NULL
+          AND COALESCE(
+            (
+              SELECT metadata->>'locale'
+              FROM sessions
+              WHERE patient_id = patient_events.patient_id
+              ORDER BY started_at DESC NULLS LAST
+              LIMIT 1
+            ),
+            'fr'
+          ) = ${locale}
         ORDER BY
           patient_id,
           CASE kind WHEN 'delivery' THEN 0 ELSE 1 END,
@@ -218,6 +274,7 @@ async function loadContext(): Promise<Omit<DashboardContext, "lowestStep">> {
       WHERE kind = 'phone_call'
         AND duration_seconds IS NOT NULL
         AND patient_id IS NOT NULL
+        AND ${sessionLocaleFilter}
     `),
     db.execute<{ avg: number | null }>(sql`
       SELECT avg(global_score)::int AS avg
@@ -226,6 +283,7 @@ async function loadContext(): Promise<Omit<DashboardContext, "lowestStep">> {
         AND analysis_status = 'done'
         AND global_score IS NOT NULL
         AND patient_id IS NOT NULL
+        AND ${sessionLocaleFilter}
     `),
     db.execute<{ avg: number | null }>(sql`
       SELECT avg(global_score)::int AS avg
@@ -234,6 +292,7 @@ async function loadContext(): Promise<Omit<DashboardContext, "lowestStep">> {
         AND analysis_status = 'done'
         AND global_score IS NOT NULL
         AND patient_id IS NOT NULL
+        AND ${sessionLocaleFilter}
     `),
     db.execute<{
       id: string | null;
@@ -243,6 +302,7 @@ async function loadContext(): Promise<Omit<DashboardContext, "lowestStep">> {
       SELECT id, label, first_contact_at
       FROM patients
       WHERE status = 'lost'
+        AND ${patientLocaleFilter}
       ORDER BY first_contact_at ASC NULLS LAST
       LIMIT 1
     `),
@@ -257,6 +317,7 @@ async function loadContext(): Promise<Omit<DashboardContext, "lowestStep">> {
       LEFT JOIN patients p ON p.id = s.patient_id
       WHERE s.kind = 'consultation'
         AND s.analysis_status = 'done'
+        AND COALESCE(s.metadata->>'locale', 'fr') = ${locale}
       ORDER BY s.analyzed_at DESC NULLS LAST
       LIMIT 1
     `),
@@ -276,6 +337,16 @@ async function loadContext(): Promise<Omit<DashboardContext, "lowestStep">> {
       WHERE e.kind = 'trial_start'
         AND (e.metadata->>'upsell_missed')::boolean = true
         AND p.status = 'prospect'
+        AND COALESCE(
+          (
+            SELECT metadata->>'locale'
+            FROM sessions
+            WHERE patient_id = e.patient_id
+            ORDER BY started_at DESC NULLS LAST
+            LIMIT 1
+          ),
+          'fr'
+        ) = ${locale}
       ORDER BY e.occurred_at DESC
       LIMIT 1
     `),
@@ -417,6 +488,7 @@ function buildAssistantKpis(
 
 async function loadWeeklyScores(
   kind: FrameworkKind,
+  locale: Locale,
   t: DashTrans
 ): Promise<WeeklyScorePoint[]> {
   const rows = await db.execute<{
@@ -434,6 +506,7 @@ async function loadWeeklyScores(
       AND global_score IS NOT NULL
       AND patient_id IS NOT NULL
       AND started_at >= now() - interval '${sql.raw(String(WEEKS_BACK))} weeks'
+      AND COALESCE(metadata->>'locale', 'fr') = ${locale}
     GROUP BY 1
     ORDER BY 1 ASC
   `);
@@ -482,6 +555,7 @@ async function loadHeatmap(
     WHERE s.kind = ${kind}
       AND s.analysis_status = 'done'
       AND s.patient_id IS NOT NULL
+      AND COALESCE(s.metadata->>'locale', 'fr') = ${locale}
     GROUP BY ss.step_number
     ORDER BY ss.step_number ASC
   `);
@@ -510,7 +584,8 @@ async function loadHeatmap(
 }
 
 async function loadRecentSessions(
-  kind: FrameworkKind
+  kind: FrameworkKind,
+  locale: Locale
 ): Promise<RecentSessionRow[]> {
   const rows = await db.execute<{
     id: string;
@@ -538,6 +613,7 @@ async function loadRecentSessions(
     WHERE s.kind = ${kind}
       AND s.analysis_status = 'done'
       AND s.patient_id IS NOT NULL
+      AND COALESCE(s.metadata->>'locale', 'fr') = ${locale}
     ORDER BY s.analyzed_at DESC NULLS LAST, s.started_at DESC NULLS LAST
     LIMIT 5
   `);

@@ -1,6 +1,7 @@
 import "server-only";
 import { sql } from "drizzle-orm";
 import { db } from "@/db/client";
+import type { Locale } from "@/lib/locale";
 import {
   LEAD_TEMPERATURES,
   type LeadTemperature,
@@ -45,7 +46,7 @@ function toDate(v: string | null): Date | null {
   return v ? new Date(v) : null;
 }
 
-export async function listPatients(): Promise<PatientRow[]> {
+export async function listPatients(locale: Locale = "fr"): Promise<PatientRow[]> {
   const rows = await db.execute<RawPatientRow>(sql`
     SELECT
       p.id,
@@ -93,6 +94,16 @@ export async function listPatients(): Promise<PatientRow[]> {
       FROM sessions
       WHERE patient_id = p.id
     ) s ON true
+    WHERE COALESCE(
+      (
+        SELECT metadata->>'locale'
+        FROM sessions
+        WHERE patient_id = p.id
+        ORDER BY started_at DESC NULLS LAST
+        LIMIT 1
+      ),
+      'fr'
+    ) = ${locale}
     ORDER BY ev.last_event_at DESC NULLS LAST, p.label ASC
   `);
 

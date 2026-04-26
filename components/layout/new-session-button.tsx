@@ -8,7 +8,7 @@ import {
   useState,
   useTransition,
 } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -26,6 +26,10 @@ import {
 } from "@/app/actions/sessions";
 import { REPLAY_SCENARIOS } from "@/scripts/replay/scripts";
 import { REPLAY_PHONE_SCENARIOS } from "@/scripts/replay/scripts-phone";
+import {
+  REPLAY_SCENARIOS_EN,
+  REPLAY_PHONE_SCENARIOS_EN,
+} from "@/scripts/replay/scripts-en";
 import type { Role } from "@/lib/role";
 
 function formatDuration(totalSec: number): string {
@@ -36,6 +40,11 @@ function formatDuration(totalSec: number): string {
 
 export function NewSessionButton({ role }: { role: Role }) {
   const t = useTranslations("newSession");
+  const locale = useLocale();
+  const consultationScenarios =
+    locale === "en" ? REPLAY_SCENARIOS_EN : REPLAY_SCENARIOS;
+  const phoneScenarios =
+    locale === "en" ? REPLAY_PHONE_SCENARIOS_EN : REPLAY_PHONE_SCENARIOS;
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [replayPendingSlug, setReplayPendingSlug] = useState<string | null>(null);
@@ -216,7 +225,7 @@ export function NewSessionButton({ role }: { role: Role }) {
                   {t("replayConsultation")}
                 </div>
                 <div className="grid gap-2 sm:grid-cols-3">
-                  {REPLAY_SCENARIOS.map((scenario) => {
+                  {consultationScenarios.map((scenario) => {
                     const isPending = pending && replayPendingSlug === scenario.slug;
                     return (
                       <button
@@ -255,7 +264,7 @@ export function NewSessionButton({ role }: { role: Role }) {
                   {t("replayPhone")}
                 </div>
                 <div className="grid gap-2 sm:grid-cols-2">
-                  {REPLAY_PHONE_SCENARIOS.map((scenario) => {
+                  {phoneScenarios.map((scenario) => {
                     const isPending = pending && replayPendingSlug === scenario.slug;
                     return (
                       <button

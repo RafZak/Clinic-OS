@@ -7,6 +7,7 @@ import {
   type NavItem,
 } from "@/lib/nav-config";
 import type { Role } from "@/lib/role";
+import { getLocale } from "@/lib/locale";
 import { loadSidebarContext } from "@/lib/sidebar-context";
 import { NavLink } from "./nav-link";
 import { SidebarRecents } from "./sidebar-recents";
@@ -42,9 +43,10 @@ function badgeFor(
 
 export async function Sidebar({ role }: { role: Role }) {
   const t = await getTranslations("nav");
+  const locale = await getLocale();
   const primary = filterNavByRole(PRIMARY_NAV, role);
   const admin = filterNavByRole(ADMIN_NAV, role);
-  const ctx = await loadSidebarContext();
+  const ctx = await loadSidebarContext(locale);
 
   const tooltips = {
     patients: (count: number) => t("patientsBadgeTooltip", { count }),

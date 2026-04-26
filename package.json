@@ -16,6 +16,7 @@
     "seed:programs": "tsx scripts/seed-programs.ts",
     "seed:replay": "tsx scripts/seed-replay.ts",
     "seed:replay-phone": "tsx scripts/seed-replay-phone.ts",
+    "seed:replay-en": "tsx scripts/seed-replay-en.ts",
     "seed:journeys": "tsx scripts/seed-patient-journeys.ts",
     "seed:vault": "tsx --conditions react-server scripts/seed-vault.ts",
     "test:j8": "tsx --conditions react-server scripts/test-j8-pipeline.ts",

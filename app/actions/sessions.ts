@@ -16,6 +16,10 @@ import { getSiteUrl } from "@/lib/site-url";
 import { getLocale } from "@/lib/locale";
 import { getScenarioBySlug } from "@/scripts/replay/scripts";
 import { getPhoneScenarioBySlug } from "@/scripts/replay/scripts-phone";
+import {
+  getEnScenarioBySlug,
+  getEnPhoneScenarioBySlug,
+} from "@/scripts/replay/scripts-en";
 
 export type PatientSummary = {
   id: string;
@@ -101,8 +105,10 @@ export async function retryAnalysis(id: string): Promise<{ ok: true }> {
 }
 
 export async function startReplaySession(slug: string): Promise<void> {
-  const consultationScenario = getScenarioBySlug(slug);
-  const phoneScenario = getPhoneScenarioBySlug(slug);
+  const consultationScenario =
+    getScenarioBySlug(slug) ?? getEnScenarioBySlug(slug);
+  const phoneScenario =
+    getPhoneScenarioBySlug(slug) ?? getEnPhoneScenarioBySlug(slug);
 
   let patientLabel: string;
   let kind: SessionKind;
@@ -110,11 +116,13 @@ export async function startReplaySession(slug: string): Promise<void> {
   if (consultationScenario) {
     patientLabel = consultationScenario.patientLabel;
     kind = "consultation";
-    seedHint = "pnpm seed:replay";
+    seedHint = slug.endsWith("-en") ? "pnpm seed:replay-en" : "pnpm seed:replay";
   } else if (phoneScenario) {
     patientLabel = phoneScenario.callerLabel;
     kind = "phone_call";
-    seedHint = "pnpm seed:replay-phone";
+    seedHint = slug.endsWith("-en")
+      ? "pnpm seed:replay-en"
+      : "pnpm seed:replay-phone";
   } else {
     throw new Error(`Scénario inconnu: ${slug}`);
   }

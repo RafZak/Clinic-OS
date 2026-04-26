@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { PageHeader } from "@/components/layout/page-header";
 import { PatientsTable } from "@/components/patients/patients-table";
 import { listPatients, type PatientStatus } from "@/lib/patients";
+import { getLocale } from "@/lib/locale";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +21,7 @@ export default async function PatientsPage({
   searchParams: Promise<{ status?: string }>;
 }) {
   const t = await getTranslations("patients");
+  const locale = await getLocale();
   const params = await searchParams;
   const filterRaw = params.status ?? "all";
   const filter: "all" | PatientStatus = (
@@ -28,7 +30,7 @@ export default async function PatientsPage({
     ? (filterRaw as PatientStatus)
     : "all";
 
-  const all = await listPatients();
+  const all = await listPatients(locale);
   const counts: Record<"all" | PatientStatus, number> = {
     all: all.length,
     prospect: all.filter((p) => p.status === "prospect").length,

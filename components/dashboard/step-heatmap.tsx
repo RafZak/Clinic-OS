@@ -20,17 +20,18 @@ function scoreTextClass(score: number | null): string {
 export function StepHeatmap({ cells }: { cells: StepHeatmapCell[] }) {
   return (
     <ul className="flex flex-col gap-2.5">
-      {cells.map((cell) => {
+      {cells.map((cell, index) => {
         const score = cell.avgScore;
         const widthPct =
           score != null ? Math.max(2, Math.min(100, score)) : 0;
+        const displayNumber = index + 1;
         return (
           <li
             key={cell.number}
             className="flex items-center gap-3 text-xs"
           >
             <span className="w-6 shrink-0 font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
-              {String(cell.number).padStart(2, "0")}
+              {String(displayNumber).padStart(2, "0")}
             </span>
             <span className="min-w-0 flex-1 truncate font-medium text-foreground">
               {cell.name}

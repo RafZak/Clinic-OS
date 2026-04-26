@@ -92,10 +92,10 @@ export function ResultsView({ bundle }: { bundle: Bundle }) {
   const framework = useMemo(() => getScorableFramework(kind), [kind]);
   const radarPoints: RadarPoint[] = useMemo(
     () =>
-      framework.map((step) => {
+      framework.map((step, index) => {
         const score = scores.find((s) => s.stepNumber === step.number);
         return {
-          step: step.number,
+          step: index + 1,
           label: getStepName(step, locale),
           score: score?.score ?? null,
           rationale: score?.rationale ?? null,

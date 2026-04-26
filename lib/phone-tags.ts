@@ -52,6 +52,16 @@ export const PHONE_CALL_TYPE_LABEL: Record<PhoneCallType, string> = {
   admin: "Administratif",
 };
 
+export const PHONE_CALL_TYPE_LABEL_EN: Record<PhoneCallType, string> = {
+  new_patient: "New patient",
+  renewal: "Renewal",
+  trial_followup: "Trial follow-up",
+  tech_issue: "Tech issue",
+  info_request: "Information request",
+  urgency: "Urgency",
+  admin: "Administrative",
+};
+
 export const RECOMMENDED_ACTION_LABEL: Record<RecommendedAction, string> = {
   rdv_bilan_60min: "RDV bilan 60 min",
   rdv_renouvellement_45min: "RDV renouvellement 45 min",
@@ -63,6 +73,17 @@ export const RECOMMENDED_ACTION_LABEL: Record<RecommendedAction, string> = {
   transfer_admin: "Transfert secrétariat",
 };
 
+export const RECOMMENDED_ACTION_LABEL_EN: Record<RecommendedAction, string> = {
+  rdv_bilan_60min: "Full review (60 min)",
+  rdv_renouvellement_45min: "Renewal (45 min)",
+  rdv_technique_15min: "Tech (15 min)",
+  rdv_technique_30min: "Tech (30 min)",
+  rappel_pro: "Audiologist callback",
+  resolved_phone: "Resolved on the phone",
+  transfer_orl: "ENT transfer (urgent)",
+  transfer_admin: "Admin transfer",
+};
+
 export const LEAD_TEMPERATURE_LABEL: Record<LeadTemperature, string> = {
   hot: "Chaud",
   warm: "Tiède",
@@ -70,10 +91,23 @@ export const LEAD_TEMPERATURE_LABEL: Record<LeadTemperature, string> = {
   lost: "Perdu",
 };
 
+export const LEAD_TEMPERATURE_LABEL_EN: Record<LeadTemperature, string> = {
+  hot: "Hot",
+  warm: "Warm",
+  cold: "Cold",
+  lost: "Lost",
+};
+
 export const DATA_CAPTURE_LABEL: Record<DataCaptureLevel, string> = {
   complete: "Identité complète",
   partial: "Identité partielle",
   anonymous: "Anonyme",
+};
+
+export const DATA_CAPTURE_LABEL_EN: Record<DataCaptureLevel, string> = {
+  complete: "Complete identity",
+  partial: "Partial identity",
+  anonymous: "Anonymous",
 };
 
 export type SessionMetadata = {

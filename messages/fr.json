@@ -186,6 +186,15 @@
       "cta": "Voir le programme téléphone"
     }
   },
+  "phoneTags": {
+    "title": "Triage de l'appel",
+    "subtitle": "Auto-tagging IA · exploitable par le CRM",
+    "labelType": "Type d'appel",
+    "labelAction": "Action recommandée",
+    "labelLead": "Lead",
+    "labelCapture": "Capture identité",
+    "noteLabel": "Note Clinic OS"
+  },
   "results": {
     "backDashboard": "Tableau de bord",
     "backPatient": "Parcours patient",
@@ -197,10 +206,15 @@
       "memory": "Mémoire"
     },
     "globalScore": "Score global",
+    "insights": "Insights",
     "duration": "Durée",
+    "sessionFallback": "Session {short}…",
+    "frameworkDuration": "{framework} · durée {duration}",
     "opportunities": "+{amount} opportunités détectées",
     "radarTitle": "Performance par étape",
     "insightsTitle": "Insights majeurs",
+    "noInsights": "Aucun insight pour cette session.",
+    "noScores": "Aucun score disponible.",
     "consultationLabels": {
       "pro": "Pro",
       "patient": "Patient"
@@ -208,7 +222,46 @@
     "phoneLabels": {
       "pro": "Standardiste",
       "patient": "Appelant"
+    },
+    "status": {
+      "pending": "Analyse en attente",
+      "transcribing": "Re-transcription",
+      "transcribed": "Transcription prête",
+      "analyzing": "Analyse IA",
+      "done": "Session analysée",
+      "failed": "Analyse échouée"
     }
+  },
+  "artifacts": {
+    "title": "Livrables prêts à envoyer",
+    "subtitle": "Notes cliniques, email patient, SMS et courrier ORL — générés à partir de la session.",
+    "clinical_notes": "Notes cliniques",
+    "patient_email": "Email patient",
+    "patient_sms": "SMS patient",
+    "orl_letter": "Courrier ORL",
+    "copy": "Copier",
+    "copied": "Copié",
+    "regenerate": "Régénérer",
+    "regenerating": "Régénération…",
+    "viewSource": "Voir la source",
+    "preparing": "Préparation du livrable…",
+    "failed": "Échec de génération",
+    "subjectLabel": "Objet",
+    "smsLength": "{count}/140 caractères"
+  },
+  "analysisLoading": {
+    "title": "Analyse en cours",
+    "subtitle": "Claude examine la session et prépare les livrables.",
+    "preparingTranscript": "Préparation du transcript…",
+    "analyzing": "Analyse de la session par l'IA…",
+    "almostDone": "Presque prêt…",
+    "elapsed": "{seconds}s écoulées"
+  },
+  "analysisFailed": {
+    "title": "Analyse échouée",
+    "description": "Une erreur s'est produite pendant l'analyse. Vous pouvez relancer l'analyse.",
+    "retry": "Relancer l'analyse",
+    "errorLabel": "Détail technique"
   },
   "live": {
     "transcriptTitle": "Transcription en direct",

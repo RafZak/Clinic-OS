@@ -7,11 +7,16 @@ import {
   UserCheck,
   type LucideIcon,
 } from "lucide-react";
+import { getTranslations, getLocale } from "next-intl/server";
 import {
   PHONE_CALL_TYPE_LABEL,
+  PHONE_CALL_TYPE_LABEL_EN,
   RECOMMENDED_ACTION_LABEL,
+  RECOMMENDED_ACTION_LABEL_EN,
   LEAD_TEMPERATURE_LABEL,
+  LEAD_TEMPERATURE_LABEL_EN,
   DATA_CAPTURE_LABEL,
+  DATA_CAPTURE_LABEL_EN,
   type PhoneCallTags,
   type LeadTemperature,
   type DataCaptureLevel,
@@ -37,40 +42,47 @@ const CAPTURE_ICON: Record<DataCaptureLevel, LucideIcon> = {
   anonymous: AlertCircle,
 };
 
-export function PhoneTagsPanel({ tags }: { tags: PhoneCallTags }) {
+export async function PhoneTagsPanel({ tags }: { tags: PhoneCallTags }) {
+  const t = await getTranslations("phoneTags");
+  const locale = await getLocale();
+  const isEn = locale === "en";
+
+  const callTypeLabel = isEn
+    ? PHONE_CALL_TYPE_LABEL_EN[tags.call_type]
+    : PHONE_CALL_TYPE_LABEL[tags.call_type];
+  const actionLabel = isEn
+    ? RECOMMENDED_ACTION_LABEL_EN[tags.recommended_action]
+    : RECOMMENDED_ACTION_LABEL[tags.recommended_action];
+  const tempLabel = isEn
+    ? LEAD_TEMPERATURE_LABEL_EN[tags.lead_temperature]
+    : LEAD_TEMPERATURE_LABEL[tags.lead_temperature];
+  const captureLabel = isEn
+    ? DATA_CAPTURE_LABEL_EN[tags.data_capture]
+    : DATA_CAPTURE_LABEL[tags.data_capture];
+
   const CaptureIcon = CAPTURE_ICON[tags.data_capture];
 
   return (
     <section className="rounded-lg border border-border bg-surface px-5 py-4">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-          Triage de l&apos;appel
+          {t("title")}
         </h2>
-        <span className="text-xs text-muted-foreground">
-          Auto-tagging IA · exploitable par le CRM
-        </span>
+        <span className="text-xs text-muted-foreground">{t("subtitle")}</span>
       </div>
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Tag
-          icon={Phone}
-          label="Type d'appel"
-          value={PHONE_CALL_TYPE_LABEL[tags.call_type]}
-        />
-        <Tag
-          icon={Stethoscope}
-          label="Action recommandée"
-          value={RECOMMENDED_ACTION_LABEL[tags.recommended_action]}
-        />
+        <Tag icon={Phone} label={t("labelType")} value={callTypeLabel} />
+        <Tag icon={Stethoscope} label={t("labelAction")} value={actionLabel} />
         <Tag
           icon={Thermometer}
-          label="Lead"
-          value={LEAD_TEMPERATURE_LABEL[tags.lead_temperature]}
+          label={t("labelLead")}
+          value={tempLabel}
           tone={TEMP_TONE[tags.lead_temperature]}
         />
         <Tag
           icon={CaptureIcon}
-          label="Capture identité"
-          value={DATA_CAPTURE_LABEL[tags.data_capture]}
+          label={t("labelCapture")}
+          value={captureLabel}
           tone={CAPTURE_TONE[tags.data_capture]}
         />
       </div>
@@ -83,7 +95,7 @@ export function PhoneTagsPanel({ tags }: { tags: PhoneCallTags }) {
               : "border-amber-200 bg-amber-50/50 text-amber-800"
           )}
         >
-          <strong className="font-semibold">Note Clinic OS</strong> ·{" "}
+          <strong className="font-semibold">{t("noteLabel")}</strong> ·{" "}
           {tags.data_capture_note}
         </p>
       )}

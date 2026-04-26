@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { FRAMEWORK_LABEL, type FrameworkKind } from "@/lib/frameworks";
+import { getTranslations } from "next-intl/server";
+import { type FrameworkKind } from "@/lib/frameworks";
 import { loadResultsBundle } from "@/lib/results";
 import { formatDuration, scoreTone, type ScoreTone } from "@/lib/format";
 import type { SessionRow } from "@/lib/sessions";
@@ -23,6 +24,9 @@ export async function ResultsShell({ session }: { session: SessionRow }) {
   const bundle = await loadResultsBundle(session.id);
   if (!bundle) return null;
 
+  const tResults = await getTranslations("results");
+  const tFw = await getTranslations("framework");
+
   const status = (bundle.session.analysisStatus ?? "pending") as AnalysisStatus;
   const globalScore = bundle.session.globalScore;
   const phoneTags =
@@ -32,7 +36,9 @@ export async function ResultsShell({ session }: { session: SessionRow }) {
         )
       : null;
   const backHref = bundle.patient ? `/patients/${bundle.patient.id}` : "/";
-  const backLabel = bundle.patient ? "Parcours patient" : "Tableau de bord";
+  const backLabel = bundle.patient
+    ? tResults("backPatient")
+    : tResults("backDashboard");
 
   return (
     <div className="flex flex-col gap-6">
@@ -45,7 +51,7 @@ export async function ResultsShell({ session }: { session: SessionRow }) {
           {backLabel}
         </Link>
         <span className="rounded-full bg-surface-muted px-3 py-1 text-xs uppercase tracking-wide text-muted-foreground">
-          {statusLabel(status)}
+          {tResults(`status.${status}`)}
         </span>
       </div>
 
@@ -53,20 +59,24 @@ export async function ResultsShell({ session }: { session: SessionRow }) {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold text-ink">
-              {bundle.patient?.label ?? `Session ${bundle.session.id.slice(0, 8)}…`}
+              {bundle.patient?.label ??
+                tResults("sessionFallback", { short: bundle.session.id.slice(0, 8) })}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {FRAMEWORK_LABEL[kind]} · durée {formatDuration(bundle.session.durationSeconds)}
+              {tResults("frameworkDuration", {
+                framework: tFw(kind),
+                duration: formatDuration(bundle.session.durationSeconds),
+              })}
             </p>
           </div>
           {status === "done" && (
             <div className="flex flex-wrap items-center gap-3">
               <Badge
-                label="Score global"
+                label={tResults("globalScore")}
                 value={globalScore !== null ? `${globalScore}/100` : "—"}
                 tone={globalScore !== null ? scoreTone(globalScore) : "default"}
               />
-              <Badge label="Insights" value={String(bundle.insights.length)} />
+              <Badge label={tResults("insights")} value={String(bundle.insights.length)} />
             </div>
           )}
         </div>
@@ -128,22 +138,5 @@ function badgeStyles(tone: "default" | "brand" | ScoreTone): {
     case "default":
     default:
       return { frame: "border-border bg-light/40", value: "text-ink" };
-  }
-}
-
-function statusLabel(status: AnalysisStatus): string {
-  switch (status) {
-    case "pending":
-      return "Analyse en attente";
-    case "transcribing":
-      return "Re-transcription";
-    case "transcribed":
-      return "Transcription prête";
-    case "analyzing":
-      return "Analyse IA";
-    case "done":
-      return "Session analysée";
-    case "failed":
-      return "Analyse échouée";
   }
 }

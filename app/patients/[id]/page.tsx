@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, BookOpen } from "lucide-react";
 import { asc } from "drizzle-orm";
+import { getTranslations, getLocale } from "next-intl/server";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { PatientTimeline } from "@/components/patients/patient-timeline";
@@ -13,6 +14,7 @@ import {
   getPatientDetail,
   patientSlug,
   STATUS_LABEL,
+  STATUS_LABEL_EN,
   type PatientStatus,
 } from "@/lib/patients";
 import { getVaultPageByPath } from "@/lib/vault/ingest";
@@ -26,9 +28,9 @@ const STATUS_BADGE_CLASS: Record<PatientStatus, string> = {
   lost: "bg-red-50 text-red-700 border-red-200",
 };
 
-function formatDate(date: Date | null): string {
+function formatDate(date: Date | null, locale: string): string {
   if (!date) return "—";
-  return date.toLocaleDateString("fr-FR", {
+  return date.toLocaleDateString(locale === "en" ? "en-GB" : "fr-FR", {
     day: "2-digit",
     month: "long",
     year: "numeric",
@@ -45,6 +47,10 @@ export default async function PatientDetailPage({
   const detail = await getPatientDetail(id);
   if (!detail) notFound();
   const { patient, events } = detail;
+
+  const t = await getTranslations("patients");
+  const locale = await getLocale();
+  const statusMap = locale === "en" ? STATUS_LABEL_EN : STATUS_LABEL;
 
   const vaultPath = `patients/${patientSlug(patient.label)}.md`;
   const [vaultPage, allPages] = await Promise.all([
@@ -65,10 +71,10 @@ export default async function PatientDetailPage({
       <PageHeader
         title={patient.label}
         description={[
-          patient.age != null ? `${patient.age} ans` : null,
-          patient.centerName ? `Centre ${patient.centerName}` : null,
+          patient.age != null ? t("ageYears", { age: patient.age }) : null,
+          patient.centerName ? t("centerSuffix", { name: patient.centerName }) : null,
           patient.firstContactAt
-            ? `Premier contact : ${formatDate(patient.firstContactAt)}`
+            ? t("firstContactPrefix", { date: formatDate(patient.firstContactAt, locale) })
             : null,
         ]
           .filter(Boolean)
@@ -81,13 +87,13 @@ export default async function PatientDetailPage({
                 STATUS_BADGE_CLASS[patient.status]
               )}
             >
-              {STATUS_LABEL[patient.status]}
+              {statusMap[patient.status]}
             </span>
             <DeletePatientButton patientId={patient.id} />
             <Link href="/patients">
               <Button variant="ghost" size="sm">
                 <ArrowLeft className="h-4 w-4" aria-hidden />
-                Liste
+                {t("backToList")}
               </Button>
             </Link>
           </div>
@@ -97,7 +103,7 @@ export default async function PatientDetailPage({
       <div className="grid gap-6 lg:grid-cols-12">
         <section className="lg:col-span-7">
           <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-muted-foreground">
-            Parcours patient ({events.length} événements)
+            {t("timelineHeader", { count: events.length })}
           </h2>
           <PatientTimeline events={events} />
         </section>
@@ -106,7 +112,7 @@ export default async function PatientDetailPage({
           <div className="sticky top-4 flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-                Mémoire
+                {t("memoryHeader")}
               </h2>
               {vaultPage && (
                 <Link
@@ -114,7 +120,7 @@ export default async function PatientDetailPage({
                   className="inline-flex items-center gap-1 text-xs font-medium text-brand hover:text-brand-dark"
                 >
                   <BookOpen className="h-3.5 w-3.5" />
-                  Ouvrir la fiche complète
+                  {t("openFullCard")}
                 </Link>
               )}
             </div>
@@ -126,21 +132,24 @@ export default async function PatientDetailPage({
                 />
                 {vaultPage.updatedAt && (
                   <p className="px-1 text-xs text-muted-foreground">
-                    Fiche mise à jour le{" "}
-                    {vaultPage.updatedAt.toLocaleString("fr-FR", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
+                    {t("memoryUpdatedAt", {
+                      date: vaultPage.updatedAt.toLocaleString(
+                        locale === "en" ? "en-GB" : "fr-FR",
+                        {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        }
+                      ),
                     })}
                   </p>
                 )}
               </div>
             ) : (
               <div className="rounded-lg border border-dashed border-border bg-surface px-5 py-8 text-center text-sm text-muted-foreground">
-                Pas de fiche en mémoire encore. Une session analysée pour ce patient
-                en générera une automatiquement.
+                {t("noVaultYet")}
               </div>
             )}
           </div>

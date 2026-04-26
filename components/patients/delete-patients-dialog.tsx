@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { Loader2, Trash2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,8 @@ export function DeletePatientsDialog({
   patientIds,
   onDeleted,
 }: Props) {
+  const t = useTranslations("patients.deleteDialog");
+  const tPatients = useTranslations("patients");
   const [preview, setPreview] = useState<DeletePatientsPreview | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -87,25 +90,20 @@ export function DeletePatientsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>
-            Supprimer {patientIds.length === 1 ? "ce patient" : `${patientIds.length} patients`}
-          </DialogTitle>
-          <DialogDescription>
-            Cette action est irréversible. Toutes les données liées sont
-            effacées de la base et du stockage audio.
-          </DialogDescription>
+          <DialogTitle>{t("title", { count: patientIds.length })}</DialogTitle>
+          <DialogDescription>{t("description")}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3 text-sm">
           {previewLoading && (
             <div className="flex items-center gap-2 text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Calcul de l'impact…
+              {t("computingImpact")}
             </div>
           )}
           {previewError && (
             <div className="rounded-md border border-red-200 bg-red-50 p-3 text-red-700">
-              Impossible de prévisualiser : {previewError}
+              {t("previewError", { error: previewError })}
             </div>
           )}
           {preview && (
@@ -113,15 +111,14 @@ export function DeletePatientsDialog({
               {visibleLabels.length > 0 && (
                 <div className="rounded-md border border-border bg-surface-muted p-3">
                   <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Patient{visibleLabels.length > 1 ? "s" : ""} concerné
-                    {visibleLabels.length > 1 ? "s" : ""}
+                    {t("concernedLabel", { count: visibleLabels.length })}
                   </p>
                   <p className="text-sm">
                     {visibleLabels.join(" · ")}
                     {hiddenLabels > 0 && (
                       <span className="text-muted-foreground">
                         {" "}
-                        + {hiddenLabels} autre{hiddenLabels > 1 ? "s" : ""}
+                        {t("moreOthers", { count: hiddenLabels })}
                       </span>
                     )}
                   </p>
@@ -129,39 +126,36 @@ export function DeletePatientsDialog({
               )}
               <ul className="space-y-1.5 rounded-md border border-border bg-surface p-3">
                 <ImpactRow
-                  label="Sessions"
+                  label={t("impactSessions")}
                   value={preview.consultationsCount + preview.phoneCallsCount}
                   detail={[
                     preview.consultationsCount > 0
-                      ? `${preview.consultationsCount} consultation${preview.consultationsCount > 1 ? "s" : ""}`
+                      ? t("impactSessionsDetailConsultation", { count: preview.consultationsCount })
                       : null,
                     preview.phoneCallsCount > 0
-                      ? `${preview.phoneCallsCount} appel${preview.phoneCallsCount > 1 ? "s" : ""}`
+                      ? t("impactSessionsDetailPhone", { count: preview.phoneCallsCount })
                       : null,
                   ]
                     .filter(Boolean)
                     .join(", ")}
                 />
+                <ImpactRow label={t("impactEvents")} value={preview.eventsCount} />
                 <ImpactRow
-                  label="Événements timeline"
-                  value={preview.eventsCount}
-                />
-                <ImpactRow
-                  label="Fiches vault"
+                  label={t("impactVault")}
                   value={preview.vaultPagesCount}
-                  detail="patient + sessions"
+                  detail={t("impactVaultDetail")}
                 />
                 <ImpactRow
-                  label="Fichiers audio"
+                  label={t("impactAudio")}
                   value={preview.audioFilesCount}
-                  detail="Supabase Storage"
+                  detail={t("impactAudioDetail")}
                 />
               </ul>
             </>
           )}
           {submitError && (
             <div className="rounded-md border border-red-200 bg-red-50 p-3 text-red-700">
-              Erreur : {submitError}
+              {t("submitError", { error: submitError })}
             </div>
           )}
         </div>
@@ -172,7 +166,7 @@ export function DeletePatientsDialog({
             onClick={() => onOpenChange(false)}
             disabled={pending}
           >
-            Annuler
+            {tPatients("deleteCancel")}
           </Button>
           <Button
             variant="destructive"
@@ -182,12 +176,12 @@ export function DeletePatientsDialog({
             {pending ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Suppression…
+                {tPatients("deleting")}
               </>
             ) : (
               <>
                 <Trash2 className="h-4 w-4" />
-                Confirmer la suppression
+                {tPatients("deleteConfirm")}
               </>
             )}
           </Button>

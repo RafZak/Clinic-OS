@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { VaultMarkdown } from "@/components/admin/vault-markdown";
 import { parseMemoryMarkdown } from "@/lib/vault/parse-sections";
 import { cn } from "@/lib/utils";
@@ -14,14 +15,28 @@ export function MemoryView({
   raw: string;
   pageIndex: PageIndexEntry[];
 }) {
+  const t = useTranslations("patients.memoryView");
   const parsed = useMemo(() => parseMemoryMarkdown(raw), [raw]);
 
   const synthesisSection = parsed.sections.find((s) =>
-    /synth[èe]se/i.test(s.heading)
+    /synth[èe]se|synthesis/i.test(s.heading)
   );
   const otherSections = parsed.sections.filter(
     (s) => s !== synthesisSection
   );
+
+  function remapHeading(heading: string): string {
+    const lower = heading.toLowerCase();
+    if (
+      lower === "timeline" ||
+      lower === "parcours" ||
+      lower === "historique" ||
+      lower === "history"
+    ) {
+      return t("profileContext");
+    }
+    return heading;
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -44,7 +59,7 @@ export function MemoryView({
       )}
 
       {parsed.intro && (
-        <SectionCard heading="Aperçu">
+        <SectionCard heading={t("overview")}>
           <VaultMarkdown raw={parsed.intro} pageIndex={pageIndex} />
         </SectionCard>
       )}
@@ -63,20 +78,11 @@ export function MemoryView({
 
       {parsed.sections.length === 0 && !parsed.intro && (
         <div className="rounded-md border border-dashed border-border bg-surface px-4 py-6 text-center text-xs text-muted-foreground">
-          Fiche en cours d&apos;enrichissement — une session analysée permettra
-          d&apos;ajouter des sections détaillées.
+          {t("noEnrichment")}
         </div>
       )}
     </div>
   );
-}
-
-function remapHeading(heading: string): string {
-  const lower = heading.toLowerCase();
-  if (lower === "timeline" || lower === "parcours" || lower === "historique") {
-    return "Profil & contexte";
-  }
-  return heading;
 }
 
 function SectionCard({

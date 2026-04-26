@@ -12,7 +12,12 @@ import {
   Sparkles,
   Stethoscope,
 } from "lucide-react";
-import { EVENT_LABEL, type PatientEventRow } from "@/lib/patients-shared";
+import { useTranslations, useLocale } from "next-intl";
+import {
+  EVENT_LABEL,
+  EVENT_LABEL_EN,
+  type PatientEventRow,
+} from "@/lib/patients-shared";
 import { formatDuration, formatEur } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -34,86 +39,13 @@ const KIND_DOT_CLASS: Record<PatientEventRow["kind"], string> = {
   follow_up: "bg-slate-500 ring-slate-200",
 };
 
-function formatShortDate(date: Date): string {
-  return date.toLocaleDateString("fr-FR", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function formatRelative(date: Date): string {
-  const diffDays = Math.round((Date.now() - date.getTime()) / 86_400_000);
-  if (diffDays === 0) return "aujourd'hui";
-  if (diffDays === 1) return "hier";
-  if (diffDays > 0) return `il y a ${diffDays} j`;
-  return `dans ${Math.abs(diffDays)} j`;
-}
-
-function formatMetadata(
-  kind: PatientEventRow["kind"],
-  meta: Record<string, unknown> | null
-): string[] {
-  if (!meta) return [];
-  const out: string[] = [];
-  if (kind === "appointment_scheduled" && typeof meta.scheduled_for === "string") {
-    const dt = new Date(meta.scheduled_for);
-    if (!Number.isNaN(dt.getTime())) {
-      out.push(
-        `Créneau : ${dt.toLocaleDateString("fr-FR", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        })} ${dt.toLocaleTimeString("fr-FR", {
-          hour: "2-digit",
-          minute: "2-digit",
-        })}`
-      );
-    }
-  }
-  if (
-    (kind === "trial_start" || kind === "delivery") &&
-    typeof meta.product === "string"
-  ) {
-    out.push(`Produit : ${meta.product}${meta.class ? ` (classe ${meta.class})` : ""}`);
-  }
-  if (typeof meta.price_eur === "number") {
-    out.push(`Prix : ${formatEur(meta.price_eur)}`);
-  }
-  if (kind === "trial_start" && typeof meta.trial_days === "number") {
-    out.push(`Essai : ${meta.trial_days} jours`);
-  }
-  if (kind === "follow_up" && typeof meta.duration_min === "number") {
-    out.push(`Durée : ${meta.duration_min} min`);
-  }
-  if (typeof meta.lost_reason === "string") {
-    const labels: Record<string, string> = {
-      objection_prix_non_traitee: "Objection prix non traitée",
-    };
-    out.push(`Motif : ${labels[meta.lost_reason] ?? meta.lost_reason}`);
-  }
-  return out;
-}
-
-function eventLink(event: PatientEventRow): string | null {
-  if (event.kind === "consultation" && event.sessionId) {
-    return `/consultations/${event.sessionId}`;
-  }
-  if (
-    event.kind === "phone_call" &&
-    event.sessionId &&
-    (event.sessionHasTranscript || event.sessionAnalysisStatus === "done")
-  ) {
-    return `/appels/${event.sessionId}`;
-  }
-  return null;
-}
-
 export function PatientTimeline({ events }: { events: PatientEventRow[] }) {
+  const t = useTranslations("patients.timeline");
+
   if (events.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-border bg-surface px-6 py-10 text-center text-sm text-muted-foreground">
-        Aucun événement enregistré pour ce patient.
+        {t("empty")}
       </div>
     );
   }
@@ -134,8 +66,89 @@ export function PatientTimeline({ events }: { events: PatientEventRow[] }) {
 }
 
 function TimelineItem({ event }: { event: PatientEventRow }) {
+  const t = useTranslations("patients.timeline");
+  const tEvents = useTranslations("patients.events");
+  const locale = useLocale();
   const [open, setOpen] = useState(false);
   const Icon = KIND_ICON[event.kind];
+
+  function formatShortDate(date: Date): string {
+    return date.toLocaleDateString(locale === "en" ? "en-GB" : "fr-FR", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  }
+
+  function formatRelative(date: Date): string {
+    const diffDays = Math.round((Date.now() - date.getTime()) / 86_400_000);
+    if (diffDays === 0) return t("today");
+    if (diffDays === 1) return t("yesterday");
+    if (diffDays > 0) return t("daysAgo", { n: diffDays });
+    return t("inDays", { n: Math.abs(diffDays) });
+  }
+
+  function formatMetadata(
+    kind: PatientEventRow["kind"],
+    meta: Record<string, unknown> | null
+  ): string[] {
+    if (!meta) return [];
+    const out: string[] = [];
+    if (kind === "appointment_scheduled" && typeof meta.scheduled_for === "string") {
+      const dt = new Date(meta.scheduled_for);
+      if (!Number.isNaN(dt.getTime())) {
+        const datePart = dt.toLocaleDateString(
+          locale === "en" ? "en-GB" : "fr-FR",
+          { day: "2-digit", month: "short", year: "numeric" }
+        );
+        const timePart = dt.toLocaleTimeString(
+          locale === "en" ? "en-GB" : "fr-FR",
+          { hour: "2-digit", minute: "2-digit" }
+        );
+        out.push(`${t("slotPrefix")}${datePart} ${timePart}`);
+      }
+    }
+    if (
+      (kind === "trial_start" || kind === "delivery") &&
+      typeof meta.product === "string"
+    ) {
+      const classSuffix = meta.class
+        ? t("productClass", { class: String(meta.class) })
+        : "";
+      out.push(`${t("productPrefix")}${meta.product}${classSuffix}`);
+    }
+    if (typeof meta.price_eur === "number") {
+      out.push(t("pricePrefix", { price: formatEur(meta.price_eur) }));
+    }
+    if (kind === "trial_start" && typeof meta.trial_days === "number") {
+      out.push(t("trialDays", { days: meta.trial_days }));
+    }
+    if (kind === "follow_up" && typeof meta.duration_min === "number") {
+      out.push(t("durationMin", { min: meta.duration_min }));
+    }
+    if (typeof meta.lost_reason === "string") {
+      const labels: Record<string, string> = {
+        objection_prix_non_traitee: t("lostReasonObjectionPrice"),
+      };
+      out.push(t("reasonPrefix", { reason: labels[meta.lost_reason] ?? meta.lost_reason }));
+    }
+    return out;
+  }
+
+  function eventLink(event: PatientEventRow): string | null {
+    if (event.kind === "consultation" && event.sessionId) {
+      return `/consultations/${event.sessionId}`;
+    }
+    if (
+      event.kind === "phone_call" &&
+      event.sessionId &&
+      (event.sessionHasTranscript || event.sessionAnalysisStatus === "done")
+    ) {
+      return `/appels/${event.sessionId}`;
+    }
+    return null;
+  }
+
   const link = eventLink(event);
   const metaLines = formatMetadata(event.kind, event.metadata);
   const hasDetails =
@@ -143,6 +156,9 @@ function TimelineItem({ event }: { event: PatientEventRow }) {
     metaLines.length > 0 ||
     event.sessionDurationSeconds != null ||
     Boolean(link);
+
+  const eventLabel =
+    locale === "en" ? EVENT_LABEL_EN[event.kind] : EVENT_LABEL[event.kind];
 
   return (
     <li className="relative">
@@ -170,7 +186,7 @@ function TimelineItem({ event }: { event: PatientEventRow }) {
           aria-hidden
         />
         <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
-          {EVENT_LABEL[event.kind]}
+          {eventLabel}
         </span>
         {event.sessionGlobalScore != null && (
           <span className="shrink-0 rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium tabular-nums text-muted-foreground">
@@ -206,7 +222,7 @@ function TimelineItem({ event }: { event: PatientEventRow }) {
           )}
           {event.sessionDurationSeconds != null && (
             <p className="text-xs text-muted-foreground">
-              Durée : {formatDuration(event.sessionDurationSeconds)}
+              {t("durationLabel", { duration: formatDuration(event.sessionDurationSeconds) })}
             </p>
           )}
           {link && (
@@ -215,12 +231,12 @@ function TimelineItem({ event }: { event: PatientEventRow }) {
               className="inline-flex items-center gap-1 self-start text-xs font-medium text-brand hover:text-brand-dark"
             >
               <Sparkles className="h-3 w-3" />
-              Voir l&apos;analyse de la session
+              {t("viewAnalysis")}
             </Link>
           )}
           {event.sessionId && !link && (
             <p className="text-xs italic text-muted-foreground">
-              Replay de session non disponible (transcript en attente).
+              {t("noReplay")}
             </p>
           )}
         </div>

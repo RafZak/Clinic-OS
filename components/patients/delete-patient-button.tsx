@@ -3,10 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { DeletePatientsDialog } from "@/components/patients/delete-patients-dialog";
 
 export function DeletePatientButton({ patientId }: { patientId: string }) {
+  const t = useTranslations("patients");
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
@@ -19,7 +21,7 @@ export function DeletePatientButton({ patientId }: { patientId: string }) {
         onClick={() => setOpen(true)}
       >
         <Trash2 className="h-4 w-4" aria-hidden />
-        Supprimer
+        {t("deleteOne")}
       </Button>
       <DeletePatientsDialog
         open={open}

@@ -362,6 +362,15 @@
   },
   "patients": {
     "title": "Patients",
+    "ageYears": "{age} ans",
+    "centerSuffix": "Centre {name}",
+    "firstContactPrefix": "Premier contact : {date}",
+    "backToList": "Liste",
+    "openFullCard": "Ouvrir la fiche complète",
+    "memoryUpdatedAt": "Fiche mise à jour le {date}",
+    "noVaultYet": "Pas de fiche en mémoire encore. Une session analysée pour ce patient en générera une automatiquement.",
+    "timelineHeader": "Parcours patient ({count} événements)",
+    "memoryHeader": "Mémoire",
     "description": "Parcours complet de chaque patient : appels, consultations, essais, livraisons et suivis.",
     "filterAll": "Tous",
     "filterProspect": "Prospects",
@@ -396,7 +405,47 @@
       "consultation": "Consultation",
       "trial_start": "Début d'essai",
       "delivery": "Livraison",
-      "follow_up": "Suivi"
+      "follow_up": "Rappel de suivi"
+    },
+    "deleteDialog": {
+      "title": "Supprimer {count, plural, one {ce patient} other {# patients}}",
+      "description": "Cette action est irréversible. Toutes les données liées sont effacées de la base et du stockage audio.",
+      "computingImpact": "Calcul de l'impact…",
+      "previewError": "Impossible de prévisualiser : {error}",
+      "concernedLabel": "{count, plural, one {Patient concerné} other {Patients concernés}}",
+      "moreOthers": "+ {count, plural, one {# autre} other {# autres}}",
+      "impactSessions": "Sessions",
+      "impactSessionsDetailConsultation": "{count, plural, one {# consultation} other {# consultations}}",
+      "impactSessionsDetailPhone": "{count, plural, one {# appel} other {# appels}}",
+      "impactEvents": "Événements timeline",
+      "impactVault": "Fiches vault",
+      "impactVaultDetail": "patient + sessions",
+      "impactAudio": "Fichiers audio",
+      "impactAudioDetail": "Supabase Storage",
+      "submitError": "Erreur : {error}"
+    },
+    "memoryView": {
+      "overview": "Aperçu",
+      "profileContext": "Profil & contexte",
+      "noEnrichment": "Fiche en cours d'enrichissement — une session analysée permettra d'ajouter des sections détaillées."
+    },
+    "timeline": {
+      "empty": "Aucun événement enregistré pour ce patient.",
+      "today": "aujourd'hui",
+      "yesterday": "hier",
+      "daysAgo": "il y a {n} j",
+      "inDays": "dans {n} j",
+      "slotPrefix": "Créneau : ",
+      "productPrefix": "Produit : ",
+      "productClass": " (classe {class})",
+      "pricePrefix": "Prix : {price}",
+      "trialDays": "Essai : {days} jours",
+      "durationMin": "Durée : {min} min",
+      "reasonPrefix": "Motif : {reason}",
+      "viewAnalysis": "Voir l'analyse de la session",
+      "noReplay": "Replay de session non disponible (transcript en attente).",
+      "durationLabel": "Durée : {duration}",
+      "lostReasonObjectionPrice": "Objection prix non traitée"
     }
   },
   "catalogue": {

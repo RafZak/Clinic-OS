@@ -7,7 +7,9 @@ import {
 } from "@/lib/phone-tags";
 import {
   EVENT_LABEL,
+  EVENT_LABEL_EN,
   STATUS_LABEL,
+  STATUS_LABEL_EN,
   type PatientEventKind,
   type PatientEventRow,
   type PatientRow,
@@ -16,7 +18,9 @@ import {
 
 export {
   EVENT_LABEL,
+  EVENT_LABEL_EN,
   STATUS_LABEL,
+  STATUS_LABEL_EN,
 };
 export type { PatientEventKind, PatientEventRow, PatientRow, PatientStatus };
 

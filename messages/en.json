@@ -362,6 +362,15 @@
   },
   "patients": {
     "title": "Patients",
+    "ageYears": "{age} y/o",
+    "centerSuffix": "Center {name}",
+    "firstContactPrefix": "First contact: {date}",
+    "backToList": "List",
+    "openFullCard": "Open full entry",
+    "memoryUpdatedAt": "Entry updated on {date}",
+    "noVaultYet": "No memory entry yet. An analyzed session for this patient will generate one automatically.",
+    "timelineHeader": "Patient journey ({count} events)",
+    "memoryHeader": "Memory",
     "description": "Full journey of each patient: calls, consultations, trials, deliveries and follow-ups.",
     "filterAll": "All",
     "filterProspect": "Prospects",
@@ -396,7 +405,47 @@
       "consultation": "Consultation",
       "trial_start": "Trial start",
       "delivery": "Delivery",
-      "follow_up": "Follow-up"
+      "follow_up": "Follow-up call"
+    },
+    "deleteDialog": {
+      "title": "Delete {count, plural, one {this patient} other {# patients}}",
+      "description": "This action is irreversible. All related data will be erased from the database and audio storage.",
+      "computingImpact": "Computing impact…",
+      "previewError": "Unable to preview: {error}",
+      "concernedLabel": "{count, plural, one {Patient concerned} other {Patients concerned}}",
+      "moreOthers": "+ {count, plural, one {# other} other {# others}}",
+      "impactSessions": "Sessions",
+      "impactSessionsDetailConsultation": "{count, plural, one {# consultation} other {# consultations}}",
+      "impactSessionsDetailPhone": "{count, plural, one {# call} other {# calls}}",
+      "impactEvents": "Timeline events",
+      "impactVault": "Vault entries",
+      "impactVaultDetail": "patient + sessions",
+      "impactAudio": "Audio files",
+      "impactAudioDetail": "Supabase Storage",
+      "submitError": "Error: {error}"
+    },
+    "memoryView": {
+      "overview": "Overview",
+      "profileContext": "Profile & context",
+      "noEnrichment": "Entry being enriched — an analyzed session will add detailed sections."
+    },
+    "timeline": {
+      "empty": "No event recorded for this patient.",
+      "today": "today",
+      "yesterday": "yesterday",
+      "daysAgo": "{n} days ago",
+      "inDays": "in {n} days",
+      "slotPrefix": "Slot: ",
+      "productPrefix": "Product: ",
+      "productClass": " (tier {class})",
+      "pricePrefix": "Price: {price}",
+      "trialDays": "Trial: {days} days",
+      "durationMin": "Duration: {min} min",
+      "reasonPrefix": "Reason: {reason}",
+      "viewAnalysis": "View session analysis",
+      "noReplay": "Session replay not available (transcript pending).",
+      "durationLabel": "Duration: {duration}",
+      "lostReasonObjectionPrice": "Unaddressed price objection"
     }
   },
   "catalogue": {

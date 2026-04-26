@@ -1,6 +1,6 @@
 "use client";
 
-import { Play, Square, XOctagon } from "lucide-react";
+import { Play, ShieldCheck, Square, XOctagon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 
@@ -18,6 +18,7 @@ export function ReplayHeader({
   elapsedMs,
   totalDurationMs,
   patientLabel,
+  consentGiven = false,
   onStart,
   onStop,
   onAbort,
@@ -26,11 +27,13 @@ export function ReplayHeader({
   elapsedMs: number;
   totalDurationMs: number;
   patientLabel: string;
+  consentGiven?: boolean;
   onStart: () => void;
   onStop: () => void;
   onAbort: () => void;
 }) {
   const t = useTranslations("replay");
+  const tLive = useTranslations("live");
   const playing = phase === "playing";
 
   return (
@@ -51,6 +54,12 @@ export function ReplayHeader({
         <span className="text-sm text-muted-foreground">
           {t("header", { label: patientLabel })}
         </span>
+        {consentGiven && (
+          <span className="inline-flex items-center gap-1 rounded-full border border-brand/30 bg-brand/10 px-2 py-0.5 text-[11px] font-medium text-brand">
+            <ShieldCheck className="size-3" aria-hidden />
+            {tLive("consentBadge")}
+          </span>
+        )}
       </div>
 
       <div className="flex items-center gap-2">

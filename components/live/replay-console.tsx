@@ -20,12 +20,14 @@ export function ReplayConsole({
   scriptLines,
   totalDurationMs,
   patientLabel,
+  consentGiven = false,
 }: {
   sessionId: string;
   kind: FrameworkKind;
   scriptLines: LiveLine[];
   totalDurationMs: number;
   patientLabel: string;
+  consentGiven?: boolean;
 }) {
   const router = useRouter();
   const tReplay = useTranslations("replay");
@@ -116,6 +118,7 @@ export function ReplayConsole({
         elapsedMs={elapsedMs}
         totalDurationMs={totalDurationMs}
         patientLabel={patientLabel}
+        consentGiven={consentGiven}
         onStart={handleStart}
         onStop={handleStop}
         onAbort={handleAbort}

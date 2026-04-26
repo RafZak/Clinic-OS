@@ -1,5 +1,9 @@
 import { notFound } from "next/navigation";
-import { getSessionById, readSessionLocale } from "@/lib/sessions";
+import {
+  getSessionById,
+  readSessionLocale,
+  readSessionConsent,
+} from "@/lib/sessions";
 import { loadReplayBundle } from "@/lib/replay-loader";
 import { LiveConsole } from "@/components/live/live-console";
 import { ReplayConsole } from "@/components/live/replay-console";
@@ -16,6 +20,7 @@ export default async function AppelDetailPage({
   if (session.kind !== "phone_call") notFound();
 
   const locale = readSessionLocale(session.metadata);
+  const consent = readSessionConsent(session.metadata);
 
   if (session.status === "in_progress") {
     if (session.source === "replay") {
@@ -28,10 +33,18 @@ export default async function AppelDetailPage({
           scriptLines={bundle.scriptLines}
           totalDurationMs={bundle.totalDurationMs}
           patientLabel={bundle.patientLabel}
+          consentGiven={consent.given}
         />
       );
     }
-    return <LiveConsole sessionId={id} kind="phone_call" locale={locale} />;
+    return (
+      <LiveConsole
+        sessionId={id}
+        kind="phone_call"
+        locale={locale}
+        consentGiven={consent.given}
+      />
+    );
   }
   return <ResultsShell session={session} />;
 }

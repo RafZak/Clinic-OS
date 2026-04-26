@@ -1,6 +1,6 @@
 "use client";
 
-import { Mic, Plus, Radio, UserPlus, User, Search } from "lucide-react";
+import { Mic, Plus, Radio, UserPlus, User, Search, ShieldCheck } from "lucide-react";
 import {
   useEffect,
   useMemo,
@@ -51,6 +51,7 @@ export function NewSessionButton({ role }: { role: Role }) {
   const [patients, setPatients] = useState<PatientSummary[]>([]);
   const [query, setQuery] = useState("");
   const [pickedId, setPickedId] = useState<string | null>(null);
+  const [consent, setConsent] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const isPro = role === "audioprothesiste";
@@ -65,6 +66,7 @@ export function NewSessionButton({ role }: { role: Role }) {
     } else {
       setQuery("");
       setPickedId(null);
+      setConsent(false);
     }
   }, [open]);
 
@@ -104,20 +106,22 @@ export function NewSessionButton({ role }: { role: Role }) {
         : t("startWithout");
 
   const onStart = () => {
+    if (!consent) return;
     startTransition(async () => {
       if (pickedPatient) {
-        await startLiveSession(kind, { patientId: pickedPatient.id });
+        await startLiveSession(kind, { patientId: pickedPatient.id, consent: true });
       } else if (exactMatch) {
-        await startLiveSession(kind, { patientId: exactMatch.id });
+        await startLiveSession(kind, { patientId: exactMatch.id, consent: true });
       } else if (trimmed.length > 0) {
-        await startLiveSession(kind, { newPatientName: trimmed });
+        await startLiveSession(kind, { newPatientName: trimmed, consent: true });
       } else {
-        await startLiveSession(kind);
+        await startLiveSession(kind, { consent: true });
       }
     });
   };
 
   const onReplay = (slug: string) => {
+    if (!consent) return;
     setReplayPendingSlug(slug);
     startTransition(async () => {
       await startReplaySession(slug);
@@ -164,7 +168,7 @@ export function NewSessionButton({ role }: { role: Role }) {
                   value={query}
                   onChange={(e) => onChangeQuery(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && !pending) {
+                    if (e.key === "Enter" && !pending && consent) {
                       e.preventDefault();
                       onStart();
                     }
@@ -211,12 +215,38 @@ export function NewSessionButton({ role }: { role: Role }) {
               <Button
                 type="button"
                 onClick={onStart}
-                disabled={pending}
+                disabled={pending || !consent}
                 className="mt-3 w-full bg-brand text-primary-foreground hover:bg-brand-dark"
               >
                 {pending && !replayPendingSlug ? t("creating") : startLabel}
               </Button>
             </div>
+
+            <label
+              className={`flex cursor-pointer items-start gap-3 rounded-md border px-4 py-3 transition ${
+                consent
+                  ? "border-brand/40 bg-brand/5"
+                  : "border-border bg-surface-muted"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={consent}
+                onChange={(e) => setConsent(e.target.checked)}
+                className="mt-0.5 size-4 cursor-pointer accent-brand"
+              />
+              <span className="flex-1 text-xs leading-relaxed">
+                <span className="inline-flex items-center gap-1.5 font-medium text-ink">
+                  <ShieldCheck className="size-3.5 text-brand" aria-hidden />
+                  {isPro ? t("consentLabelConsultation") : t("consentLabelPhone")}
+                </span>
+                {!consent && (
+                  <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                    {t("consentRequiredHint")}
+                  </span>
+                )}
+              </span>
+            </label>
 
             {isPro && (
               <div className="flex flex-col gap-2">
@@ -232,7 +262,7 @@ export function NewSessionButton({ role }: { role: Role }) {
                         key={scenario.slug}
                         type="button"
                         onClick={() => onReplay(scenario.slug)}
-                        disabled={pending}
+                        disabled={pending || !consent}
                         className="flex flex-col gap-2 rounded-md border border-border bg-surface p-3 text-left transition hover:border-brand hover:bg-brand/5 disabled:opacity-50"
                       >
                         <div className="flex items-center justify-between gap-2">
@@ -271,7 +301,7 @@ export function NewSessionButton({ role }: { role: Role }) {
                         key={scenario.slug}
                         type="button"
                         onClick={() => onReplay(scenario.slug)}
-                        disabled={pending}
+                        disabled={pending || !consent}
                         className="flex flex-col gap-2 rounded-md border border-border bg-surface p-3 text-left transition hover:border-brand hover:bg-brand/5 disabled:opacity-50"
                       >
                         <div className="flex items-center justify-between gap-2">

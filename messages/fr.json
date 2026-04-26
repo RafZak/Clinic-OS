@@ -91,7 +91,10 @@
     "launching": "lancement…",
     "patientStatusWon": "gagné",
     "patientStatusLost": "perdu",
-    "patientStatusProspect": "prospect"
+    "patientStatusProspect": "prospect",
+    "consentLabelConsultation": "Le patient a donné son consentement pour l'enregistrement et l'analyse de cette consultation (RGPD).",
+    "consentLabelPhone": "L'appelant a donné son consentement pour l'enregistrement et l'analyse de cet appel (RGPD).",
+    "consentRequiredHint": "Cochez cette case pour activer le démarrage."
   },
   "framework": {
     "consultation": "Consultation",
@@ -327,7 +330,8 @@
     "improvement": "Axe d'amélioration",
     "infoSeverity": "Info",
     "warningSeverity": "Action recommandée",
-    "criticalSeverity": "Critique"
+    "criticalSeverity": "Critique",
+    "consentBadge": "Consentement RGPD"
   },
   "coachPanel": {
     "header": "Coach IA",

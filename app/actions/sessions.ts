@@ -45,8 +45,11 @@ export async function listPatientsLite(): Promise<PatientSummary[]> {
 
 export async function startLiveSession(
   kind: SessionKind,
-  opts: { patientId?: string; newPatientName?: string } = {}
+  opts: { patientId?: string; newPatientName?: string; consent?: boolean } = {}
 ): Promise<void> {
+  if (!opts.consent) {
+    throw new Error("Consentement RGPD requis pour démarrer la session.");
+  }
   let patientId = opts.patientId;
 
   if (!patientId && opts.newPatientName) {
@@ -80,6 +83,7 @@ export async function startLiveSession(
     source: "live",
     patientId: patientId ?? null,
     locale,
+    consent: true,
   });
   const route = kind === "consultation" ? `/consultations/${id}` : `/appels/${id}`;
   redirect(route);
@@ -167,7 +171,10 @@ export async function startReplaySession(slug: string): Promise<void> {
         globalScore: null,
         summary: null,
         endedAt: null,
-        metadata: { locale },
+        metadata: {
+          locale,
+          consent: { given: true, at: new Date().toISOString() },
+        },
       })
       .where(eq(sessions.id, session.id));
   });

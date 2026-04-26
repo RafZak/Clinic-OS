@@ -19,10 +19,12 @@ export function LiveConsole({
   sessionId,
   kind,
   locale = "fr",
+  consentGiven = false,
 }: {
   sessionId: string;
   kind: FrameworkKind;
   locale?: Locale;
+  consentGiven?: boolean;
 }) {
   const router = useRouter();
   const tLive = useTranslations("live");
@@ -99,6 +101,7 @@ export function LiveConsole({
       <LiveHeader
         state={state}
         elapsedMs={elapsedMs}
+        consentGiven={consentGiven}
         onStart={() => void start()}
         onStop={() => void handleStop()}
         onAbort={() => void handleAbort()}

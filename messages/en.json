@@ -91,7 +91,10 @@
     "launching": "launching…",
     "patientStatusWon": "won",
     "patientStatusLost": "lost",
-    "patientStatusProspect": "prospect"
+    "patientStatusProspect": "prospect",
+    "consentLabelConsultation": "The patient has given consent to record and analyze this consultation (GDPR).",
+    "consentLabelPhone": "The caller has given consent to record and analyze this call (GDPR).",
+    "consentRequiredHint": "Tick this box to enable start."
   },
   "framework": {
     "consultation": "Consultation",
@@ -327,7 +330,8 @@
     "improvement": "Improvement",
     "infoSeverity": "Info",
     "warningSeverity": "Recommended action",
-    "criticalSeverity": "Critical"
+    "criticalSeverity": "Critical",
+    "consentBadge": "GDPR consent"
   },
   "coachPanel": {
     "header": "AI coach",

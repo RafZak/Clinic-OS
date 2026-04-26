@@ -22,6 +22,24 @@ export function readSessionLocale(metadata: unknown): Locale {
   return DEFAULT_LOCALE;
 }
 
+export type SessionConsent = { given: boolean; at: string | null };
+
+export function readSessionConsent(metadata: unknown): SessionConsent {
+  if (
+    metadata &&
+    typeof metadata === "object" &&
+    "consent" in metadata &&
+    typeof (metadata as { consent: unknown }).consent === "object" &&
+    (metadata as { consent: unknown }).consent !== null
+  ) {
+    const c = (metadata as { consent: { given?: unknown; at?: unknown } }).consent;
+    if (c.given === true) {
+      return { given: true, at: typeof c.at === "string" ? c.at : null };
+    }
+  }
+  return { given: false, at: null };
+}
+
 export async function getSessionById(id: string): Promise<SessionRow | null> {
   const [row] = await db.select().from(sessions).where(eq(sessions.id, id)).limit(1);
   return row ?? null;
@@ -32,7 +50,13 @@ export async function insertSession(input: {
   source: "live" | "replay" | "seed";
   patientId?: string | null;
   locale?: Locale;
+  consent?: boolean;
 }): Promise<string> {
+  const metadata: Record<string, unknown> = {};
+  if (input.locale) metadata.locale = input.locale;
+  if (input.consent) {
+    metadata.consent = { given: true, at: new Date().toISOString() };
+  }
   const [row] = await db
     .insert(sessions)
     .values({
@@ -40,7 +64,7 @@ export async function insertSession(input: {
       source: input.source,
       status: "in_progress",
       patientId: input.patientId ?? null,
-      metadata: input.locale ? { locale: input.locale } : null,
+      metadata: Object.keys(metadata).length > 0 ? metadata : null,
     })
     .returning({ id: sessions.id });
   return row.id;

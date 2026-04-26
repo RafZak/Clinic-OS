@@ -1,6 +1,6 @@
 "use client";
 
-import { Mic, MicOff, Square, XOctagon } from "lucide-react";
+import { Mic, MicOff, ShieldCheck, Square, XOctagon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import type { LiveState } from "@/hooks/use-deepgram-live";
@@ -17,12 +17,14 @@ function formatElapsed(ms: number): string {
 export function LiveHeader({
   state,
   elapsedMs,
+  consentGiven = false,
   onStart,
   onStop,
   onAbort,
 }: {
   state: LiveState;
   elapsedMs: number;
+  consentGiven?: boolean;
   onStart: () => void;
   onStop: () => void;
   onAbort: () => void;
@@ -45,6 +47,12 @@ export function LiveHeader({
         </span>
         {state.phase === "error" && (
           <span className="text-xs text-brand">{state.message}</span>
+        )}
+        {consentGiven && (
+          <span className="inline-flex items-center gap-1 rounded-full border border-brand/30 bg-brand/10 px-2 py-0.5 text-[11px] font-medium text-brand">
+            <ShieldCheck className="size-3" aria-hidden />
+            {t("consentBadge")}
+          </span>
         )}
       </div>
 

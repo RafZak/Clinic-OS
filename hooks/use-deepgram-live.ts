@@ -22,6 +22,7 @@ export type LiveState =
 
 export type UseDeepgramLiveArgs = {
   sessionId: string;
+  language?: "fr" | "en";
 };
 
 export type UseDeepgramLiveReturn = {
@@ -62,7 +63,7 @@ function randomId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export function useDeepgramLive({ sessionId }: UseDeepgramLiveArgs): UseDeepgramLiveReturn {
+export function useDeepgramLive({ sessionId, language = "fr" }: UseDeepgramLiveArgs): UseDeepgramLiveReturn {
   const [state, setState] = useState<LiveState>({ phase: "idle" });
   const [lines, setLines] = useState<LiveLine[]>([]);
   const [interim, setInterim] = useState<string>("");
@@ -134,7 +135,7 @@ export function useDeepgramLive({ sessionId }: UseDeepgramLiveArgs): UseDeepgram
 
       const params = new URLSearchParams({
         model: "nova-3-general",
-        language: "fr",
+        language,
         punctuate: "true",
         smart_format: "true",
         interim_results: "true",

@@ -1,6 +1,7 @@
 "use client";
 
 import { Sparkles, TrendingUp, AlertTriangle, Zap, ShieldAlert } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type { CoachBubble } from "@/hooks/use-live-coach";
 
 function formatMs(ms: number): string {
@@ -25,44 +26,6 @@ function iconFor(type: CoachBubble["type"]) {
   }
 }
 
-function severityClasses(severity: CoachBubble["severity"]): {
-  card: string;
-  icon: string;
-  pill: string;
-  label: string;
-} {
-  switch (severity) {
-    case "critical":
-      return {
-        card: "border-brand bg-brand/5",
-        icon: "bg-brand/15 text-brand",
-        pill: "bg-brand/15 text-brand",
-        label: "Critique",
-      };
-    case "warning":
-      return {
-        card: "border-amber-300 bg-amber-50",
-        icon: "bg-amber-100 text-amber-700",
-        pill: "bg-amber-100 text-amber-700",
-        label: "À surveiller",
-      };
-    default:
-      return {
-        card: "border-border bg-surface",
-        icon: "bg-surface-muted text-muted-foreground",
-        pill: "bg-surface-muted text-muted-foreground",
-        label: "Info",
-      };
-  }
-}
-
-const TYPE_LABEL: Record<CoachBubble["type"], string> = {
-  missed_objection: "Objection ratée",
-  upsell_missed: "Upsell manqué",
-  good_practice: "Bonne pratique",
-  improvement: "À améliorer",
-};
-
 export function CoachPanel({
   bubbles,
   pending,
@@ -72,15 +35,55 @@ export function CoachPanel({
   pending: boolean;
   enabled: boolean;
 }) {
+  const t = useTranslations("coachPanel");
+
+  function severityClasses(severity: CoachBubble["severity"]): {
+    card: string;
+    icon: string;
+    pill: string;
+    label: string;
+  } {
+    switch (severity) {
+      case "critical":
+        return {
+          card: "border-brand bg-brand/5",
+          icon: "bg-brand/15 text-brand",
+          pill: "bg-brand/15 text-brand",
+          label: t("severityCritical"),
+        };
+      case "warning":
+        return {
+          card: "border-amber-300 bg-amber-50",
+          icon: "bg-amber-100 text-amber-700",
+          pill: "bg-amber-100 text-amber-700",
+          label: t("severityWarning"),
+        };
+      default:
+        return {
+          card: "border-border bg-surface",
+          icon: "bg-surface-muted text-muted-foreground",
+          pill: "bg-surface-muted text-muted-foreground",
+          label: t("severityInfo"),
+        };
+    }
+  }
+
+  const TYPE_LABEL: Record<CoachBubble["type"], string> = {
+    missed_objection: t("typeMissedObjection"),
+    upsell_missed: t("typeUpsellMissed"),
+    good_practice: t("typeGoodPractice"),
+    improvement: t("typeImprovement"),
+  };
+
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-lg border border-border bg-surface">
       <div className="flex items-center justify-between border-b border-border px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        <span>Coach IA</span>
+        <span>{t("header")}</span>
         <span className="flex items-center gap-1 tabular-nums">
           {pending && (
             <span className="inline-flex size-1.5 animate-pulse rounded-full bg-brand" aria-hidden />
           )}
-          {bubbles.length} {bubbles.length <= 1 ? "bulle" : "bulles"}
+          {t("bubble", { count: bubbles.length })}
         </span>
       </div>
       <div className="flex-1 overflow-y-auto px-3 py-3">
@@ -90,12 +93,10 @@ export function CoachPanel({
               <Sparkles className="size-5" aria-hidden />
             </span>
             <p className="text-sm font-medium text-ink">
-              {enabled ? "Coach à l'écoute" : "Coach en veille"}
+              {enabled ? t("listening") : t("idle")}
             </p>
             <p className="text-xs text-muted-foreground">
-              {enabled
-                ? "Les bulles apparaîtront au fil de la conversation quand un moment coachable est détecté."
-                : "Démarrez la session pour activer le coaching en temps réel."}
+              {enabled ? t("listeningDescription") : t("idleDescription")}
             </p>
           </div>
         ) : (
@@ -139,7 +140,7 @@ export function CoachPanel({
                         </span>
                         {b.relatedStep != null && (
                           <span className="inline-flex items-center rounded-full bg-surface-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                            Étape {b.relatedStep}
+                            {t("step", { number: b.relatedStep })}
                           </span>
                         )}
                       </div>

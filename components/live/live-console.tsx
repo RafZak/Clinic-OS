@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import type { FrameworkKind } from "@/lib/frameworks";
+import type { Locale } from "@/lib/locale";
 import { useDeepgramLive } from "@/hooks/use-deepgram-live";
 import { useLiveCoach } from "@/hooks/use-live-coach";
 import { finishLiveSession, abortLiveSession } from "@/app/actions/sessions";
@@ -14,12 +16,19 @@ import { CoachPanel } from "./coach-panel";
 export function LiveConsole({
   sessionId,
   kind,
+  locale = "fr",
 }: {
   sessionId: string;
   kind: FrameworkKind;
+  locale?: Locale;
 }) {
   const router = useRouter();
-  const { state, lines, interim, latencyMs, start, stop } = useDeepgramLive({ sessionId });
+  const tLive = useTranslations("live");
+  const tResults = useTranslations("results");
+  const { state, lines, interim, latencyMs, start, stop } = useDeepgramLive({
+    sessionId,
+    language: locale,
+  });
   const { bubbles, pending: coachPending } = useLiveCoach({
     sessionId,
     kind,
@@ -29,6 +38,17 @@ export function LiveConsole({
   const [elapsedMs, setElapsedMs] = useState(0);
   const [finalizing, setFinalizing] = useState(false);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const labels =
+    kind === "phone_call"
+      ? {
+          pro: tResults("phoneLabels.pro"),
+          patient: tResults("phoneLabels.patient"),
+        }
+      : {
+          pro: tResults("consultationLabels.pro"),
+          patient: tResults("consultationLabels.patient"),
+        };
 
   useEffect(() => {
     if (state.phase === "recording") {
@@ -84,7 +104,7 @@ export function LiveConsole({
 
       {finalizing && (
         <div className="rounded-md border border-border bg-surface-muted px-4 py-3 text-sm text-muted-foreground">
-          Upload de l&apos;audio et finalisation de la session…
+          {tLive("uploadingAudio")}
         </div>
       )}
 
@@ -93,8 +113,8 @@ export function LiveConsole({
           <LiveTranscript
             lines={lines}
             interim={interim}
-            practitionerLabel={kind === "phone_call" ? "Standardiste" : "Pro"}
-            patientLabel={kind === "phone_call" ? "Appelant" : "Patient"}
+            practitionerLabel={labels.pro}
+            patientLabel={labels.patient}
           />
         </div>
         <div className="col-span-6 min-w-0">

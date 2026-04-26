@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getSessionById } from "@/lib/sessions";
+import { getSessionById, readSessionLocale } from "@/lib/sessions";
 import { loadReplayBundle } from "@/lib/replay-loader";
 import { LiveConsole } from "@/components/live/live-console";
 import { ReplayConsole } from "@/components/live/replay-console";
@@ -15,6 +15,8 @@ export default async function ConsultationDetailPage({
   if (!session) notFound();
   if (session.kind !== "consultation") notFound();
 
+  const locale = readSessionLocale(session.metadata);
+
   if (session.status === "in_progress") {
     if (session.source === "replay") {
       const bundle = await loadReplayBundle(id);
@@ -29,7 +31,7 @@ export default async function ConsultationDetailPage({
         />
       );
     }
-    return <LiveConsole sessionId={id} kind="consultation" />;
+    return <LiveConsole sessionId={id} kind="consultation" locale={locale} />;
   }
   return <ResultsShell session={session} />;
 }

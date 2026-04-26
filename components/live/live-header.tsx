@@ -1,6 +1,7 @@
 "use client";
 
 import { Mic, MicOff, Square, XOctagon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import type { LiveState } from "@/hooks/use-deepgram-live";
 
@@ -26,6 +27,7 @@ export function LiveHeader({
   onStop: () => void;
   onAbort: () => void;
 }) {
+  const t = useTranslations("live");
   const recording = state.phase === "recording";
   const connecting = state.phase === "connecting";
 
@@ -55,14 +57,14 @@ export function LiveHeader({
             disabled={connecting}
           >
             <Mic className="size-4" aria-hidden />
-            {connecting ? "Connexion…" : "Démarrer l'enregistrement"}
+            {connecting ? t("connecting") : t("startRecord")}
           </Button>
         )}
         {recording && (
           <>
             <Button size="sm" variant="outline" onClick={onAbort}>
               <XOctagon className="size-4" aria-hidden />
-              Abandonner
+              {t("abort")}
             </Button>
             <Button
               size="sm"
@@ -70,14 +72,14 @@ export function LiveHeader({
               onClick={onStop}
             >
               <Square className="size-4" aria-hidden />
-              Arrêter et analyser
+              {t("stopAndAnalyze")}
             </Button>
           </>
         )}
         {state.phase === "stopped" && (
           <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
             <MicOff className="size-4" aria-hidden />
-            Enregistrement terminé
+            {t("recordingDone")}
           </span>
         )}
       </div>

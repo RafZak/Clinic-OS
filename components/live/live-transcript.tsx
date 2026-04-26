@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 import type { LiveLine } from "@/hooks/use-deepgram-live";
 
 function formatMs(ms: number): string {
@@ -10,17 +11,14 @@ function formatMs(ms: number): string {
   return `${m}:${s}`;
 }
 
-const DEFAULT_FOOTER_NOTE =
-  "L'attribution des voix sera affinée à l'analyse post-consultation.";
-
 export function LiveTranscript({
   lines,
   interim,
   showSpeaker = false,
-  footerNote = DEFAULT_FOOTER_NOTE,
-  title = "Transcription en direct",
-  practitionerLabel = "Pro",
-  patientLabel = "Patient",
+  footerNote,
+  title,
+  practitionerLabel,
+  patientLabel,
 }: {
   lines: LiveLine[];
   interim: string;
@@ -30,7 +28,16 @@ export function LiveTranscript({
   practitionerLabel?: string;
   patientLabel?: string;
 }) {
+  const t = useTranslations("live");
   const endRef = useRef<HTMLDivElement | null>(null);
+
+  const resolvedTitle = title ?? t("transcriptTitle");
+  const resolvedFooter =
+    footerNote === null
+      ? null
+      : footerNote ?? t("voicesNote");
+  const resolvedPro = practitionerLabel ?? "Pro";
+  const resolvedPatient = patientLabel ?? "Patient";
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -39,13 +46,13 @@ export function LiveTranscript({
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-lg border border-border bg-surface">
       <div className="flex items-center justify-between border-b border-border px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        <span>{title}</span>
-        <span>{lines.length} lignes</span>
+        <span>{resolvedTitle}</span>
+        <span>{t("linesCount", { count: lines.length })}</span>
       </div>
       <div className="flex-1 overflow-y-auto px-4 py-3">
         {lines.length === 0 && !interim && (
           <p className="text-sm text-muted-foreground">
-            En attente de la première prise de parole…
+            {t("waitingFirstSpeech")}
           </p>
         )}
         <ul className="space-y-3">
@@ -62,7 +69,7 @@ export function LiveTranscript({
                       : "bg-surface-muted text-muted-foreground"
                   }`}
                 >
-                  {l.speaker === "practitioner" ? practitionerLabel : patientLabel}
+                  {l.speaker === "practitioner" ? resolvedPro : resolvedPatient}
                 </span>
               )}
               <p className="text-sm leading-relaxed text-ink">{l.text}</p>
@@ -79,9 +86,9 @@ export function LiveTranscript({
         </ul>
         <div ref={endRef} />
       </div>
-      {footerNote && (
+      {resolvedFooter && (
         <div className="border-t border-border px-4 py-2 text-[11px] text-muted-foreground">
-          {footerNote}
+          {resolvedFooter}
         </div>
       )}
     </div>

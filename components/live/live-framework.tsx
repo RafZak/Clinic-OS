@@ -1,15 +1,25 @@
 "use client";
 
 import { Circle } from "lucide-react";
-import { getFramework, FRAMEWORK_LABEL, type FrameworkKind } from "@/lib/frameworks";
+import { useTranslations, useLocale } from "next-intl";
+import {
+  getFramework,
+  getStepName,
+  getStepDescription,
+  type FrameworkKind,
+} from "@/lib/frameworks";
+import type { Locale } from "@/lib/locale";
 
 export function LiveFramework({ kind }: { kind: FrameworkKind }) {
+  const t = useTranslations("liveFramework");
+  const tFw = useTranslations("framework");
+  const locale = useLocale() as Locale;
   const steps = getFramework(kind);
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-lg border border-border bg-surface">
       <div className="flex items-center justify-between border-b border-border px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        <span>Framework {FRAMEWORK_LABEL[kind]}</span>
-        <span>{steps.length} étapes</span>
+        <span>{t("header", { label: tFw(kind) })}</span>
+        <span>{t("stepsCount", { count: steps.length })}</span>
       </div>
       <div className="flex-1 overflow-y-auto px-4 py-3">
         <ol className="space-y-2">
@@ -23,19 +33,23 @@ export function LiveFramework({ kind }: { kind: FrameworkKind }) {
               </span>
               <div className="flex flex-1 flex-col gap-1">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-medium text-ink">{s.name}</span>
+                  <span className="text-sm font-medium text-ink">
+                    {getStepName(s, locale)}
+                  </span>
                   <span className="inline-flex items-center gap-1 rounded-full bg-surface-muted px-2 py-0.5 text-[11px] uppercase tracking-wide text-muted-foreground">
                     <Circle className="size-2.5" aria-hidden />
-                    À évaluer
+                    {t("toEval")}
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground">{s.description}</p>
+                <p className="text-xs text-muted-foreground">
+                  {getStepDescription(s, locale)}
+                </p>
               </div>
             </li>
           ))}
         </ol>
         <p className="mt-4 text-center text-[11px] text-muted-foreground">
-          Les statuts sont renseignés en temps réel par l'analyse IA pendant la consultation.
+          {t("footer")}
         </p>
       </div>
     </div>

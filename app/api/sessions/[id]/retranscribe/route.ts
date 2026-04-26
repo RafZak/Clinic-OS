@@ -3,8 +3,9 @@ import { after } from "next/server";
 import { retranscribeSession } from "@/lib/analysis/retranscribe";
 import { getSiteUrl } from "@/lib/site-url";
 
-// Vercel Pro : 60 s max. Deepgram batch sur un webm 5-10 min prend 15-30 s.
-export const maxDuration = 60;
+// Vercel Pro : jusqu'à 300 s. Deepgram batch sur un webm 15-20 min peut grimper ;
+// même marge que /analyze pour éviter les zombies.
+export const maxDuration = 300;
 export const runtime = "nodejs";
 
 export async function POST(

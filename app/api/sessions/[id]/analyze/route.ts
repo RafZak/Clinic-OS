@@ -2,8 +2,9 @@ import { NextResponse, after } from "next/server";
 import { analyzeSession } from "@/lib/analysis/analyze";
 import { getSiteUrl } from "@/lib/site-url";
 
-// Vercel Pro : 60 s max. Claude Sonnet 4.6 sur un transcript 5-10 min = 15-25 s.
-export const maxDuration = 60;
+// Vercel Pro : jusqu'à 300 s. Claude Sonnet sur un transcript 15-20 min peut
+// dépasser 60 s ; on garde une marge pour éviter les zombies "analyzing".
+export const maxDuration = 300;
 export const runtime = "nodejs";
 
 export async function POST(

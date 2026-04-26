@@ -5,9 +5,10 @@ import {
   type ArtifactType,
 } from "@/lib/artifacts/generate";
 
-// Vercel Pro : 60 s max. Les 4 artefacts en parallèle = max(Sonnet ~15-20s,
-// Haiku ~3s, Sonnet ~15s, Sonnet ~20s) ≈ 25 s en worst case.
-export const maxDuration = 60;
+// Vercel Pro : jusqu'à 300 s. Les 4 artefacts en parallèle restent typiquement
+// sous 30 s, mais une consultation longue peut faire dérailler Sonnet ; on
+// garde la même marge que /analyze pour éviter les zombies.
+export const maxDuration = 300;
 export const runtime = "nodejs";
 
 const VALID_TYPES = new Set<ArtifactType>([

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { updateVaultForSession } from "@/lib/vault/ingest";
 
-// Vercel Pro : 60 s. Sonnet 4.6 sur les patches vault = ~15-25 s + writes Storage/DB.
-export const maxDuration = 60;
+// Vercel Pro : jusqu'à 300 s. Patches vault + writes Storage/DB peuvent grimper
+// sur une longue consultation ; même marge que /analyze.
+export const maxDuration = 300;
 export const runtime = "nodejs";
 
 export async function POST(

@@ -233,25 +233,7 @@ function ArtifactCard({
           <ArtifactContent type={def.type} content={artifact.content} />
         )}
       </div>
-
-      {artifact?.metadata ? <ArtifactMeta metadata={artifact.metadata} /> : null}
     </div>
-  );
-}
-
-function ArtifactMeta({ metadata }: { metadata: unknown }) {
-  if (!metadata || typeof metadata !== "object") return null;
-  const meta = metadata as {
-    model?: string;
-    durationMs?: number;
-    inputTokens?: number;
-    outputTokens?: number;
-  };
-  return (
-    <p className="text-[10px] text-muted-foreground">
-      {meta.model} · {meta.durationMs ? Math.round(meta.durationMs / 100) / 10 : "?"} s ·{" "}
-      {meta.inputTokens ?? "?"} + {meta.outputTokens ?? "?"} tokens
-    </p>
   );
 }
 

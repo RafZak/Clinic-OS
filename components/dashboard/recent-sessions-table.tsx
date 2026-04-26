@@ -1,48 +1,58 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
+import { getTranslations, getLocale } from "next-intl/server";
 import type { RecentSessionRow } from "@/lib/dashboard";
 import { formatDuration, scoreTextColor } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-function formatRelative(date: Date | null): string {
+function formatRelative(
+  date: Date | null,
+  locale: string,
+  t: (key: string, params?: Record<string, string | number>) => string
+): string {
   if (!date) return "—";
   const days = Math.round((Date.now() - date.getTime()) / 86_400_000);
-  if (days === 0) return "Aujourd'hui";
-  if (days === 1) return "Hier";
-  if (days < 7) return `Il y a ${days} j`;
-  if (days < 30) return `Il y a ${Math.floor(days / 7)} sem`;
-  return date.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
+  if (days === 0) return t("today");
+  if (days === 1) return t("yesterday");
+  if (days < 7) return t("daysAgo", { n: days });
+  if (days < 30) return t("weeksAgo", { n: Math.floor(days / 7) });
+  return date.toLocaleDateString(locale === "en" ? "en-GB" : "fr-FR", {
+    day: "2-digit",
+    month: "short",
+  });
 }
 
-
-export function RecentSessionsTable({
+export async function RecentSessionsTable({
   rows,
   kind,
 }: {
   rows: RecentSessionRow[];
   kind: "consultation" | "phone_call";
 }) {
+  const t = await getTranslations("recentSessions");
+  const locale = await getLocale();
+
   if (rows.length === 0) {
     return (
       <div className="flex h-32 items-center justify-center rounded-md border border-dashed border-border bg-surface text-sm text-muted-foreground">
-        Aucune session analysée pour l&apos;instant.
+        {t("empty")}
       </div>
     );
   }
 
   const baseHref = kind === "consultation" ? "/consultations" : "/appels";
-  const labelKind = kind === "consultation" ? "Consultation" : "Appel";
+  const labelKind = kind === "consultation" ? t("consultation") : t("phone_call");
 
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-surface">
       <table className="w-full text-sm">
         <thead className="border-b border-border bg-surface-muted text-xs uppercase tracking-wide text-muted-foreground">
           <tr>
-            <th className="px-4 py-2.5 text-left font-medium">Patient</th>
-            <th className="px-4 py-2.5 text-left font-medium">Pro</th>
-            <th className="px-4 py-2.5 text-left font-medium">Score</th>
-            <th className="px-4 py-2.5 text-left font-medium">Durée</th>
-            <th className="px-4 py-2.5 text-left font-medium">Date</th>
+            <th className="px-4 py-2.5 text-left font-medium">{t("patient")}</th>
+            <th className="px-4 py-2.5 text-left font-medium">{t("pro")}</th>
+            <th className="px-4 py-2.5 text-left font-medium">{t("score")}</th>
+            <th className="px-4 py-2.5 text-left font-medium">{t("duration")}</th>
+            <th className="px-4 py-2.5 text-left font-medium">{t("date")}</th>
             <th className="px-4 py-2.5" />
           </tr>
         </thead>
@@ -68,7 +78,7 @@ export function RecentSessionsTable({
                 {formatDuration(r.durationSeconds)}
               </td>
               <td className="px-4 py-2.5 text-muted-foreground">
-                {formatRelative(r.startedAt)}
+                {formatRelative(r.startedAt, locale, t)}
               </td>
               <td className="px-4 py-2.5 text-right">
                 <Link

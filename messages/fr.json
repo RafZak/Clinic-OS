@@ -123,6 +123,27 @@
     "weekThis": "Cette sem.",
     "weekShort": "S-{n}"
   },
+  "nudgesPanel": {
+    "groupAlertTitle": "Alertes & relances",
+    "groupAlertDescription": "Actions concrètes à mener maintenant — patients à rappeler, RDV à confirmer, livrables à valider.",
+    "groupImprovementTitle": "Axes d'amélioration",
+    "groupImprovementDescription": "Suggestions de coaching basées sur vos sessions analysées et la mémoire du réseau.",
+    "empty": "Aucune action recommandée pour l'instant."
+  },
+  "recentSessions": {
+    "empty": "Aucune session analysée pour l'instant.",
+    "patient": "Patient",
+    "pro": "Pro",
+    "score": "Score",
+    "duration": "Durée",
+    "date": "Date",
+    "today": "Aujourd'hui",
+    "yesterday": "Hier",
+    "daysAgo": "Il y a {n} j",
+    "weeksAgo": "Il y a {n} sem",
+    "consultation": "Consultation",
+    "phone_call": "Appel"
+  },
   "nudges": {
     "uncalledLostPro": {
       "title": "{label} pas rappelée depuis {days} j",

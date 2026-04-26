@@ -13,6 +13,7 @@ import {
 import { insertSession, markSessionCompleted, markSessionAborted } from "@/lib/sessions";
 import type { SessionKind } from "@/lib/sessions";
 import { getSiteUrl } from "@/lib/site-url";
+import { getLocale } from "@/lib/locale";
 import { getScenarioBySlug } from "@/scripts/replay/scripts";
 import { getPhoneScenarioBySlug } from "@/scripts/replay/scripts-phone";
 
@@ -69,10 +70,12 @@ export async function startLiveSession(
     }
   }
 
+  const locale = await getLocale();
   const id = await insertSession({
     kind,
     source: "live",
     patientId: patientId ?? null,
+    locale,
   });
   const route = kind === "consultation" ? `/consultations/${id}` : `/appels/${id}`;
   redirect(route);
@@ -140,6 +143,7 @@ export async function startReplaySession(slug: string): Promise<void> {
     throw new Error(`Session replay "${slug}" non seedée. Lancez ${seedHint}.`);
   }
 
+  const locale = await getLocale();
   await db.transaction(async (tx) => {
     await tx.delete(sessionScores).where(eq(sessionScores.sessionId, session.id));
     await tx
@@ -155,7 +159,7 @@ export async function startReplaySession(slug: string): Promise<void> {
         globalScore: null,
         summary: null,
         endedAt: null,
-        metadata: null,
+        metadata: { locale },
       })
       .where(eq(sessions.id, session.id));
   });

@@ -12,6 +12,10 @@ import {
   vaultPages,
 } from "@/db/schema";
 import { getAnthropic, CLAUDE_MODELS } from "@/lib/claude";
+import { readSessionLocale } from "@/lib/sessions";
+import type { Locale } from "@/lib/locale";
+import { getLocaleInstruction, getSpeakerLabels } from "@/lib/i18n/llm";
+import type { FrameworkKind } from "@/lib/frameworks";
 import {
   parseFrontmatter,
   serializeFrontmatter,
@@ -136,6 +140,7 @@ type SessionContext = {
   sessionId: string;
   sessionShort: string;
   kind: string;
+  locale: Locale;
   durationSeconds: number | null;
   startedAt: Date | null;
   globalScore: number | null;
@@ -190,11 +195,17 @@ async function loadSessionContext(sessionId: string): Promise<SessionContext | n
       .where(eq(coachingInsights.sessionId, sessionId)),
   ]);
 
+  const locale = readSessionLocale(s.metadata);
+  const labels = getSpeakerLabels(
+    (s.kind === "phone_call" ? "phone_call" : "consultation") as FrameworkKind,
+    locale
+  );
+
   const transcriptText = linesRaw
     .slice(0, 60)
     .map((l) => {
       const ts = formatTs(l.startMs);
-      const who = l.speaker === "practitioner" ? "Pro" : "Patient";
+      const who = l.speaker === "practitioner" ? labels.pro : labels.patient;
       return `[${ts}] ${who}: ${l.text}`;
     })
     .join("\n");
@@ -203,6 +214,7 @@ async function loadSessionContext(sessionId: string): Promise<SessionContext | n
     sessionId,
     sessionShort: sessionId.slice(0, 8),
     kind: s.kind,
+    locale,
     durationSeconds: s.durationSeconds ?? null,
     startedAt: s.startedAt ?? null,
     globalScore: s.globalScore,
@@ -276,7 +288,9 @@ async function callClaudeForPatches(
 ): Promise<Patch[]> {
   const anthropic = getAnthropic();
 
-  const system = `Tu es le maintenance agent du LLM Wiki de Clinic OS (pattern Karpathy). Après chaque session analysée, tu mets à jour le vault markdown qui contient la mémoire organisationnelle du réseau.
+  const system = `${getLocaleInstruction(ctx.locale)}
+
+Tu es le maintenance agent du LLM Wiki de Clinic OS (pattern Karpathy). Après chaque session analysée, tu mets à jour le vault markdown qui contient la mémoire organisationnelle du réseau.
 
 PRINCIPES NON NÉGOCIABLES :
 - Tu ENRICHIS les fiches existantes, tu ne les RÉÉCRIS pas. Conserve toujours le contenu existant. Toute modification est additive ou un raffinement narratif ciblé d'une section.

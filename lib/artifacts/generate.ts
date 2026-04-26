@@ -13,6 +13,10 @@ import {
   vaultPages,
 } from "@/db/schema";
 import { getAnthropic, CLAUDE_MODELS } from "@/lib/claude";
+import { readSessionLocale } from "@/lib/sessions";
+import type { Locale } from "@/lib/locale";
+import { getLocaleInstruction, getSpeakerLabels } from "@/lib/i18n/llm";
+import type { FrameworkKind } from "@/lib/frameworks";
 
 export type ArtifactType =
   | "clinical_notes"
@@ -34,6 +38,7 @@ export type ArtifactGenerationResult =
 type Context = {
   sessionId: string;
   sessionKind: string;
+  locale: Locale;
   startedAt: Date | null;
   durationSeconds: number | null;
   patientLabel: string | null;
@@ -92,9 +97,16 @@ async function loadContext(sessionId: string): Promise<Context | null> {
       : Promise.resolve([] as (typeof vaultPages.$inferSelect)[]),
   ]);
 
+  const locale = readSessionLocale(s.metadata);
+  const labels = getSpeakerLabels(
+    (s.kind === "phone_call" ? "phone_call" : "consultation") as FrameworkKind,
+    locale
+  );
+
   return {
     sessionId,
     sessionKind: s.kind,
+    locale,
     startedAt: s.startedAt ?? null,
     durationSeconds: s.durationSeconds ?? null,
     patientLabel: p?.label ?? null,
@@ -103,7 +115,7 @@ async function loadContext(sessionId: string): Promise<Context | null> {
     centerName: c?.name ?? null,
     centerCity: c?.city ?? null,
     transcript: linesRaw.map((l) => ({
-      speaker: l.speaker === "practitioner" ? "Pro" : "Patient",
+      speaker: l.speaker === "practitioner" ? labels.pro : labels.patient,
       ts: formatTs(l.startMs),
       text: l.text,
     })),
@@ -202,7 +214,9 @@ export async function generateClinicalNotes(ctx: Context): Promise<{ ok: true; d
   const t0 = Date.now();
   const anthropic = getAnthropic();
 
-  const system = `Tu rédiges les notes cliniques d'une consultation d'audioprothèse à partir du transcript et de l'analyse IA. Ces notes servent au dossier patient.
+  const system = `${getLocaleInstruction(ctx.locale)}
+
+Tu rédiges les notes cliniques d'une consultation d'audioprothèse à partir du transcript et de l'analyse IA. Ces notes servent au dossier patient.
 
 RÈGLES :
 - Format markdown structuré avec sections imposées :
@@ -275,7 +289,9 @@ export async function generatePatientEmail(
   const t0 = Date.now();
   const anthropic = getAnthropic();
 
-  const system = `Tu rédiges un email de suivi à envoyer au patient après sa session.
+  const system = `${getLocaleInstruction(ctx.locale)}
+
+Tu rédiges un email de suivi à envoyer au patient après sa session.
 
 RÈGLES :
 - Format : objet (court, factuel, sans emojis) + corps en HTML simple (<p>, <ul><li>, <strong>, <br/>). Pas de CSS, pas d'images, pas d'iframes.
@@ -348,7 +364,9 @@ export async function generatePatientSms(
   const t0 = Date.now();
   const anthropic = getAnthropic();
 
-  const system = `Tu rédiges un SMS court de rappel ou de confirmation à envoyer au patient après sa session.
+  const system = `${getLocaleInstruction(ctx.locale)}
+
+Tu rédiges un SMS court de rappel ou de confirmation à envoyer au patient après sa session.
 
 RÈGLES STRICTES :
 - 140 caractères MAXIMUM, espaces inclus.
@@ -419,7 +437,9 @@ export async function generateOrlLetter(
   const t0 = Date.now();
   const anthropic = getAnthropic();
 
-  const system = `Tu rédiges un courrier médical concis destiné au médecin ORL prescripteur, à partir d'une consultation d'audioprothèse.
+  const system = `${getLocaleInstruction(ctx.locale)}
+
+Tu rédiges un courrier médical concis destiné au médecin ORL prescripteur, à partir d'une consultation d'audioprothèse.
 
 RÈGLES :
 - Format : courrier médical professionnel français, en markdown qui se prête à la conversion PDF.

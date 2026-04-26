@@ -123,6 +123,27 @@
     "weekThis": "This wk",
     "weekShort": "W-{n}"
   },
+  "nudgesPanel": {
+    "groupAlertTitle": "Alerts & follow-ups",
+    "groupAlertDescription": "Actions to take now — patients to call back, appointments to confirm, deliverables to validate.",
+    "groupImprovementTitle": "Improvement areas",
+    "groupImprovementDescription": "Coaching suggestions based on your analyzed sessions and the network memory.",
+    "empty": "No recommended action right now."
+  },
+  "recentSessions": {
+    "empty": "No analyzed session yet.",
+    "patient": "Patient",
+    "pro": "Practitioner",
+    "score": "Score",
+    "duration": "Duration",
+    "date": "Date",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "daysAgo": "{n} days ago",
+    "weeksAgo": "{n} weeks ago",
+    "consultation": "Consultation",
+    "phone_call": "Call"
+  },
   "nudges": {
     "uncalledLostPro": {
       "title": "{label} not called back for {days} days",

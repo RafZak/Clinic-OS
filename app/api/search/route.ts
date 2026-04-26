@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { synthesizeAnswer } from "@/lib/retrieval/synthesize";
+import { getLocale } from "@/lib/locale";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,16 +12,27 @@ function sseEvent(data: unknown): string {
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const query = typeof body?.query === "string" ? body.query.trim() : "";
+  const locale = await getLocale();
 
   if (!query) {
-    return new Response(JSON.stringify({ error: "Requête vide." }), {
-      status: 400,
-      headers: { "content-type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        error: locale === "en" ? "Empty query." : "Requête vide.",
+      }),
+      {
+        status: 400,
+        headers: { "content-type": "application/json" },
+      }
+    );
   }
   if (query.length < 3) {
     return new Response(
-      JSON.stringify({ error: "Requête trop courte (3 caractères minimum)." }),
+      JSON.stringify({
+        error:
+          locale === "en"
+            ? "Query too short (3 characters minimum)."
+            : "Requête trop courte (3 caractères minimum).",
+      }),
       { status: 400, headers: { "content-type": "application/json" } }
     );
   }
@@ -29,7 +41,7 @@ export async function POST(req: NextRequest) {
   const stream = new ReadableStream({
     async start(controller) {
       try {
-        for await (const chunk of synthesizeAnswer(query)) {
+        for await (const chunk of synthesizeAnswer(query, { locale })) {
           controller.enqueue(encoder.encode(sseEvent(chunk)));
         }
       } catch (err) {

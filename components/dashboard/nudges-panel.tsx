@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AlertTriangle, ArrowUpRight, Lightbulb, Sparkles } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import type { Nudge, NudgeKind, NudgeSeverity } from "@/lib/nudges";
 import { cn } from "@/lib/utils";
 
@@ -21,23 +22,13 @@ const SEVERITY_STYLES: Record<NudgeSeverity, { card: string; icon: string; Icon:
   },
 };
 
-const GROUP_TITLE: Record<NudgeKind, string> = {
-  alert: "Alertes & relances",
-  improvement: "Axes d'amélioration",
-};
+export async function NudgesPanel({ nudges }: { nudges: Nudge[] }) {
+  const t = await getTranslations("nudgesPanel");
 
-const GROUP_DESCRIPTION: Record<NudgeKind, string> = {
-  alert:
-    "Actions concrètes à mener maintenant — patients à rappeler, RDV à confirmer, livrables à valider.",
-  improvement:
-    "Suggestions de coaching basées sur vos sessions analysées et la mémoire du réseau.",
-};
-
-export function NudgesPanel({ nudges }: { nudges: Nudge[] }) {
   if (nudges.length === 0) {
     return (
       <div className="flex h-32 items-center justify-center rounded-md border border-dashed border-border bg-surface text-sm text-muted-foreground">
-        Aucune action recommandée pour l&apos;instant.
+        {t("empty")}
       </div>
     );
   }
@@ -47,27 +38,47 @@ export function NudgesPanel({ nudges }: { nudges: Nudge[] }) {
 
   return (
     <div className="flex flex-col gap-6">
-      {alerts.length > 0 && <NudgeGroup kind="alert" nudges={alerts} />}
+      {alerts.length > 0 && (
+        <NudgeGroup
+          kind="alert"
+          nudges={alerts}
+          title={t("groupAlertTitle")}
+          description={t("groupAlertDescription")}
+        />
+      )}
       {improvements.length > 0 && (
-        <NudgeGroup kind="improvement" nudges={improvements} />
+        <NudgeGroup
+          kind="improvement"
+          nudges={improvements}
+          title={t("groupImprovementTitle")}
+          description={t("groupImprovementDescription")}
+        />
       )}
     </div>
   );
 }
 
-function NudgeGroup({ kind, nudges }: { kind: NudgeKind; nudges: Nudge[] }) {
+function NudgeGroup({
+  kind,
+  nudges,
+  title,
+  description,
+}: {
+  kind: NudgeKind;
+  nudges: Nudge[];
+  title: string;
+  description: string;
+}) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-0.5">
         <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-foreground">
-          {GROUP_TITLE[kind]}{" "}
+          {title}{" "}
           <span className="ml-1 font-normal tabular-nums text-muted-foreground">
             ({nudges.length})
           </span>
         </h3>
-        <p className="text-xs text-muted-foreground">
-          {GROUP_DESCRIPTION[kind]}
-        </p>
+        <p className="text-xs text-muted-foreground">{description}</p>
       </div>
       <div
         className={cn(

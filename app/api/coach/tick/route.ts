@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { db } from "@/db/client";
+import { sessions } from "@/db/schema";
 import { getAnthropic, CLAUDE_MODELS } from "@/lib/claude";
-import { getFramework } from "@/lib/frameworks";
+import { getFramework, getStepName, getStepDescription } from "@/lib/frameworks";
+import { readSessionLocale } from "@/lib/sessions";
+import { getLocaleInstruction, getSpeakerLabels } from "@/lib/i18n/llm";
 
 export const runtime = "nodejs";
 export const maxDuration = 20;
@@ -74,33 +79,48 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid body" }, { status: 400 });
   }
 
-  const { frameworkKind, lines, excludeRelatedSteps = [] } = parsed.data;
+  const { sessionId, frameworkKind, lines, excludeRelatedSteps = [] } = parsed.data;
   if (lines.length < 3) {
     return NextResponse.json({ insight: null });
   }
 
+  const sessionRow = await db
+    .select({ metadata: sessions.metadata })
+    .from(sessions)
+    .where(eq(sessions.id, sessionId))
+    .limit(1);
+  const locale = readSessionLocale(sessionRow[0]?.metadata);
+
   const steps = getFramework(frameworkKind);
   const frameworkDescription = steps
-    .map((s) => `${s.number}. ${s.name} — ${s.description}`)
+    .map(
+      (s) =>
+        `${s.number}. ${getStepName(s, locale)} — ${getStepDescription(s, locale)}`
+    )
     .join("\n");
 
+  const labels = getSpeakerLabels(frameworkKind, locale);
   const transcript = lines
     .map(
       (l) =>
         `[${formatMs(l.startMs)}] ${
-          l.speaker === "practitioner" ? "Pro" : "Patient"
+          l.speaker === "practitioner" ? labels.pro : labels.patient
         }: ${l.text}`
     )
     .join("\n");
 
   const excludeLine =
     excludeRelatedSteps.length > 0
-      ? `\n\nNe re-générez PAS de bulle sur les étapes déjà couvertes dans ce rendez-vous : ${excludeRelatedSteps.join(
-          ", "
-        )}.`
+      ? locale === "en"
+        ? `\n\nDo NOT re-emit a bubble on steps already covered earlier in this appointment: ${excludeRelatedSteps.join(", ")}.`
+        : `\n\nNe re-générez PAS de bulle sur les étapes déjà couvertes dans ce rendez-vous : ${excludeRelatedSteps.join(", ")}.`
       : "";
 
-  const systemPrompt = `Vous êtes un coach ambiant pour audioprothésiste en consultation, ancré marché français (classe 1 / classe 2, reste à charge, 100% santé, ordonnance ORL, mutuelle). Vous observez en direct un extrait récent (environ les 60 dernières secondes) et devez détecter UN seul moment coachable dans cet extrait précis — objection mal accueillie, opportunité d'upsell manquée, bonne pratique à renforcer, ou axe d'amélioration actionnable. Si aucun moment clair ne le mérite, répondez "skip".
+  const localeInstruction = getLocaleInstruction(locale);
+
+  const systemPrompt = `${localeInstruction}
+
+Vous êtes un coach ambiant pour audioprothésiste en consultation, ancré marché français (classe 1 / classe 2, reste à charge, 100% santé, ordonnance ORL, mutuelle). Vous observez en direct un extrait récent (environ les 60 dernières secondes) et devez détecter UN seul moment coachable dans cet extrait précis — objection mal accueillie, opportunité d'upsell manquée, bonne pratique à renforcer, ou axe d'amélioration actionnable. Si aucun moment clair ne le mérite, répondez "skip".
 
 Ton : professionnel, factuel, bienveillant sans complaisance. Vouvoyez l'utilisateur (l'audioprothésiste). Coachez l'utilisateur, jamais le patient. Soyez spécifique : citez un terme concret du dialogue si pertinent. 280 caractères max sur la description.
 
@@ -125,7 +145,10 @@ ${frameworkDescription}`;
     messages: [
       {
         role: "user",
-        content: `Extrait récent :\n\n${transcript}`,
+        content:
+          locale === "en"
+            ? `Recent excerpt:\n\n${transcript}`
+            : `Extrait récent :\n\n${transcript}`,
       },
     ],
   });

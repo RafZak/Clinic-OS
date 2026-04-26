@@ -8,7 +8,7 @@ import {
   coachingInsights,
 } from "@/db/schema";
 import { getAnthropic, CLAUDE_MODELS } from "@/lib/claude";
-import { getFramework, type FrameworkKind, type FrameworkStep } from "@/lib/frameworks";
+import { getFramework, getStepName, getStepDescription, getCriterionLabel, type FrameworkKind, type FrameworkStep } from "@/lib/frameworks";
 import { enrichInsightsWithCitations } from "@/lib/analysis/citations";
 import {
   PHONE_CALL_TYPES,
@@ -19,6 +19,9 @@ import {
   type PhoneCallTags,
   type SessionMetadata,
 } from "@/lib/phone-tags";
+import { readSessionLocale } from "@/lib/sessions";
+import type { Locale } from "@/lib/locale";
+import { getLocaleInstruction, getSpeakerLabels, getKindLabel } from "@/lib/i18n/llm";
 
 export type AnalyzeOutcome =
   | { ok: true; insights: number; globalScore: number }
@@ -73,13 +76,14 @@ export async function analyzeSession(sessionId: string): Promise<AnalyzeOutcome>
         )
       )
     )
-    .returning({ id: sessions.id, kind: sessions.kind });
+    .returning({ id: sessions.id, kind: sessions.kind, metadata: sessions.metadata });
 
   if (locked.length === 0) {
     return { skipped: "not-ready" };
   }
 
   const kind = (locked[0].kind ?? "consultation") as FrameworkKind;
+  const locale = readSessionLocale(locked[0].metadata);
 
   try {
     const lines = await db
@@ -101,10 +105,10 @@ export async function analyzeSession(sessionId: string): Promise<AnalyzeOutcome>
     }
 
     const framework = getFramework(kind);
-    const transcriptText = formatTranscript(lines, kind);
+    const transcriptText = formatTranscript(lines, kind, locale);
 
-    const payload = await callClaude(kind, framework, transcriptText);
-    const normalized = normalize(payload, framework);
+    const payload = await callClaude(kind, framework, transcriptText, locale);
+    const normalized = normalize(payload, framework, locale);
     const phoneTags = kind === "phone_call" ? parsePhoneTags(payload.phone_tags) : null;
 
     // Enrichissement citations Layer A (best effort — une panne retrieval
@@ -198,14 +202,14 @@ export async function analyzeSession(sessionId: string): Promise<AnalyzeOutcome>
 
 function formatTranscript(
   lines: (typeof transcriptLines.$inferSelect)[],
-  kind: FrameworkKind
+  kind: FrameworkKind,
+  locale: Locale
 ): string {
-  const proLabel = kind === "phone_call" ? "Standardiste" : "Pro";
-  const patientLabel = kind === "phone_call" ? "Appelant" : "Patient";
+  const labels = getSpeakerLabels(kind, locale);
   return lines
     .map((l) => {
       const ts = formatTs(l.startMs);
-      const who = l.speaker === "practitioner" ? proLabel : patientLabel;
+      const who = l.speaker === "practitioner" ? labels.pro : labels.patient;
       return `[${ts}] ${who}: ${l.text}`;
     })
     .join("\n");
@@ -221,15 +225,20 @@ function formatTs(ms: number): string {
 async function callClaude(
   kind: FrameworkKind,
   framework: FrameworkStep[],
-  transcript: string
+  transcript: string,
+  locale: Locale
 ): Promise<AnalysisPayload> {
   const anthropic = getAnthropic();
-  const frameworkLabel = kind === "consultation" ? "consultation audioprothèse" : "appel entrant centre audio";
+  const frameworkLabel = getKindLabel(kind, locale);
 
   const frameworkBlock = framework
     .map((s) => {
-      const criteria = s.criteria.map((c) => `    - ${c.label}`).join("\n");
-      return `${s.number}. ${s.name} — ${s.description}\n${criteria}`;
+      const stepName = getStepName(s, locale);
+      const stepDesc = getStepDescription(s, locale);
+      const criteria = s.criteria
+        .map((c) => `    - ${getCriterionLabel(c, locale)}`)
+        .join("\n");
+      return `${s.number}. ${stepName} — ${stepDesc}\n${criteria}`;
     })
     .join("\n\n");
 
@@ -278,7 +287,10 @@ INSIGHTS SUPPLÉMENTAIRES POUR APPEL ENTRANT :
 `
     : "";
 
-  const system = `Tu es un analyste senior de performance commerciale dans l'audioprothèse. Tu analyses les ${frameworkLabel}s pour coacher l'utilisateur (pas le patient).
+  const localeInstruction = getLocaleInstruction(locale);
+  const system = `${localeInstruction}
+
+Tu es un analyste senior de performance commerciale dans l'audioprothèse. Tu analyses les ${frameworkLabel}s pour coacher l'utilisateur (pas le patient).
 
 Ton : professionnel, factuel, bienveillant sans complaisance. Vouvoie l'utilisateur. Pas de préambule ni de flatterie. Tu t'appuies uniquement sur le verbatim fourni.
 
@@ -411,14 +423,19 @@ Analyse cette session selon le framework. Appelle l'outil submit_analysis avec l
   return toolUse.input as AnalysisPayload;
 }
 
-function normalize(raw: AnalysisPayload, framework: FrameworkStep[]): AnalysisPayload {
+function normalize(raw: AnalysisPayload, framework: FrameworkStep[], locale: Locale): AnalysisPayload {
   const byStep = new Map(raw.scores.map((s) => [s.step_number, s]));
+  const notEvaluated =
+    locale === "en"
+      ? "Step not evaluated by the analyzer."
+      : "Étape non évaluée par l'analyseur.";
   const scores: RawScore[] = framework.map((step) => {
+    const stepName = getStepName(step, locale);
     const existing = byStep.get(step.number);
     if (existing) {
       return {
         step_number: step.number,
-        step_name: step.name,
+        step_name: stepName,
         score: clampScore(existing.score),
         rationale: existing.rationale ?? "",
         examples: Array.isArray(existing.examples) ? existing.examples : null,
@@ -426,9 +443,9 @@ function normalize(raw: AnalysisPayload, framework: FrameworkStep[]): AnalysisPa
     }
     return {
       step_number: step.number,
-      step_name: step.name,
+      step_name: stepName,
       score: null,
-      rationale: "Étape non évaluée par l'analyseur.",
+      rationale: notEvaluated,
       examples: null,
     };
   });

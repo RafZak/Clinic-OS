@@ -2,11 +2,25 @@ import "server-only";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { patientEvents, sessions } from "@/db/schema";
+import type { Locale } from "@/lib/locale";
+import { isLocale, DEFAULT_LOCALE } from "@/lib/locale";
 
 export type SessionKind = "consultation" | "phone_call";
 export type SessionStatus = "in_progress" | "completed" | "aborted";
 
 export type SessionRow = typeof sessions.$inferSelect;
+
+export function readSessionLocale(metadata: unknown): Locale {
+  if (
+    metadata &&
+    typeof metadata === "object" &&
+    "locale" in metadata &&
+    isLocale((metadata as { locale: unknown }).locale)
+  ) {
+    return (metadata as { locale: Locale }).locale;
+  }
+  return DEFAULT_LOCALE;
+}
 
 export async function getSessionById(id: string): Promise<SessionRow | null> {
   const [row] = await db.select().from(sessions).where(eq(sessions.id, id)).limit(1);
@@ -17,6 +31,7 @@ export async function insertSession(input: {
   kind: SessionKind;
   source: "live" | "replay" | "seed";
   patientId?: string | null;
+  locale?: Locale;
 }): Promise<string> {
   const [row] = await db
     .insert(sessions)
@@ -25,6 +40,7 @@ export async function insertSession(input: {
       source: input.source,
       status: "in_progress",
       patientId: input.patientId ?? null,
+      metadata: input.locale ? { locale: input.locale } : null,
     })
     .returning({ id: sessions.id });
   return row.id;

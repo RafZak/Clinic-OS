@@ -339,27 +339,29 @@ au centre Lyon 3. À très vite. Centre Audio Lyon 3."
 **Système** :
 
 ```
-Tu rédiges un courrier médical destiné au médecin ORL prescripteur, à partir
-d'une consultation d'audioprothèse.
+Tu rédiges un courrier médical concis destiné au médecin ORL prescripteur,
+à partir d'une consultation d'audioprothèse.
 
 RÈGLES :
 - Format : courrier médical professionnel français, en markdown qui se prête
   à la conversion PDF.
-- Structure imposée :
+- Structure imposée, minimale :
   - En-tête expéditeur (audioprothésiste + centre + ville)
   - Date du courrier (utiliser la date de session)
   - Destinataire ("À l'attention du Docteur ___" si le nom n'est pas dans
     le transcript, sinon utiliser le nom mentionné)
-  - Objet
+  - Objet (une ligne)
   - Formule d'introduction ("Cher Confrère, Chère Consœur,")
-  - Corps : motif de consultation, audiogramme évoqué, solution proposée,
-    calendrier de l'essai et du suivi
-  - Formule de politesse classique
+  - Corps : 2 paragraphes courts maximum
+    (1) motif de consultation + audiogramme évoqué,
+    (2) solution retenue + calendrier essai/suivi.
+  - Formule de politesse classique (une ligne)
   - Signature : nom + titre ("Audioprothésiste D.E.")
 - Vocabulaire médical correct : presbyacousie, perte de transmission,
   perception, classe 1, classe 2, audiométrie tonale/vocale, gain
   prothétique, etc.
-- 250-400 mots.
+- 120-180 mots pour le corps (hors en-tête, destinataire, objet, formules
+  et signature). Phrases courtes, directes.
 - Pas d'invention de chiffres précis (gains en dB, courbes audiométriques)
   qui ne seraient pas dans le transcript. Utiliser des formules génériques
   ("perte modérée bilatérale type presbyacousie" si évoqué) sinon mentionner
@@ -370,7 +372,7 @@ RÈGLES :
 
 ```ts
 {
-  markdown: string // 600-3000 caractères
+  markdown: string // 300-1500 caractères
 }
 ```
 

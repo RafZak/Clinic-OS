@@ -173,11 +173,21 @@ function formatInsights(ctx: Context): string {
 }
 
 function patientHeader(ctx: Context): string {
+  if (ctx.locale === "en") {
+    if (!ctx.patientLabel) return "Patient: not recorded";
+    return `Patient: ${ctx.patientLabel}${ctx.patientAge ? ` (${ctx.patientAge} y/o)` : ""}`;
+  }
   if (!ctx.patientLabel) return "Patient : non renseigné";
   return `Patient : ${ctx.patientLabel}${ctx.patientAge ? ` (${ctx.patientAge} ans)` : ""}`;
 }
 
 function practitionerHeader(ctx: Context): string {
+  if (ctx.locale === "en") {
+    const name = ctx.practitionerName ?? "Audiologist";
+    const center = ctx.centerName ? ` — ${ctx.centerName}` : "";
+    const city = ctx.centerCity ? ` (${ctx.centerCity})` : "";
+    return `Audiologist: ${name}${center}${city}`;
+  }
   const name = ctx.practitionerName ?? "Audioprothésiste";
   const center = ctx.centerName ? ` — ${ctx.centerName}` : "";
   const city = ctx.centerCity ? ` (${ctx.centerCity})` : "";
@@ -185,6 +195,12 @@ function practitionerHeader(ctx: Context): string {
 }
 
 function vaultBlock(ctx: Context): string {
+  if (ctx.locale === "en") {
+    if (!ctx.practitionerVaultMd) {
+      return "Audiologist's vault entry: not available.";
+    }
+    return `Audiologist's vault entry (excerpts):\n\n${ctx.practitionerVaultMd.slice(0, 1800)}`;
+  }
   if (!ctx.practitionerVaultMd) {
     return "Fiche organisationnelle de l'audioprothésiste : non disponible.";
   }
@@ -214,7 +230,27 @@ export async function generateClinicalNotes(ctx: Context): Promise<{ ok: true; d
   const t0 = Date.now();
   const anthropic = getAnthropic();
 
-  const system = `${getLocaleInstruction(ctx.locale)}
+  const system =
+    ctx.locale === "en"
+      ? `${getLocaleInstruction(ctx.locale)}
+
+You write the clinical notes of a hearing-care consultation from the transcript and AI analysis. These notes go into the patient record.
+
+RULES:
+- Structured markdown with mandatory section headings:
+  ## Reason for consultation
+  ## Reported history
+  ## Hearing assessment
+  ## Options presented
+  ## Decisions made
+  ## Next steps
+- Clinical, factual tone, no judgement, no emotional qualifiers.
+- Address the patient as "Mr. <Name>" or "Mrs. <Name>".
+- No invention: if a piece of information is not in the transcript, write "Not recorded" under the relevant section.
+- 200-400 words maximum.
+- NEVER mention the score, insights or any opinion on the practitioner's performance — this is a patient record, not coaching.
+- If the practitioner's vault entry flags a recurring point, you may soften a phrasing without quoting it explicitly.`
+      : `${getLocaleInstruction(ctx.locale)}
 
 Tu rédiges les notes cliniques d'une consultation d'audioprothèse à partir du transcript et de l'analyse IA. Ces notes servent au dossier patient.
 
@@ -233,7 +269,20 @@ RÈGLES :
 - Ne mentionne JAMAIS le score, les insights, ou un avis sur la prestation du pro — c'est un dossier patient, pas un coaching.
 - Si la fiche organisationnelle indique un point d'attention récurrent, tu peux nuancer une formulation sans le citer explicitement.`;
 
-  const user = `${patientHeader(ctx)}
+  const user =
+    ctx.locale === "en"
+      ? `${patientHeader(ctx)}
+${practitionerHeader(ctx)}
+Session date: ${ctx.startedAt ? ctx.startedAt.toISOString().slice(0, 10) : "not recorded"}
+Duration: ${ctx.durationSeconds ?? "?"} s
+
+Verbatim transcript:
+${formatTranscript(ctx)}
+
+${vaultBlock(ctx)}
+
+Generate the clinical notes by calling the submit_clinical_notes tool.`
+      : `${patientHeader(ctx)}
 ${practitionerHeader(ctx)}
 Date de session : ${ctx.startedAt ? ctx.startedAt.toISOString().slice(0, 10) : "non renseignée"}
 Durée : ${ctx.durationSeconds ?? "?"} s
@@ -289,7 +338,22 @@ export async function generatePatientEmail(
   const t0 = Date.now();
   const anthropic = getAnthropic();
 
-  const system = `${getLocaleInstruction(ctx.locale)}
+  const system =
+    ctx.locale === "en"
+      ? `${getLocaleInstruction(ctx.locale)}
+
+You write a follow-up email to send to the patient after their session.
+
+RULES:
+- Format: subject line (short, factual, no emojis) + body in simple HTML (<p>, <ul><li>, <strong>, <br/>). No CSS, no images, no iframes.
+- Warm but professional tone. Use natural British English.
+- Address the patient as "Dear Mrs. <Name>" or "Dear Mr. <Name>" based on the label.
+- Reference 1-2 concrete commitments taken during the session (drawn from the transcript).
+- End with ONE single contextual CTA (confirm a trial, finalise a quote, book a follow-up, send a prescription).
+- No invention: do not mention any product, price or date that is not in the transcript.
+- Signature: "Kind regards,<br/><strong>{practitioner}</strong><br/>{center}". Use "—" if any info is missing.
+- 100-200 words in the body. No emojis.`
+      : `${getLocaleInstruction(ctx.locale)}
 
 Tu rédiges un email de suivi à envoyer au patient après sa session.
 
@@ -303,7 +367,21 @@ RÈGLES :
 - Signature : "Bien cordialement,<br/><strong>{practitioner}</strong><br/>{center}". Utiliser "—" si une info manque.
 - 100-200 mots dans le corps. Pas d'emojis.`;
 
-  const user = `${patientHeader(ctx)}
+  const user =
+    ctx.locale === "en"
+      ? `${patientHeader(ctx)}
+${practitionerHeader(ctx)}
+Session date: ${ctx.startedAt ? ctx.startedAt.toISOString().slice(0, 10) : "not recorded"}
+
+Verbatim transcript:
+${formatTranscript(ctx)}
+
+Analyst summary: ${ctx.summary ?? "—"}
+
+${vaultBlock(ctx)}
+
+Generate the patient email by calling the submit_patient_email tool.`
+      : `${patientHeader(ctx)}
 ${practitionerHeader(ctx)}
 Date de session : ${ctx.startedAt ? ctx.startedAt.toISOString().slice(0, 10) : "non renseignée"}
 
@@ -364,7 +442,23 @@ export async function generatePatientSms(
   const t0 = Date.now();
   const anthropic = getAnthropic();
 
-  const system = `${getLocaleInstruction(ctx.locale)}
+  const system =
+    ctx.locale === "en"
+      ? `${getLocaleInstruction(ctx.locale)}
+
+You write a short reminder or confirmation SMS to send to the patient after their session.
+
+STRICT RULES:
+- 140 characters MAXIMUM, including spaces.
+- Direct, factual, polite tone.
+- One main piece of information (appointment, action to take, confirmation).
+- No emoji, no link, no aggressive abbreviations ("appt" is fine, "thx" is not).
+- Address: "Mrs. <Name>" or "Mr. <Name>".
+- End with the centre name or city.
+
+Target example (do not copy verbatim):
+"Hello Mrs. Davis, your fitting appointment is set for 28/03 at 2pm at our London Bridge centre. See you soon. London Bridge Hearing."`
+      : `${getLocaleInstruction(ctx.locale)}
 
 Tu rédiges un SMS court de rappel ou de confirmation à envoyer au patient après sa session.
 
@@ -379,7 +473,21 @@ RÈGLES STRICTES :
 Exemple cible (ne pas copier littéralement) :
 "Bonjour Mme Durand, votre essai d'appareillage est prévu le 28/03 à 14h au centre Lyon 3. À très vite. Centre Audio Lyon 3."`;
 
-  const user = `${patientHeader(ctx)}
+  const user =
+    ctx.locale === "en"
+      ? `${patientHeader(ctx)}
+${practitionerHeader(ctx)}
+
+Analyst summary: ${ctx.summary ?? "—"}
+
+Key insights (to identify the next action):
+${formatInsights(ctx).slice(0, 600) || "No insight."}
+
+Verbatim transcript (excerpts):
+${formatTranscript(ctx).slice(0, 3000)}
+
+Generate the SMS by calling the submit_patient_sms tool.`
+      : `${patientHeader(ctx)}
 ${practitionerHeader(ctx)}
 
 Synthèse analyste : ${ctx.summary ?? "—"}
@@ -437,7 +545,27 @@ export async function generateOrlLetter(
   const t0 = Date.now();
   const anthropic = getAnthropic();
 
-  const system = `${getLocaleInstruction(ctx.locale)}
+  const system =
+    ctx.locale === "en"
+      ? `${getLocaleInstruction(ctx.locale)}
+
+You write a concise medical letter to the referring ENT consultant, based on a hearing-care consultation.
+
+RULES:
+- Format: professional English medical correspondence in markdown, ready for PDF conversion.
+- Mandatory minimal structure:
+  - Sender header (audiologist + centre + city)
+  - Letter date (session date)
+  - Addressee ("Attn: Dr ___" if the name is unknown; otherwise use the name from the transcript)
+  - Subject line (one line)
+  - Opening salutation ("Dear colleague,")
+  - Body: 2 short paragraphs maximum — (1) reason for visit + reported audiogram, (2) chosen solution + trial / follow-up schedule.
+  - Closing line (one line, e.g. "Yours sincerely,")
+  - Signature: name + "Audiologist (HCPC registered)"
+- Correct medical vocabulary: presbyacusis, conductive loss, sensorineural perception, tier 1 / tier 2 device, pure-tone audiometry, speech-in-noise testing, prosthetic gain, etc.
+- 120-180 words for the body (excluding header, addressee, subject, salutations and signature). Short, direct sentences.
+- No fabricated numbers (dB gains, audiometric curves) that are not in the transcript. Write "audiogram to be sent by return of post" if not quantifiable.`
+      : `${getLocaleInstruction(ctx.locale)}
 
 Tu rédiges un courrier médical concis destiné au médecin ORL prescripteur, à partir d'une consultation d'audioprothèse.
 
@@ -456,7 +584,19 @@ RÈGLES :
 - 120-180 mots pour le corps (hors en-tête, destinataire, objet, formules et signature). Phrases courtes, directes.
 - Pas d'invention de chiffres précis (gains en dB, courbes audiométriques) qui ne seraient pas dans le transcript. Mentionner "audiogramme à transmettre par retour de courrier" si non chiffrable.`;
 
-  const user = `${patientHeader(ctx)}
+  const user =
+    ctx.locale === "en"
+      ? `${patientHeader(ctx)}
+${practitionerHeader(ctx)}
+Session date: ${ctx.startedAt ? ctx.startedAt.toISOString().slice(0, 10) : "not recorded"}
+
+Verbatim transcript:
+${formatTranscript(ctx)}
+
+Analyst summary: ${ctx.summary ?? "—"}
+
+Generate the ENT specialist letter by calling the submit_orl_letter tool.`
+      : `${patientHeader(ctx)}
 ${practitionerHeader(ctx)}
 Date de session : ${ctx.startedAt ? ctx.startedAt.toISOString().slice(0, 10) : "non renseignée"}
 

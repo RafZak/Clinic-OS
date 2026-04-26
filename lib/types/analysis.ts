@@ -10,6 +10,8 @@ import type {
 export type InsightCitation = {
   id: string;
   sourceFile: string;
+  sourceType: string | null;
+  driveFileId: string | null;
   programSlug: string | null;
   moduleNumber: number | null;
   chunkIndex: number;

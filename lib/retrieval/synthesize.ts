@@ -1,6 +1,7 @@
 import "server-only";
 import { CLAUDE_MODELS, getAnthropic } from "../claude";
 import { semanticSearch, type RetrievalResult } from "./search";
+import { isMasterFile } from "@/lib/knowledge/master";
 import type { Locale } from "@/lib/locale";
 import { getLocaleInstruction } from "@/lib/i18n/llm";
 
@@ -69,7 +70,10 @@ export async function* synthesizeAnswer(
 
   let sources: RetrievalResult[];
   try {
-    sources = await semanticSearch(query, { topK });
+    // On élargit le topK puis on filtre les fichiers Master* qui ne doivent
+    // pas remonter comme sources visibles côté utilisateur (mémoire only).
+    const raw = await semanticSearch(query, { topK: topK + 4 });
+    sources = raw.filter((s) => !isMasterFile(s.sourceFile)).slice(0, topK);
   } catch (err) {
     yield {
       type: "error",

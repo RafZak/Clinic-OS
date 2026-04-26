@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db/client";
 import {
   sessions,
@@ -9,8 +9,10 @@ import {
   sessionScores,
   coachingInsights,
   sessionArtifacts,
+  knowledgeChunks,
   vaultPages,
 } from "@/db/schema";
+import { isMasterFile } from "@/lib/knowledge/master";
 import type {
   ArtifactRow,
   ArtifactType,
@@ -84,6 +86,60 @@ export async function loadResultsBundle(sessionId: string): Promise<ResultsBundl
       ? (i.citationChunks as InsightCitation[])
       : null,
   }));
+
+  // Hydrate citations with up-to-date driveFileId/sourceType from
+  // knowledge_chunks (data may pre-date the field being stored), and
+  // filter Master* files which should never surface as user-facing sources.
+  const citationIds = Array.from(
+    new Set(
+      insights
+        .flatMap((i) => i.citationChunks ?? [])
+        .map((c) => c.id)
+        .filter((id): id is string => typeof id === "string" && id.length > 0)
+    )
+  );
+  if (citationIds.length > 0) {
+    const chunkRows = await db
+      .select({
+        id: knowledgeChunks.id,
+        sourceFile: knowledgeChunks.sourceFile,
+        sourceType: knowledgeChunks.sourceType,
+        driveFileId: knowledgeChunks.driveFileId,
+        programSlug: knowledgeChunks.programSlug,
+        moduleNumber: knowledgeChunks.moduleNumber,
+      })
+      .from(knowledgeChunks)
+      .where(inArray(knowledgeChunks.id, citationIds));
+    const byId = new Map(chunkRows.map((r) => [r.id, r]));
+    for (const insight of insights) {
+      if (!insight.citationChunks) continue;
+      const filtered: InsightCitation[] = [];
+      for (const c of insight.citationChunks) {
+        const fresh = byId.get(c.id);
+        const sourceFile = fresh?.sourceFile ?? c.sourceFile;
+        if (isMasterFile(sourceFile)) continue;
+        filtered.push({
+          ...c,
+          sourceFile,
+          sourceType: fresh?.sourceType ?? c.sourceType ?? null,
+          driveFileId: fresh?.driveFileId ?? c.driveFileId ?? null,
+          programSlug: fresh?.programSlug ?? c.programSlug,
+          moduleNumber: fresh?.moduleNumber ?? c.moduleNumber,
+        });
+      }
+      insight.citationChunks = filtered.length > 0 ? filtered : null;
+    }
+  } else {
+    // Aucune citation, rien à hydrater — mais on filtre quand même les
+    // citations malformées sans id pour être sûr.
+    for (const insight of insights) {
+      if (!insight.citationChunks) continue;
+      const filtered = insight.citationChunks.filter(
+        (c) => !isMasterFile(c.sourceFile)
+      );
+      insight.citationChunks = filtered.length > 0 ? filtered : null;
+    }
+  }
 
   const artifacts: ArtifactRow[] = artifactsRaw.map((a) => ({
     ...a,

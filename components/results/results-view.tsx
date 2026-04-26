@@ -333,12 +333,28 @@ function InsightCard({
   );
 }
 
-function citationHref(c: InsightCitation): string | null {
+type CitationLink =
+  | { kind: "external"; href: string }
+  | { kind: "internal"; href: string }
+  | null;
+
+function citationLink(c: InsightCitation): CitationLink {
+  if (c.driveFileId) {
+    if (c.sourceType === "pdf" || c.sourceType === "docx") {
+      return {
+        kind: "external",
+        href: `/api/file/${encodeURIComponent(c.driveFileId)}`,
+      };
+    }
+  }
   if (!c.programSlug) return null;
   if (c.moduleNumber !== null) {
-    return `/catalogue/${c.programSlug}#module-${c.moduleNumber}`;
+    return {
+      kind: "internal",
+      href: `/catalogue/${c.programSlug}#module-${c.moduleNumber}`,
+    };
   }
-  return `/catalogue/${c.programSlug}`;
+  return { kind: "internal", href: `/catalogue/${c.programSlug}` };
 }
 
 function Citations({ citations }: { citations: InsightCitation[] }) {
@@ -350,7 +366,7 @@ function Citations({ citations }: { citations: InsightCitation[] }) {
       </p>
       <ul className="mt-1 flex flex-col gap-1">
         {citations.map((c) => {
-          const href = citationHref(c);
+          const link = citationLink(c);
           const inner = (
             <>
               <MessageSquare
@@ -363,13 +379,21 @@ function Citations({ citations }: { citations: InsightCitation[] }) {
               </span>
             </>
           );
+          const className =
+            "flex items-center gap-2 rounded hover:bg-muted/40 -mx-1 px-1 py-0.5 transition-colors [&>span>span:first-child]:hover:underline";
           return (
             <li key={c.id} className="text-xs">
-              {href ? (
-                <Link
-                  href={href}
-                  className="flex items-center gap-2 rounded hover:bg-muted/40 -mx-1 px-1 py-0.5 transition-colors [&>span>span:first-child]:hover:underline"
+              {link?.kind === "external" ? (
+                <a
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={className}
                 >
+                  {inner}
+                </a>
+              ) : link?.kind === "internal" ? (
+                <Link href={link.href} className={className}>
                   {inner}
                 </Link>
               ) : (

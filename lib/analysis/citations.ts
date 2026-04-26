@@ -1,5 +1,6 @@
 import "server-only";
 import { semanticSearch } from "@/lib/retrieval/search";
+import { isMasterFile } from "@/lib/knowledge/master";
 import type { InsightCitation } from "@/lib/types/analysis";
 
 export type { InsightCitation };
@@ -12,6 +13,8 @@ type InsightLike = {
 /**
  * Pour chaque insight, attache 1-2 chunks Layer A les plus pertinents.
  * Best-effort : si le retrieval échoue pour un insight, citationChunks=null.
+ * Les fichiers Master* sont conservés en mémoire mais exclus des citations
+ * affichées à l'utilisateur.
  */
 export async function enrichInsightsWithCitations<T extends InsightLike>(
   insights: T[]
@@ -20,13 +23,16 @@ export async function enrichInsightsWithCitations<T extends InsightLike>(
   for (const insight of insights) {
     const query = `${insight.title}. ${insight.description}`.slice(0, 500);
     try {
-      const results = await semanticSearch(query, { topK: 4, dedupeThreshold: 0.9 });
+      const results = await semanticSearch(query, { topK: 6, dedupeThreshold: 0.9 });
       const citations: InsightCitation[] = results
         .filter((r) => r.similarity >= 0.35)
+        .filter((r) => !isMasterFile(r.sourceFile))
         .slice(0, 2)
         .map((r) => ({
           id: r.id,
           sourceFile: r.sourceFile,
+          sourceType: r.sourceType,
+          driveFileId: r.driveFileId,
           programSlug: r.programSlug,
           moduleNumber: r.moduleNumber,
           chunkIndex: r.chunkIndex,

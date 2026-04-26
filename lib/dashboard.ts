@@ -5,7 +5,7 @@ import { db } from "@/db/client";
 import type { Role } from "@/lib/role";
 import type { Locale } from "@/lib/locale";
 import type { FrameworkKind } from "@/lib/frameworks";
-import { getFramework, getStepName } from "@/lib/frameworks";
+import { getScorableFramework, getStepName } from "@/lib/frameworks";
 
 export type DashboardKpi = {
   label: string;
@@ -537,7 +537,8 @@ async function loadHeatmap(
   kind: FrameworkKind,
   locale: Locale
 ): Promise<StepHeatmapCell[]> {
-  const framework = getFramework(kind);
+  const framework = getScorableFramework(kind);
+  const scorableNumbers = framework.map((s) => s.number);
 
   const rows = await db.execute<{
     step_number: number;
@@ -556,6 +557,7 @@ async function loadHeatmap(
       AND s.analysis_status = 'done'
       AND s.patient_id IS NOT NULL
       AND COALESCE(s.metadata->>'locale', 'fr') = ${locale}
+      AND ss.step_number = ANY(${scorableNumbers})
     GROUP BY ss.step_number
     ORDER BY ss.step_number ASC
   `);

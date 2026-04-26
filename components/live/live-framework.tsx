@@ -3,7 +3,7 @@
 import { Circle } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import {
-  getFramework,
+  getScorableFramework,
   getStepName,
   getStepDescription,
   type FrameworkKind,
@@ -14,7 +14,7 @@ export function LiveFramework({ kind }: { kind: FrameworkKind }) {
   const t = useTranslations("liveFramework");
   const tFw = useTranslations("framework");
   const locale = useLocale() as Locale;
-  const steps = getFramework(kind);
+  const steps = getScorableFramework(kind);
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-lg border border-border bg-surface">
       <div className="flex items-center justify-between border-b border-border px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">

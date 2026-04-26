@@ -8,7 +8,7 @@ import {
   coachingInsights,
 } from "@/db/schema";
 import { getAnthropic, CLAUDE_MODELS } from "@/lib/claude";
-import { getFramework, getStepName, getStepDescription, getCriterionLabel, type FrameworkKind, type FrameworkStep } from "@/lib/frameworks";
+import { getScorableFramework, getStepName, getStepDescription, getCriterionLabel, type FrameworkKind, type FrameworkStep } from "@/lib/frameworks";
 import { enrichInsightsWithCitations } from "@/lib/analysis/citations";
 import {
   PHONE_CALL_TYPES,
@@ -104,7 +104,7 @@ export async function analyzeSession(sessionId: string): Promise<AnalyzeOutcome>
       return { skipped: "no-transcript" };
     }
 
-    const framework = getFramework(kind);
+    const framework = getScorableFramework(kind);
     const transcriptText = formatTranscript(lines, kind, locale);
 
     const payload = await callClaude(kind, framework, transcriptText, locale);

@@ -13,6 +13,14 @@ export type FrameworkStep = {
   description: string;
   description_en: string;
   criteria: FrameworkCriterion[];
+  /**
+   * Étape observable dans la fenêtre de la conversation analysée.
+   * Quand `false`, l'étape reste dans le référentiel métier (knowledge base,
+   * formation) mais n'est ni notée, ni coachée, ni affichée dans les radars
+   * et heatmaps : elle se déroule hors de l'audio capturé (avant ou après
+   * la consultation), donc impossible à juger sur transcript.
+   */
+  scorable?: boolean;
 };
 
 export type FrameworkKind = "consultation" | "phone_call";
@@ -34,15 +42,18 @@ export const CONSULTATION_FRAMEWORK: FrameworkStep[] = [
       { id: "prep_ambiance", label: "Ambiance accueillante (lumière, son, propreté)", label_en: "Welcoming atmosphere (light, sound, cleanliness)" },
       { id: "prep_planning", label: "Planning respecté, pas de retard", label_en: "Schedule respected, no delay" },
     ],
+    scorable: false,
   },
   {
     number: 2,
     name: "Introduction",
     name_en: "Introduction",
-    description: "Se présenter, valider l'agenda",
-    description_en: "Introduce yourself, validate the agenda",
+    description: "Accueillir, mettre à l'aise, se présenter, valider l'agenda",
+    description_en: "Welcome, put at ease, introduce yourself, validate the agenda",
     criteria: [
       { id: "intro_presentation", label: "Se présente avec nom + fonction", label_en: "Introduces self with name + role" },
+      { id: "intro_accueil_humain", label: "Marque une attention au confort du patient (propose un verre d'eau, vérifie qu'il a trouvé, prend des nouvelles)", label_en: "Shows attention to patient comfort (offers water, checks they found the place, asks how they are)" },
+      { id: "intro_brise_glace", label: "Échange chaleureux court avant d'entrer dans le médical (sujet léger, mise à l'aise)", label_en: "Brief warm exchange before clinical content (light topic, putting at ease)" },
       { id: "intro_agenda", label: "Annonce le déroulé du rendez-vous", label_en: "Announces the appointment outline" },
       { id: "intro_duree", label: "Donne la durée estimée", label_en: "Gives the estimated duration" },
     ],
@@ -113,12 +124,14 @@ export const CONSULTATION_FRAMEWORK: FrameworkStep[] = [
     number: 8,
     name: "Conclusion",
     name_en: "Conclusion",
-    description: "Résumer les engagements pris",
-    description_en: "Summarize the commitments taken",
+    description: "Résumer les engagements pris, fixer la suite, sécuriser la relation",
+    description_en: "Summarize commitments, lock in next steps, secure the relationship",
     criteria: [
       { id: "conclu_synthese", label: "Fait une synthèse orale de la décision", label_en: "Makes an oral synthesis of the decision" },
-      { id: "conclu_next_steps", label: "Donne les prochaines étapes (essai, livraison)", label_en: "Gives the next steps (trial, delivery)" },
+      { id: "conclu_rdv_essai", label: "Fixe le RDV d'essai ou de livraison avant le départ du patient", label_en: "Books the trial or delivery appointment before the patient leaves" },
       { id: "conclu_validation", label: "Obtient une validation explicite du patient", label_en: "Obtains an explicit confirmation from the patient" },
+      { id: "conclu_rappel", label: "Annonce un rappel pour vérifier le bon déroulement de l'essai", label_en: "Announces a follow-up call to check the trial is going well" },
+      { id: "conclu_coordonnees", label: "Donne ses coordonnées directes en cas de question", label_en: "Provides direct contact info for questions" },
     ],
   },
   {
@@ -136,13 +149,14 @@ export const CONSULTATION_FRAMEWORK: FrameworkStep[] = [
     number: 10,
     name: "Suivi",
     name_en: "Follow-up",
-    description: "Sécuriser contre la concurrence",
-    description_en: "Lock down against the competition",
+    description: "Entretenir la relation entre les rendez-vous (hors fenêtre de la consultation)",
+    description_en: "Maintain the relationship between appointments (outside the consultation window)",
     criteria: [
-      { id: "suivi_rdv_essai", label: "Fixe le RDV d'essai ou de livraison avant le départ", label_en: "Books the trial or delivery appointment before leaving" },
-      { id: "suivi_rappel", label: "Promet un rappel pour vérifier l'essai", label_en: "Promises a follow-up call to check the trial" },
-      { id: "suivi_joignable", label: "Donne ses coordonnées directes en cas de question", label_en: "Provides direct contact info for questions" },
+      { id: "suivi_rappel_j2", label: "Rappel SMS ou email à J-2 du prochain rendez-vous", label_en: "SMS or email reminder 2 days before the next appointment" },
+      { id: "suivi_relance_essai", label: "Prise de nouvelles pendant la période d'essai (téléphone ou message)", label_en: "Follow-up during the trial period (phone or message)" },
+      { id: "suivi_relance_silencieux", label: "Relance des patients silencieux après un rendez-vous (pas de retour spontané)", label_en: "Outreach to silent patients after an appointment (no spontaneous reply)" },
     ],
+    scorable: false,
   },
 ];
 
@@ -238,6 +252,21 @@ export const PHONE_CALL_FRAMEWORK: FrameworkStep[] = [
 
 export function getFramework(kind: FrameworkKind): FrameworkStep[] {
   return kind === "consultation" ? CONSULTATION_FRAMEWORK : PHONE_CALL_FRAMEWORK;
+}
+
+/**
+ * Étapes effectivement observables dans la conversation analysée.
+ * Référence pour scoring, coaching, radars et heatmaps. Les étapes hors
+ * fenêtre (préparation matérielle, suivi post-RDV) restent dans
+ * `getFramework` pour la knowledge base et la formation.
+ */
+export function getScorableFramework(kind: FrameworkKind): FrameworkStep[] {
+  return getFramework(kind).filter((s) => s.scorable !== false);
+}
+
+export function isStepScorable(kind: FrameworkKind, stepNumber: number): boolean {
+  const step = getFramework(kind).find((s) => s.number === stepNumber);
+  return step ? step.scorable !== false : false;
 }
 
 export function getStepName(step: FrameworkStep, locale: Locale): string {

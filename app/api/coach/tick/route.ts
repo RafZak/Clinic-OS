@@ -4,7 +4,7 @@ import { z } from "zod";
 import { db } from "@/db/client";
 import { sessions } from "@/db/schema";
 import { getAnthropic, CLAUDE_MODELS } from "@/lib/claude";
-import { getFramework, getStepName, getStepDescription } from "@/lib/frameworks";
+import { getScorableFramework, getStepName, getStepDescription } from "@/lib/frameworks";
 import { readSessionLocale } from "@/lib/sessions";
 import { getLocaleInstruction, getSpeakerLabels } from "@/lib/i18n/llm";
 
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
     .limit(1);
   const locale = readSessionLocale(sessionRow[0]?.metadata);
 
-  const steps = getFramework(frameworkKind);
+  const steps = getScorableFramework(frameworkKind);
   const frameworkDescription = steps
     .map(
       (s) =>
@@ -130,7 +130,7 @@ Severity :
 - info : bonne pratique à consolider, ou remarque pédagogique
 
 timestamp_ms : si la bulle porte sur un moment précis, mettre le startMs de la ligne concernée, sinon null.
-related_step : numéro de l'étape framework si applicable (1-10 consultation, 1-6 appel), sinon null.${excludeLine}
+related_step : numéro de l'étape framework si applicable (consultation : 2 à 9 — la préparation et le suivi post-RDV ne sont pas observables dans la conversation ; appel : 1 à 6), sinon null.${excludeLine}
 
 Framework de référence :
 ${frameworkDescription}`;

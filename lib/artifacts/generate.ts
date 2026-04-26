@@ -16,7 +16,7 @@ import { getAnthropic, CLAUDE_MODELS } from "@/lib/claude";
 import { readSessionLocale } from "@/lib/sessions";
 import type { Locale } from "@/lib/locale";
 import { getLocaleInstruction, getSpeakerLabels } from "@/lib/i18n/llm";
-import type { FrameworkKind } from "@/lib/frameworks";
+import { isStepScorable, type FrameworkKind } from "@/lib/frameworks";
 
 export type ArtifactType =
   | "clinical_notes"
@@ -98,10 +98,8 @@ async function loadContext(sessionId: string): Promise<Context | null> {
   ]);
 
   const locale = readSessionLocale(s.metadata);
-  const labels = getSpeakerLabels(
-    (s.kind === "phone_call" ? "phone_call" : "consultation") as FrameworkKind,
-    locale
-  );
+  const kind = (s.kind === "phone_call" ? "phone_call" : "consultation") as FrameworkKind;
+  const labels = getSpeakerLabels(kind, locale);
 
   return {
     sessionId,
@@ -119,12 +117,14 @@ async function loadContext(sessionId: string): Promise<Context | null> {
       ts: formatTs(l.startMs),
       text: l.text,
     })),
-    scores: scoresRaw.map((s) => ({
-      stepNumber: s.stepNumber,
-      stepName: s.stepName,
-      score: s.score,
-      rationale: s.rationale,
-    })),
+    scores: scoresRaw
+      .filter((row) => isStepScorable(kind, row.stepNumber))
+      .map((s) => ({
+        stepNumber: s.stepNumber,
+        stepName: s.stepName,
+        score: s.score,
+        rationale: s.rationale,
+      })),
     insights: insightsRaw.map((i) => ({
       type: i.type,
       severity: i.severity,

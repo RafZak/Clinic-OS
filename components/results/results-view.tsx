@@ -17,7 +17,7 @@ import { ArtifactsPanel } from "@/components/results/artifacts-panel";
 import { cn } from "@/lib/utils";
 import { formatTimestampMs } from "@/lib/format";
 import {
-  getFramework,
+  getScorableFramework,
   getStepName,
   type FrameworkKind,
 } from "@/lib/frameworks";
@@ -89,7 +89,7 @@ export function ResultsView({ bundle }: { bundle: Bundle }) {
 
   // Le radar utilise toujours les noms d'étape de la locale UI courante
   // (le step_name stocké en DB est figé dans la langue de la session).
-  const framework = useMemo(() => getFramework(kind), [kind]);
+  const framework = useMemo(() => getScorableFramework(kind), [kind]);
   const radarPoints: RadarPoint[] = useMemo(
     () =>
       framework.map((step) => {

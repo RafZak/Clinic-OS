@@ -3,11 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { Square } from "lucide-react";
 import type { FrameworkKind } from "@/lib/frameworks";
 import type { Locale } from "@/lib/locale";
 import { useDeepgramLive } from "@/hooks/use-deepgram-live";
 import { useLiveCoach } from "@/hooks/use-live-coach";
 import { finishLiveSession, abortLiveSession } from "@/app/actions/sessions";
+import { Button } from "@/components/ui/button";
 import { LiveHeader } from "./live-header";
 import { LiveTranscript } from "./live-transcript";
 import { LiveFramework } from "./live-framework";
@@ -128,6 +130,20 @@ export function LiveConsole({
           />
         </div>
       </div>
+
+      {state.phase === "recording" && (
+        <div className="pointer-events-none fixed bottom-6 right-6 z-50">
+          <Button
+            size="lg"
+            className="pointer-events-auto bg-brand text-primary-foreground shadow-lg hover:bg-brand-dark"
+            onClick={() => void handleStop()}
+            disabled={finalizing}
+          >
+            <Square className="size-4" aria-hidden />
+            {tLive("stopAndAnalyze")}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

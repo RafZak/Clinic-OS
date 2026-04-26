@@ -493,7 +493,24 @@
     },
     "noPagesYet": "Aucune fiche pour l'instant. Les fiches session sont créées automatiquement après chaque analyse.",
     "backlinksTitle": "Liens entrants",
-    "noBacklinks": "Aucun lien entrant"
+    "noBacklinks": "Aucun lien entrant",
+    "graphTitle": "Vault — Vue graph",
+    "graphDescription": "Visualisation des relations entre fiches via les wikilinks. Cliquez sur un nœud pour ouvrir la fiche.",
+    "backToList": "Retour à la liste",
+    "graphFooter": "{nodes} fiches · {edges} liens. Layout calculé automatiquement à partir des wikilinks détectés en base.",
+    "categories": "Catégories",
+    "zoomIn": "Zoom avant",
+    "zoomOut": "Zoom arrière",
+    "recenter": "Recentrer",
+    "kindLegend": {
+      "practitioner": "Audioprothésiste",
+      "assistant": "Assistant",
+      "center": "Centre",
+      "patient": "Patient",
+      "pattern": "Pattern",
+      "session": "Session",
+      "index": "Index"
+    }
   },
   "admin": {
     "knowledge": {

@@ -493,7 +493,24 @@
     },
     "noPagesYet": "No entry yet. Session entries are created automatically after each analysis.",
     "backlinksTitle": "Backlinks",
-    "noBacklinks": "No backlinks"
+    "noBacklinks": "No backlinks",
+    "graphTitle": "Vault — Graph view",
+    "graphDescription": "Visualisation of relations between entries via wikilinks. Click a node to open the entry.",
+    "backToList": "Back to list",
+    "graphFooter": "{nodes} entries · {edges} links. Layout computed automatically from wikilinks detected in the index.",
+    "categories": "Categories",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "recenter": "Recenter",
+    "kindLegend": {
+      "practitioner": "Audiologist",
+      "assistant": "Front desk assistant",
+      "center": "Center",
+      "patient": "Patient",
+      "pattern": "Pattern",
+      "session": "Session",
+      "index": "Index"
+    }
   },
   "admin": {
     "knowledge": {

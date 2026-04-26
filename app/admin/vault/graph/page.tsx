@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { asc } from "drizzle-orm";
+import { getTranslations } from "next-intl/server";
 import { db } from "@/db/client";
 import { vaultPages } from "@/db/schema";
 import { PageHeader } from "@/components/layout/page-header";
@@ -8,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { VaultGraph } from "@/components/admin/vault-graph";
 
 export default async function VaultGraphPage() {
+  const t = await getTranslations("vault");
   const rows = await db
     .select({
       path: vaultPages.path,
@@ -53,13 +55,13 @@ export default async function VaultGraphPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Vault — Vue graph"
-        description="Visualisation des relations entre fiches via les wikilinks. Cliquez sur un nœud pour ouvrir la fiche."
+        title={t("graphTitle")}
+        description={t("graphDescription")}
         actions={
           <Link href="/admin/vault">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="size-4" aria-hidden />
-              Retour à la liste
+              {t("backToList")}
             </Button>
           </Link>
         }
@@ -68,8 +70,7 @@ export default async function VaultGraphPage() {
         <VaultGraph nodes={nodes} edges={edges} />
       </div>
       <p className="text-xs text-muted-foreground">
-        {nodes.length} fiches · {edges.length} liens. Layout calculé automatiquement à partir
-        des wikilinks détectés en base.
+        {t("graphFooter", { nodes: nodes.length, edges: edges.length })}
       </p>
     </div>
   );

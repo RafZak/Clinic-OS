@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 import { Maximize2, Minus, Plus } from "lucide-react";
 
 const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), { ssr: false });
@@ -29,15 +30,25 @@ type GraphLinkRuntime = {
   target: string | GraphNodeRuntime;
 };
 
-const KIND_STYLE: Record<string, { color: string; label: string }> = {
-  practitioner: { color: "#CC0641", label: "Audioprothésiste" },
-  assistant: { color: "#D97706", label: "Assistant" },
-  center: { color: "#2563EB", label: "Centre" },
-  patient: { color: "#059669", label: "Patient" },
-  pattern: { color: "#E11D48", label: "Pattern" },
-  session: { color: "#7C3AED", label: "Session" },
-  index: { color: "#64748B", label: "Index" },
+const KIND_COLOR: Record<string, string> = {
+  practitioner: "#CC0641",
+  assistant: "#D97706",
+  center: "#2563EB",
+  patient: "#059669",
+  pattern: "#E11D48",
+  session: "#7C3AED",
+  index: "#64748B",
 };
+
+const KIND_ORDER = [
+  "practitioner",
+  "assistant",
+  "center",
+  "patient",
+  "pattern",
+  "session",
+  "index",
+] as const;
 
 const FALLBACK_COLOR = "#64748B";
 
@@ -53,6 +64,8 @@ export function VaultGraph({
   edges: { source: string; target: string }[];
 }) {
   const router = useRouter();
+  const t = useTranslations("vault");
+  const tLegend = useTranslations("vault.kindLegend");
   const fgRef = useRef<{
     zoomToFit: (ms?: number, padding?: number) => void;
     zoom: (k?: number, ms?: number) => number;
@@ -66,7 +79,7 @@ export function VaultGraph({
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [activeKinds, setActiveKinds] = useState<Set<string>>(
-    () => new Set(Object.keys(KIND_STYLE))
+    () => new Set(KIND_ORDER)
   );
 
   const data = useMemo(() => {
@@ -186,9 +199,10 @@ export function VaultGraph({
 
       <div className="absolute right-4 top-4 z-10 flex flex-col gap-0.5 rounded-md border border-border bg-white/90 p-2 shadow-sm backdrop-blur">
         <p className="px-2 pb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-          Catégories
+          {t("categories")}
         </p>
-        {Object.entries(KIND_STYLE).map(([kind, style]) => {
+        {KIND_ORDER.map((kind) => {
+          const color = KIND_COLOR[kind] ?? FALLBACK_COLOR;
           const active = activeKinds.has(kind);
           return (
             <button
@@ -201,9 +215,9 @@ export function VaultGraph({
             >
               <span
                 className="size-2.5 rounded-full ring-1 ring-black/5"
-                style={{ background: active ? style.color : "transparent", borderColor: style.color }}
+                style={{ background: active ? color : "transparent", borderColor: color }}
               />
-              <span>{style.label}</span>
+              <span>{tLegend(kind)}</span>
             </button>
           );
         })}
@@ -214,7 +228,7 @@ export function VaultGraph({
           type="button"
           onClick={() => zoomBy(1.4)}
           className="flex size-8 items-center justify-center rounded hover:bg-light"
-          aria-label="Zoom avant"
+          aria-label={t("zoomIn")}
         >
           <Plus className="size-4" aria-hidden />
         </button>
@@ -222,7 +236,7 @@ export function VaultGraph({
           type="button"
           onClick={() => zoomBy(1 / 1.4)}
           className="flex size-8 items-center justify-center rounded hover:bg-light"
-          aria-label="Zoom arrière"
+          aria-label={t("zoomOut")}
         >
           <Minus className="size-4" aria-hidden />
         </button>
@@ -230,7 +244,7 @@ export function VaultGraph({
           type="button"
           onClick={recenter}
           className="flex size-8 items-center justify-center rounded hover:bg-light"
-          aria-label="Recentrer"
+          aria-label={t("recenter")}
         >
           <Maximize2 className="size-4" aria-hidden />
         </button>
@@ -246,10 +260,12 @@ export function VaultGraph({
             <div className="flex items-center gap-1.5">
               <span
                 className="size-2 rounded-full ring-1 ring-black/5"
-                style={{ background: KIND_STYLE[hoverNodeData.kind]?.color ?? FALLBACK_COLOR }}
+                style={{ background: KIND_COLOR[hoverNodeData.kind] ?? FALLBACK_COLOR }}
               />
               <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                {KIND_STYLE[hoverNodeData.kind]?.label ?? hoverNodeData.kind}
+                {KIND_ORDER.includes(hoverNodeData.kind as (typeof KIND_ORDER)[number])
+                  ? tLegend(hoverNodeData.kind)
+                  : hoverNodeData.kind}
               </span>
             </div>
             <div className="mt-0.5 truncate font-medium text-foreground">
@@ -329,7 +345,7 @@ export function VaultGraph({
             const r = nodeRadius(n);
             const isHover = hoverId === n.id;
             const dimmed = highlight ? !highlight.has(n.id) : false;
-            const baseColor = KIND_STYLE[n.kind]?.color ?? FALLBACK_COLOR;
+            const baseColor = KIND_COLOR[n.kind] ?? FALLBACK_COLOR;
 
             ctx.globalAlpha = dimmed ? 0.18 : 1;
 

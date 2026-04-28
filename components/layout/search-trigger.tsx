@@ -11,7 +11,8 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
+import { formatSourceCitation } from "@/lib/format/source-citation";
 import {
   Dialog,
   DialogContent,
@@ -25,12 +26,16 @@ type Source = {
   sourceFile: string;
   sourceType: string;
   programSlug: string | null;
+  programTitle: string | null;
   moduleNumber: number | null;
+  moduleTitle: string | null;
   chunkIndex: number;
   content: string;
   metadata: Record<string, unknown> | null;
   driveFileId: string | null;
   similarity: number;
+  startSeconds: number | null;
+  pageNumber: number | null;
 };
 
 type StreamEvent =
@@ -120,6 +125,7 @@ export function SearchTrigger() {
 function SearchBody({ onClose }: { onClose: () => void }) {
   const t = useTranslations("search");
   const tCommon = useTranslations("common");
+  const locale = useLocale() as "fr" | "en";
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
@@ -379,22 +385,24 @@ function SearchBody({ onClose }: { onClose: () => void }) {
                     <li
                       key={s.id}
                       className={cn(
-                        "grid grid-cols-[auto,1fr,auto] items-center gap-3 rounded-md border border-border bg-surface px-3 py-2 text-xs"
+                        "grid grid-cols-[auto,1fr] items-center gap-3 rounded-md border border-border bg-surface px-3 py-2 text-xs"
                       )}
                     >
                       <span className="font-mono text-muted-foreground">
                         [{idx + 1}]
                       </span>
-                      <span className="truncate">
-                        <span className="font-medium text-ink">{s.sourceFile}</span>
-                        <span className="text-muted-foreground">
-                          {" · "}
-                          {s.programSlug ?? "—"}
-                          {s.moduleNumber ? ` · module ${s.moduleNumber}` : ""}
-                        </span>
-                      </span>
-                      <span className="rounded-full bg-surface-muted px-2 py-0.5 font-mono text-[10px] text-brand">
-                        {s.similarity.toFixed(2)}
+                      <span className="truncate text-ink">
+                        {formatSourceCitation(
+                          {
+                            programTitle: s.programTitle,
+                            moduleNumber: s.moduleNumber,
+                            moduleTitle: s.moduleTitle,
+                            startSeconds: s.startSeconds,
+                            pageNumber: s.pageNumber,
+                            sourceType: s.sourceType,
+                          },
+                          locale
+                        )}
                       </span>
                     </li>
                   ))}

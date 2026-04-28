@@ -72,12 +72,16 @@ function TimelineItem({ event }: { event: PatientEventRow }) {
   const [open, setOpen] = useState(false);
   const Icon = KIND_ICON[event.kind];
 
-  function formatShortDate(date: Date): string {
-    return date.toLocaleDateString(locale === "en" ? "en-GB" : "fr-FR", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
+  function formatShortDateTime(date: Date): string {
+    const datePart = date.toLocaleDateString(
+      locale === "en" ? "en-GB" : "fr-FR",
+      { day: "2-digit", month: "short", year: "numeric" }
+    );
+    const timePart = date.toLocaleTimeString(
+      locale === "en" ? "en-GB" : "fr-FR",
+      { hour: "2-digit", minute: "2-digit" }
+    );
+    return `${datePart} · ${timePart}`;
   }
 
   function formatRelative(date: Date): string {
@@ -178,8 +182,8 @@ function TimelineItem({ event }: { event: PatientEventRow }) {
           hasDetails ? "hover:bg-surface-muted/60" : "cursor-default"
         )}
       >
-        <span className="w-24 shrink-0 text-xs font-medium tabular-nums text-foreground">
-          {formatShortDate(event.occurredAt)}
+        <span className="w-36 shrink-0 text-xs font-medium tabular-nums text-foreground">
+          {formatShortDateTime(event.occurredAt)}
         </span>
         <Icon
           className="h-3.5 w-3.5 shrink-0 text-muted-foreground"

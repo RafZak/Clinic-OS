@@ -6,11 +6,12 @@ import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { ChevronRight, Home } from "lucide-react";
 
+// Routes qui ont une vraie page index → cliquables dans le fil d'Ariane.
+// Les autres segments (admin, consultations, appels, vault/patients…) sont
+// affichés comme texte non cliquable car ils ne correspondent à aucune page.
 const NAVIGABLE_ROUTES = new Set<string>([
   "/",
   "/patients",
-  "/consultations",
-  "/appels",
   "/catalogue",
   "/admin/knowledge",
   "/admin/vault",

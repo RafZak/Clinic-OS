@@ -64,6 +64,7 @@ export default async function PatientDetailPage({
   const pageIndex = allPages.map((p) => ({
     slug: p.path.replace(/^.*\//, "").replace(/\.md$/, ""),
     path: p.path,
+    title: p.title,
   }));
 
   return (

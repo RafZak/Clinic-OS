@@ -6,7 +6,7 @@ import { VaultMarkdown } from "@/components/admin/vault-markdown";
 import { parseMemoryMarkdown } from "@/lib/vault/parse-sections";
 import { cn } from "@/lib/utils";
 
-type PageIndexEntry = { slug: string; path: string };
+type PageIndexEntry = { slug: string; path: string; title?: string };
 
 export function MemoryView({
   raw,

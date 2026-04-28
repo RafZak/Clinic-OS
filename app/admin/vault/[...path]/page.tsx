@@ -36,6 +36,7 @@ export default async function VaultPagePage({
   const pageIndex = allPages.map((p) => ({
     slug: p.path.replace(/^.*\//, "").replace(/\.md$/, ""),
     path: p.path,
+    title: p.title,
   }));
 
   // Outbound : déjà stockés dans page.backlinks (slugs)

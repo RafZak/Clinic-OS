@@ -1,10 +1,10 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { headers } from "next/headers";
-import { getTranslations } from "next-intl/server";
+import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { ChevronRight, Home } from "lucide-react";
-import { eq } from "drizzle-orm";
-import { db } from "@/db/client";
-import { patients, sessions, vaultPages, programs } from "@/db/schema";
 
 const NAVIGABLE_ROUTES = new Set<string>([
   "/",
@@ -28,149 +28,128 @@ const STATIC_LABEL_NAV: Record<string, string> = {
   graph: "graph",
 };
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 function humanize(segment: string) {
-  return decodeURIComponent(segment)
-    .replace(/[-_]/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  try {
+    return decodeURIComponent(segment)
+      .replace(/[-_]/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  } catch {
+    return segment;
+  }
 }
 
 type Crumb = { href: string; label: string; clickable: boolean; isHome?: boolean };
 
-async function resolveSingleSegmentLabel(
-  parentPath: string,
-  segment: string
-): Promise<string | null> {
-  if (parentPath === "/patients" && UUID_RE.test(segment)) {
-    const [row] = await db
-      .select({ label: patients.label })
-      .from(patients)
-      .where(eq(patients.id, segment))
-      .limit(1);
-    return row?.label ?? null;
-  }
+type ResolvedCrumb = {
+  segment: string;
+  label: string | null;
+  scope: "vault-page" | "single";
+};
 
-  if (
-    (parentPath === "/consultations" || parentPath === "/appels") &&
-    UUID_RE.test(segment)
-  ) {
-    const [row] = await db
-      .select({ label: patients.label })
-      .from(sessions)
-      .leftJoin(patients, eq(sessions.patientId, patients.id))
-      .where(eq(sessions.id, segment))
-      .limit(1);
-    return row?.label ?? null;
-  }
+function buildCrumbs(
+  pathname: string,
+  resolved: ResolvedCrumb[],
+  tNav: (key: string) => string
+): Crumb[] {
+  const segments = pathname.split("/").filter(Boolean);
+  const crumbs: Crumb[] = [
+    { href: "/", label: tNav("dashboard"), clickable: true, isHome: true },
+  ];
 
-  if (parentPath === "/catalogue") {
-    const [row] = await db
-      .select({ title: programs.title })
-      .from(programs)
-      .where(eq(programs.slug, segment))
-      .limit(1);
-    return row?.title ?? null;
-  }
+  let acc = "";
+  let i = 0;
+  // Index dans le tableau resolved : on consomme dans l'ordre où resolveDynamicCrumbs les produit
+  let resolvedIdx = 0;
 
-  return null;
-}
+  while (i < segments.length) {
+    const seg = segments[i];
+    acc += `/${seg}`;
 
-async function buildVaultPageCrumbs(
-  vaultSegments: string[],
-  pathname: string
-): Promise<Crumb[]> {
-  const fullPath = vaultSegments.join("/") + ".md";
-  const [row] = await db
-    .select({ title: vaultPages.title })
-    .from(vaultPages)
-    .where(eq(vaultPages.path, fullPath))
-    .limit(1);
+    if (acc.startsWith("/admin/vault/") && acc !== "/admin/vault/graph") {
+      const remaining = segments.slice(i);
+      // Le serveur résout le path complet en une seule entrée
+      const r = resolved[resolvedIdx];
+      const lastLabel =
+        r?.scope === "vault-page" && r.label
+          ? r.label
+          : humanize(remaining[remaining.length - 1]);
 
-  const crumbs: Crumb[] = [];
-  // Segments intermédiaires = dossiers de catégorie (patients, practitioners…)
-  for (let j = 0; j < vaultSegments.length - 1; j++) {
-    crumbs.push({
-      href: "",
-      label: humanize(vaultSegments[j]),
-      clickable: false,
-    });
-  }
-  const last = vaultSegments[vaultSegments.length - 1];
-  crumbs.push({
-    href: pathname,
-    label: row?.title ?? humanize(last),
-    clickable: false,
-  });
-  return crumbs;
-}
-
-export async function Breadcrumbs() {
-  let crumbs: Crumb[] = [];
-  let breadcrumbAria = "Breadcrumb";
-  try {
-    const headerList = await headers();
-    const pathname = headerList.get("x-pathname") ?? "/";
-    const tNav = await getTranslations("nav");
-    breadcrumbAria = tNav("breadcrumbAria");
-
-    if (pathname === "/" || pathname === "") return null;
-
-    const segments = pathname.split("/").filter(Boolean);
-    crumbs = [
-      { href: "/", label: tNav("dashboard"), clickable: true, isHome: true },
-    ];
-
-    let acc = "";
-    let i = 0;
-    while (i < segments.length) {
-      const seg = segments[i];
-      acc += `/${seg}`;
-
-      // Sous-pages du vault : tous les segments restants forment le path
-      // d'une fiche unique, on les traite ensemble.
-      if (acc.startsWith("/admin/vault/") && acc !== "/admin/vault/graph") {
-        const vaultCrumbs = await buildVaultPageCrumbs(
-          segments.slice(i),
-          pathname
-        );
-        crumbs.push(...vaultCrumbs);
-        break;
-      }
-
-      const navKey = STATIC_LABEL_NAV[seg];
-      if (navKey) {
+      // Segments intermédiaires = catégories non cliquables
+      for (let j = 0; j < remaining.length - 1; j++) {
         crumbs.push({
-          href: acc,
-          label: tNav(navKey),
-          clickable: NAVIGABLE_ROUTES.has(acc),
+          href: "",
+          label: humanize(remaining[j]),
+          clickable: false,
         });
-        i++;
-        continue;
       }
+      crumbs.push({
+        href: pathname,
+        label: lastLabel,
+        clickable: false,
+      });
+      break;
+    }
 
-      const parentPath =
-        `/${segments.slice(0, i).join("/")}`.replace(/\/+$/, "") || "/";
-      const dynamicLabel = await resolveSingleSegmentLabel(parentPath, seg);
-
+    const navKey = STATIC_LABEL_NAV[seg];
+    if (navKey) {
       crumbs.push({
         href: acc,
-        label: dynamicLabel ?? humanize(seg),
+        label: tNav(navKey),
         clickable: NAVIGABLE_ROUTES.has(acc),
       });
       i++;
+      resolvedIdx++;
+      continue;
     }
-  } catch (err) {
-    console.error("[Breadcrumbs] failed:", err);
-    return null;
+
+    const r = resolved[resolvedIdx];
+    const dynamicLabel = r?.scope === "single" ? r.label : null;
+    crumbs.push({
+      href: acc,
+      label: dynamicLabel ?? humanize(seg),
+      clickable: NAVIGABLE_ROUTES.has(acc),
+    });
+    i++;
+    resolvedIdx++;
   }
 
+  return crumbs;
+}
+
+export function Breadcrumbs() {
+  const pathname = usePathname() ?? "/";
+  const tNav = useTranslations("nav");
+  const [resolved, setResolved] = useState<ResolvedCrumb[]>([]);
+
+  useEffect(() => {
+    if (pathname === "/" || pathname === "") {
+      setResolved([]);
+      return;
+    }
+    let cancelled = false;
+    // Reset immédiat → affichage humanizé pendant la résolution
+    setResolved([]);
+    fetch(`/api/breadcrumb?path=${encodeURIComponent(pathname)}`)
+      .then((r) => (r.ok ? r.json() : { crumbs: [] }))
+      .then((data) => {
+        if (!cancelled) setResolved(data.crumbs ?? []);
+      })
+      .catch(() => {
+        // On garde la version humanizée ; pas besoin d'alerter.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
+
+  if (pathname === "/" || pathname === "") return null;
+
+  const crumbs = buildCrumbs(pathname, resolved, tNav);
   if (crumbs.length < 2) return null;
 
   return (
     <nav
-      aria-label={breadcrumbAria}
+      aria-label={tNav("breadcrumbAria")}
       className="flex items-center gap-1.5 text-xs text-muted-foreground"
     >
       {crumbs.map((c, i) => {

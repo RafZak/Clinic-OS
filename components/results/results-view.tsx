@@ -612,8 +612,8 @@ function VaultLinkCard({
         )}
       </div>
       <p className="mt-1 text-xs text-muted-foreground">{description}</p>
-      <p className="mt-3 truncate text-xs font-mono text-brand group-hover:underline">
-        {link.path}
+      <p className="mt-3 truncate text-xs font-medium text-brand group-hover:underline">
+        {link.title}
       </p>
     </a>
   );

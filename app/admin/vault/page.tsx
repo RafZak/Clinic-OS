@@ -107,8 +107,8 @@ export default async function AdminVaultPage() {
                         className="flex items-center justify-between gap-3 rounded-md px-2 py-1 text-sm transition hover:bg-surface-muted"
                       >
                         <span className="truncate font-medium text-ink">{p.title}</span>
-                        <span className="shrink-0 font-mono text-xs text-muted-foreground">
-                          {p.path}
+                        <span className="shrink-0 rounded-full bg-surface-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                          {t(`kindLabel.${kind as Kind}`)}
                         </span>
                       </Link>
                     </li>

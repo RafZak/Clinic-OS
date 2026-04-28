@@ -17,6 +17,7 @@ import { ScoreRadar, type RadarPoint } from "@/components/results/score-radar";
 import { ArtifactsPanel } from "@/components/results/artifacts-panel";
 import { cn } from "@/lib/utils";
 import { formatTimestampMs } from "@/lib/format";
+import { formatSourceCitation } from "@/lib/format/source-citation";
 import {
   getScorableFramework,
   getStepName,
@@ -423,6 +424,7 @@ function citationLink(c: InsightCitation): CitationLink {
 
 function Citations({ citations }: { citations: InsightCitation[] }) {
   const t = useTranslations("results");
+  const locale = useLocale() as "fr" | "en";
   return (
     <div className="mt-3 border-t border-border/60 pt-2">
       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -438,8 +440,19 @@ function Citations({ citations }: { citations: InsightCitation[] }) {
                 aria-hidden
               />
               <span className="truncate text-muted-foreground">
-                <span className="text-ink">{c.sourceFile}</span>
-                {c.moduleNumber !== null && ` · module ${c.moduleNumber}`}
+                <span className="text-ink">
+                  {formatSourceCitation(
+                    {
+                      programTitle: c.programTitle,
+                      moduleNumber: c.moduleNumber,
+                      moduleTitle: c.moduleTitle,
+                      startSeconds: c.startSeconds,
+                      pageNumber: c.pageNumber,
+                      sourceType: c.sourceType,
+                    },
+                    locale
+                  )}
+                </span>
               </span>
             </>
           );
@@ -599,8 +612,8 @@ function VaultLinkCard({
         )}
       </div>
       <p className="mt-1 text-xs text-muted-foreground">{description}</p>
-      <p className="mt-3 truncate text-xs font-mono text-brand group-hover:underline">
-        {link.path}
+      <p className="mt-3 truncate text-xs font-medium text-brand group-hover:underline">
+        {link.title}
       </p>
     </a>
   );

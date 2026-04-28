@@ -34,10 +34,14 @@ export async function enrichInsightsWithCitations<T extends InsightLike>(
           sourceType: r.sourceType,
           driveFileId: r.driveFileId,
           programSlug: r.programSlug,
+          programTitle: r.programTitle,
           moduleNumber: r.moduleNumber,
+          moduleTitle: r.moduleTitle,
           chunkIndex: r.chunkIndex,
           similarity: Number(r.similarity.toFixed(3)),
           excerpt: r.content.slice(0, 280),
+          startSeconds: r.startSeconds,
+          pageNumber: r.pageNumber,
         }));
       out.push({ ...insight, citationChunks: citations.length > 0 ? citations : null });
     } catch (err) {

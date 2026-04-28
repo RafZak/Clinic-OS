@@ -13,10 +13,14 @@ export type InsightCitation = {
   sourceType: string | null;
   driveFileId: string | null;
   programSlug: string | null;
+  programTitle: string | null;
   moduleNumber: number | null;
+  moduleTitle: string | null;
   chunkIndex: number;
   similarity: number;
   excerpt: string;
+  startSeconds: number | null;
+  pageNumber: number | null;
 };
 
 export type InsightRow = Omit<typeof coachingInsights.$inferSelect, "citationChunks"> & {

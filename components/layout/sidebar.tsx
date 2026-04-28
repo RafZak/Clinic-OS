@@ -11,7 +11,6 @@ import { getLocale } from "@/lib/locale";
 import { loadSidebarContext } from "@/lib/sidebar-context";
 import { NavLink } from "./nav-link";
 import { SidebarRecents } from "./sidebar-recents";
-import { SidebarFooter } from "./sidebar-footer";
 
 type Badge = {
   count: number;
@@ -102,7 +101,6 @@ export async function Sidebar({ role }: { role: Role }) {
         </div>
       )}
 
-      <SidebarFooter />
     </aside>
   );
 }

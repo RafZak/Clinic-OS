@@ -487,9 +487,9 @@
   },
   "catalogue": {
     "title": "Training catalogue",
-    "description": "{active, plural, one {# active program} other {# active programs}} · {coming} coming soon. Designed by Audio Académie, ingested into Clinic OS to power Cmd+K search and consultation coaching.",
+    "description": "{active, plural, one {# active program} other {# active programs}} · {coming} coming soon. Designed by Audio Académie, imported into Clinic OS to power search and AI coaching.",
     "available": "{ready}/{total} available",
-    "filesCount": "{count, plural, one {# file} other {# files}} · {chunks} chunks",
+    "filesCount": "{count, plural, one {# file} other {# files}} · {chunks} passages",
     "open": "Open →",
     "comingSoon": "Coming soon",
     "modulesCount": "{count, plural, one {# module} other {# modules}}",
@@ -497,9 +497,9 @@
   },
   "vault": {
     "title": "Memory",
-    "description": "The network learns collectively. Every session automatically enriches the related entries — Obsidian-exportable, auditable.",
+    "description": "The network learns collectively. Every session automatically enriches the related entries — exportable, auditable.",
     "graphView": "Graph view",
-    "exportZip": "Export to Obsidian (.zip)",
+    "exportZip": "Export (.zip)",
     "statTotal": "Entries in memory",
     "statPractitioners": "Audiologists tracked",
     "statPatients": "Patients tracked",
@@ -526,9 +526,9 @@
     "backlinksTitle": "Backlinks",
     "noBacklinks": "No backlinks",
     "graphTitle": "Vault — Graph view",
-    "graphDescription": "Visualisation of relations between entries via wikilinks. Click a node to open the entry.",
+    "graphDescription": "Visualisation of relations between entries. Click a node to open the entry.",
     "backToList": "Back to list",
-    "graphFooter": "{nodes} entries · {edges} links. Layout computed automatically from wikilinks detected in the index.",
+    "graphFooter": "{nodes} entries · {edges} links.",
     "categories": "Categories",
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
@@ -541,37 +541,48 @@
       "pattern": "Pattern",
       "session": "Session",
       "index": "Index"
-    }
+    },
+    "metadataTitle": "Details",
+    "kindLabel": {
+      "index": "Index",
+      "practitioner": "Audiologist",
+      "assistant": "Front desk",
+      "center": "Center",
+      "patient": "Patient",
+      "pattern": "Pattern",
+      "session": "Session"
+    },
+    "updatedAtSuffix": "updated on {date}"
   },
   "admin": {
     "knowledge": {
       "title": "Knowledge base",
-      "description": "Knowledge source injected into Cmd+K search and AI coaching. Google Drive ingestion pipeline, vector chunks, live retrieval test and run history.",
-      "kpiTotal": "Total chunks",
+      "description": "Knowledge source used by search and AI coaching. Imported from Google Drive.",
+      "kpiTotal": "Total passages",
       "kpiPdf": "PDF",
       "kpiVideo": "Videos",
       "kpiDocx": "DOCX",
       "perProgramTitle": "Volume by program",
       "perProgramDescription": "One row per active program. Programs without data haven't been ingested (or aren't active in the business catalogue).",
-      "slugFiles": "slug: {slug} · {count, plural, one {# file} other {# files}}",
-      "chunksValue": "{count} chunks",
+      "slugFiles": "{count, plural, one {# file} other {# files}}",
+      "chunksValue": "{count} passages",
       "runsTitle": "Latest ingestion runs",
-      "runsDescription": "Trigger from the CLI: ",
+      "runsDescription": "Refreshed from Google Drive.",
       "runsEmpty": "No run recorded.",
-      "runFiles": "{files} files · {chunks} chunks",
+      "runFiles": "{files} files · {chunks} passages",
       "filesTab": "Files",
       "chunksTab": "Chunks",
       "runsTab": "History",
       "testTab": "Test retrieval",
-      "reingest": "Re-ingest",
+      "reingest": "Refresh",
       "filesTitle": "Ingested files",
-      "filesDescription": "{count, plural, one {# distinct file} other {# distinct files}} in the database, deduplicated by drive_file_id. Stable order by program then by file name.",
-      "filesGroupSummary": "{files, plural, one {# file} other {# files}} · {chunks} chunks",
-      "filesEmpty": "No file in the database. Run an ingestion with ",
-      "fileChunks": "{count, plural, one {# chunk} other {# chunks}}",
+      "filesDescription": "{count, plural, one {# file} other {# files}} imported, grouped by program.",
+      "filesGroupSummary": "{files, plural, one {# file} other {# files}} · {chunks} passages",
+      "filesEmpty": "No file imported yet.",
+      "fileChunks": "{count, plural, one {# passage} other {# passages}}",
       "videoLabel": "Video",
-      "retrievalTitle": "Retrieval test",
-      "retrievalDescription": "Submit a natural-language query. Top 12 chunks by cosine similarity, then duplicates collapsed at 0.92.",
+      "retrievalTitle": "Diagnostic tool",
+      "retrievalDescription": "Shows the passages closest to a query. Internal diagnostic only.",
       "retrievalPlaceholder": "e.g. premium price objection",
       "retrievalSearching": "Searching…",
       "retrievalSearch": "Search",
@@ -582,7 +593,13 @@
         "script for asking for a companion to be present"
       ],
       "retrievalCount": "{count, plural, one {# result} other {# results}} · {ms} ms",
-      "retrievalQueryLabel": "query: \"{query}\""
+      "retrievalQueryLabel": "Query: « {query} »",
+      "runStatus": {
+        "success": "Success",
+        "failed": "Failed",
+        "running": "Running",
+        "partial": "Partial"
+      }
     }
   }
 }

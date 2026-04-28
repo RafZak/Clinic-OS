@@ -487,9 +487,9 @@
   },
   "catalogue": {
     "title": "Catalogue de formation",
-    "description": "{active, plural, one {# programme actif} other {# programmes actifs}} · {coming} à venir. Conçus par Audio Académie, ingérés dans Clinic OS pour servir la recherche Cmd+K et le coaching des consultations.",
+    "description": "{active, plural, one {# programme actif} other {# programmes actifs}} · {coming} à venir. Conçus par Audio Académie, importés dans Clinic OS pour alimenter la recherche et le coaching IA.",
     "available": "{ready}/{total} disponibles",
-    "filesCount": "{count, plural, one {# fichier} other {# fichiers}} · {chunks} chunks",
+    "filesCount": "{count, plural, one {# fichier} other {# fichiers}} · {chunks} passages",
     "open": "Ouvrir →",
     "comingSoon": "Bientôt disponible",
     "modulesCount": "{count, plural, one {# module} other {# modules}}",
@@ -497,9 +497,9 @@
   },
   "vault": {
     "title": "Mémoire",
-    "description": "Le réseau apprend collectivement. Chaque session enrichit automatiquement les fiches concernées — exportable Obsidian, auditable.",
+    "description": "Le réseau apprend collectivement. Chaque session enrichit automatiquement les fiches concernées — exportable, auditable.",
     "graphView": "Vue graph",
-    "exportZip": "Export Obsidian (.zip)",
+    "exportZip": "Exporter (.zip)",
     "statTotal": "Fiches en mémoire",
     "statPractitioners": "Audioprothésistes suivis",
     "statPatients": "Patients suivis",
@@ -526,9 +526,9 @@
     "backlinksTitle": "Liens entrants",
     "noBacklinks": "Aucun lien entrant",
     "graphTitle": "Vault — Vue graph",
-    "graphDescription": "Visualisation des relations entre fiches via les wikilinks. Cliquez sur un nœud pour ouvrir la fiche.",
+    "graphDescription": "Visualisation des relations entre fiches. Cliquez sur un nœud pour ouvrir la fiche.",
     "backToList": "Retour à la liste",
-    "graphFooter": "{nodes} fiches · {edges} liens. Layout calculé automatiquement à partir des wikilinks détectés en base.",
+    "graphFooter": "{nodes} fiches · {edges} liens.",
     "categories": "Catégories",
     "zoomIn": "Zoom avant",
     "zoomOut": "Zoom arrière",
@@ -541,37 +541,48 @@
       "pattern": "Pattern",
       "session": "Session",
       "index": "Index"
-    }
+    },
+    "metadataTitle": "Détails",
+    "kindLabel": {
+      "index": "Sommaire",
+      "practitioner": "Audioprothésiste",
+      "assistant": "Assistant accueil",
+      "center": "Centre",
+      "patient": "Patient",
+      "pattern": "Pattern récurrent",
+      "session": "Session"
+    },
+    "updatedAtSuffix": "mis à jour le {date}"
   },
   "admin": {
     "knowledge": {
       "title": "Base formation",
-      "description": "Source de connaissances injectée dans la recherche Cmd+K et le coaching IA. Pipeline d'ingestion Google Drive, chunks vectoriels, test de recherche en direct et historique des runs.",
-      "kpiTotal": "Chunks totaux",
+      "description": "Source de connaissances utilisée par la recherche et le coaching IA. Importée depuis Google Drive.",
+      "kpiTotal": "Passages totaux",
       "kpiPdf": "PDF",
       "kpiVideo": "Vidéos",
       "kpiDocx": "DOCX",
       "perProgramTitle": "Volume par programme",
       "perProgramDescription": "Une ligne par programme actif. Les programmes sans données n'ont pas été ingérés (ou le programme n'est pas un programme actif côté métier).",
-      "slugFiles": "slug : {slug} · {count, plural, one {# fichier} other {# fichiers}}",
-      "chunksValue": "{count} chunks",
+      "slugFiles": "{count, plural, one {# fichier} other {# fichiers}}",
+      "chunksValue": "{count} passages",
       "runsTitle": "Derniers runs d'ingestion",
-      "runsDescription": "Déclencher depuis le CLI : ",
+      "runsDescription": "Mise à jour depuis Google Drive.",
       "runsEmpty": "Aucun run enregistré.",
-      "runFiles": "{files} fichiers · {chunks} chunks",
+      "runFiles": "{files} fichiers · {chunks} passages",
       "filesTab": "Fichiers",
       "chunksTab": "Chunks",
       "runsTab": "Historique",
       "testTab": "Test retrieval",
-      "reingest": "Re-ingérer",
+      "reingest": "Mettre à jour",
       "filesTitle": "Fichiers ingérés",
-      "filesDescription": "{count, plural, one {# fichier} other {# fichiers}} distincts en base, dédupliqués par drive_file_id. Ordre stable par programme puis par nom de fichier.",
-      "filesGroupSummary": "{files, plural, one {# fichier} other {# fichiers}} · {chunks} chunks",
-      "filesEmpty": "Aucun fichier en base. Lancer une ingestion avec ",
-      "fileChunks": "{count, plural, one {# chunk} other {# chunks}}",
+      "filesDescription": "{count, plural, one {# fichier} other {# fichiers}} importés, regroupés par programme.",
+      "filesGroupSummary": "{files, plural, one {# fichier} other {# fichiers}} · {chunks} passages",
+      "filesEmpty": "Aucun fichier importé pour l'instant.",
+      "fileChunks": "{count, plural, one {# passage} other {# passages}}",
       "videoLabel": "Vidéo",
-      "retrievalTitle": "Test de retrieval",
-      "retrievalDescription": "Soumets une requête en langage naturel. Top 12 chunks par similarité cosinus, puis collapse des doublons à 0.92.",
+      "retrievalTitle": "Outil de diagnostic",
+      "retrievalDescription": "Affiche les passages les plus proches d'une requête. Réservé au diagnostic interne.",
       "retrievalPlaceholder": "Ex. objection prix classe 2",
       "retrievalSearching": "Recherche…",
       "retrievalSearch": "Chercher",
@@ -582,7 +593,13 @@
         "script pour demander la présence d'un tiers"
       ],
       "retrievalCount": "{count, plural, one {# résultat} other {# résultats}} · {ms} ms",
-      "retrievalQueryLabel": "query : \"{query}\""
+      "retrievalQueryLabel": "Requête : « {query} »",
+      "runStatus": {
+        "success": "Réussi",
+        "failed": "Échec",
+        "running": "En cours",
+        "partial": "Partiel"
+      }
     }
   }
 }

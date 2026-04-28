@@ -50,8 +50,7 @@
     "breadcrumbAria": "Breadcrumb",
     "patientsBadgeTooltip": "{count, plural, one {# lost patient — to call back} other {# lost patients — to call back}}",
     "memoryBadgeTooltip": "{count, plural, one {# entry updated today} other {# entries updated today}}",
-    "patientsRecent": "Recent patients",
-    "lastAnalysis": "Latest analysis"
+    "patientsRecent": "Recent patients"
   },
   "search": {
     "placeholderTrigger": "Search patient, training, question…",

@@ -50,8 +50,7 @@
     "breadcrumbAria": "Fil d'Ariane",
     "patientsBadgeTooltip": "{count, plural, one {# patient perdu — à rappeler} other {# patients perdus — à rappeler}}",
     "memoryBadgeTooltip": "{count, plural, one {# fiche mise à jour aujourd'hui} other {# fiches mises à jour aujourd'hui}}",
-    "patientsRecent": "Patients récents",
-    "lastAnalysis": "Dernière analyse"
+    "patientsRecent": "Patients récents"
   },
   "search": {
     "placeholderTrigger": "Rechercher patient, formation, question…",

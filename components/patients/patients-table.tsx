@@ -26,12 +26,46 @@ const STATUS_BADGE_CLASS: Record<PatientStatus, string> = {
   lost: "bg-red-50 text-red-700 border-red-200",
 };
 
-const TEMPERATURE_BADGE_CLASS: Record<LeadTemperature, string> = {
-  hot: "bg-red-50 text-red-700 border-red-200",
-  warm: "bg-amber-50 text-amber-700 border-amber-200",
-  cold: "bg-sky-50 text-sky-700 border-sky-200",
-  lost: "bg-slate-100 text-slate-600 border-slate-300",
+const TEMPERATURE_LEVEL: Record<LeadTemperature, number> = {
+  hot: 3,
+  warm: 2,
+  cold: 1,
+  lost: 0,
 };
+
+const TEMPERATURE_TONE: Record<LeadTemperature, { dot: string; text: string }> = {
+  hot: { dot: "bg-red-500", text: "text-red-700" },
+  warm: { dot: "bg-amber-500", text: "text-amber-700" },
+  cold: { dot: "bg-sky-500", text: "text-sky-700" },
+  lost: { dot: "bg-slate-400", text: "text-slate-500" },
+};
+
+function TemperatureIndicator({
+  temperature,
+  label,
+}: {
+  temperature: LeadTemperature;
+  label: string;
+}) {
+  const level = TEMPERATURE_LEVEL[temperature];
+  const tone = TEMPERATURE_TONE[temperature];
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span className="flex items-center gap-0.5" aria-hidden>
+        {[0, 1, 2].map((i) => (
+          <span
+            key={i}
+            className={cn(
+              "h-1.5 w-1.5 rounded-full",
+              i < level ? tone.dot : "bg-slate-200"
+            )}
+          />
+        ))}
+      </span>
+      <span className={cn("text-xs font-medium", tone.text)}>{label}</span>
+    </span>
+  );
+}
 
 function initials(label: string): string {
   const parts = label.replace(/^(M\.|Mme|Mlle|Mr\.|Mrs\.|Ms\.)\s+/i, "").split(/\s+/);
@@ -182,14 +216,10 @@ export function PatientsTable({ rows }: { rows: PatientRow[] }) {
                   </td>
                   <td className="px-4 py-3">
                     {p.lastPhoneTemperature ? (
-                      <span
-                        className={cn(
-                          "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium",
-                          TEMPERATURE_BADGE_CLASS[p.lastPhoneTemperature]
-                        )}
-                      >
-                        {tempMap[p.lastPhoneTemperature]}
-                      </span>
+                      <TemperatureIndicator
+                        temperature={p.lastPhoneTemperature}
+                        label={tempMap[p.lastPhoneTemperature]}
+                      />
                     ) : (
                       <span className="text-xs text-muted-foreground">—</span>
                     )}

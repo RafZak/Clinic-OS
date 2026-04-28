@@ -1,6 +1,7 @@
 import { NextResponse, after } from "next/server";
 import { analyzeSession } from "@/lib/analysis/analyze";
-import { getSiteUrl } from "@/lib/site-url";
+import { generateAllArtifacts } from "@/lib/artifacts/generate";
+import { updateVaultForSession } from "@/lib/vault/ingest";
 
 // Vercel Pro : jusqu'à 300 s. Claude Sonnet sur un transcript 15-20 min peut
 // dépasser 60 s ; on garde une marge pour éviter les zombies "analyzing".
@@ -16,25 +17,26 @@ export async function POST(
     const outcome = await analyzeSession(id);
 
     // Si l'analyse a abouti, on enchaîne sur la génération des 4 artefacts +
-    // l'update du vault Layer B EN PARALLÈLE. Fire-and-forget : on ne
-    // bloque pas la réponse au client (qui poll /status pour suivre l'état
-    // analyse).
+    // l'update du vault Layer B EN PARALLÈLE, en appelant directement les
+    // fonctions (pas de fetch HTTP interne : URL/cold start fragiles, Vercel
+    // peut couper). after() garantit l'exécution post-réponse jusqu'à
+    // maxDuration sans bloquer le client.
     if ("ok" in outcome && outcome.ok) {
       after(async () => {
-        const base = getSiteUrl();
-        const kick = (path: string) =>
-          fetch(`${base}/api/sessions/${id}/${path}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-          }).then(
-            (res) => {
-              if (!res.ok) {
-                console.warn(`${path} kick non-OK for ${id}: ${res.status}`);
-              }
-            },
-            (err) => console.warn(`${path} kick failed for ${id}`, err)
-          );
-        await Promise.all([kick("artifacts"), kick("vault")]);
+        const run = async (label: string, fn: () => Promise<unknown>) => {
+          try {
+            await fn();
+          } catch (err) {
+            console.warn(
+              `${label} post-analyze failed for ${id}:`,
+              err instanceof Error ? err.message : err
+            );
+          }
+        };
+        await Promise.all([
+          run("artifacts", () => generateAllArtifacts(id)),
+          run("vault", () => updateVaultForSession(id)),
+        ]);
       });
     }
 

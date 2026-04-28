@@ -8,11 +8,15 @@ export type RetrievalResult = {
   sourceFile: string;
   sourceType: string;
   programSlug: string | null;
+  programTitle: string | null;
   moduleNumber: number | null;
+  moduleTitle: string | null;
   chunkIndex: number;
   content: string;
   metadata: Record<string, unknown> | null;
   driveFileId: string | null;
+  startSeconds: number | null;
+  pageNumber: number | null;
   similarity: number;
 };
 
@@ -61,7 +65,7 @@ export async function semanticSearch(
   const queryVec = `[${queryEmbedding.join(",")}]`;
 
   const programFilter = opts.programSlug
-    ? sql`AND program_slug = ${opts.programSlug}`
+    ? sql`AND kc.program_slug = ${opts.programSlug}`
     : sql``;
 
   const rows = await db.execute<{
@@ -69,30 +73,40 @@ export async function semanticSearch(
     source_file: string;
     source_type: string;
     program_slug: string | null;
+    program_title: string | null;
     module_number: number | null;
+    module_title: string | null;
     chunk_index: number;
     content: string;
     metadata: Record<string, unknown> | null;
     drive_file_id: string | null;
+    start_seconds: number | null;
+    page_number: number | null;
     embedding: unknown;
     similarity: number;
   }>(sql`
     SELECT
-      id,
-      source_file,
-      source_type,
-      program_slug,
-      module_number,
-      chunk_index,
-      content,
-      metadata,
-      drive_file_id,
-      embedding,
-      1 - (embedding <=> ${queryVec}::vector) AS similarity
-    FROM knowledge_chunks
-    WHERE embedding IS NOT NULL
+      kc.id,
+      kc.source_file,
+      kc.source_type,
+      kc.program_slug,
+      p.title AS program_title,
+      kc.module_number,
+      m.title AS module_title,
+      kc.chunk_index,
+      kc.content,
+      kc.metadata,
+      kc.drive_file_id,
+      (kc.metadata->>'startSeconds')::float AS start_seconds,
+      (kc.metadata->>'pageNumber')::int AS page_number,
+      kc.embedding,
+      1 - (kc.embedding <=> ${queryVec}::vector) AS similarity
+    FROM knowledge_chunks kc
+    LEFT JOIN programs p ON p.slug = kc.program_slug
+    LEFT JOIN modules m ON m.program_id = p.id AND m.number = kc.module_number
+    WHERE kc.embedding IS NOT NULL
     ${programFilter}
-    ORDER BY embedding <=> ${queryVec}::vector
+    ORDER BY kc.embedding <=> ${queryVec}::vector
     LIMIT ${topK}
   `);
 
@@ -101,11 +115,15 @@ export async function semanticSearch(
     sourceFile: r.source_file,
     sourceType: r.source_type,
     programSlug: r.program_slug,
+    programTitle: r.program_title ?? null,
     moduleNumber: r.module_number,
+    moduleTitle: r.module_title ?? null,
     chunkIndex: r.chunk_index,
     content: r.content,
     metadata: r.metadata,
     driveFileId: r.drive_file_id,
+    startSeconds: r.start_seconds ?? null,
+    pageNumber: r.page_number ?? null,
     similarity: r.similarity,
     embedding: parseVector(r.embedding),
   }));

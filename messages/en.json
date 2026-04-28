@@ -112,8 +112,25 @@
     "consultation_short": "Consultation",
     "phone_call_short": "Call"
   },
+  "login": {
+    "title": "Sign in to Clinic OS",
+    "subtitle": "Demo access only.",
+    "usernameLabel": "Username",
+    "usernamePlaceholder": "Your username",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "••••••••",
+    "submit": "Sign in",
+    "submitting": "Signing in…",
+    "errorInvalid": "Invalid username or password.",
+    "demoHint": "Amplifon demo — restricted access."
+  },
+  "userMenu": {
+    "connectedAs": "Signed in as",
+    "logout": "Sign out"
+  },
   "dashboard": {
     "title": "Dashboard — {role}",
+    "welcome": "Welcome {name}",
     "descriptionPro": "Conversion rate, average basket and quality of your consultations — actions recommended by Clinic OS.",
     "descriptionAssistant": "Average call duration and quality — actions recommended by Clinic OS.",
     "kpiPractitionerConversion": "Conversion rate",

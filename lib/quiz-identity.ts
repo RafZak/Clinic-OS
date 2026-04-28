@@ -5,7 +5,7 @@ import { and, asc, eq } from "drizzle-orm";
 import type { Role } from "./role";
 
 const DEFAULT_BY_ROLE: Record<Role, string> = {
-  audioprothesiste: "Claire Moreau",
+  audioprothesiste: "Jonathan Goldminc",
   assistant: "Sophie Bernard",
 };
 

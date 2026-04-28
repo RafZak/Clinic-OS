@@ -8,6 +8,7 @@ import { loadDashboard } from "@/lib/dashboard";
 import { buildNudges } from "@/lib/nudges";
 import { getRole } from "@/lib/role";
 import { getLocale } from "@/lib/locale";
+import { getCurrentUser } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +16,7 @@ export const dynamic = "force-dynamic";
 export default async function DashboardPage() {
   const role = await getRole();
   const locale = await getLocale();
+  const user = await getCurrentUser();
   const dashboard = await loadDashboard(role, locale);
   const nudges = await buildNudges(role, dashboard.context, locale);
 
@@ -27,7 +29,11 @@ export default async function DashboardPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title={tDash("title", { role: tRoles(role) })}
+        title={
+          user
+            ? tDash("welcome", { name: user.name })
+            : tDash("title", { role: tRoles(role) })
+        }
         description={
           isPractitioner
             ? tDash("descriptionPro")

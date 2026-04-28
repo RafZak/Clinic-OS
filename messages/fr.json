@@ -112,8 +112,25 @@
     "consultation_short": "Consultation",
     "phone_call_short": "Appel"
   },
+  "login": {
+    "title": "Connexion à Clinic OS",
+    "subtitle": "Accès démo réservé.",
+    "usernameLabel": "Identifiant",
+    "usernamePlaceholder": "Votre identifiant",
+    "passwordLabel": "Mot de passe",
+    "passwordPlaceholder": "••••••••",
+    "submit": "Se connecter",
+    "submitting": "Connexion…",
+    "errorInvalid": "Identifiant ou mot de passe incorrect.",
+    "demoHint": "Démo Amplifon — accès restreint."
+  },
+  "userMenu": {
+    "connectedAs": "Connecté en tant que",
+    "logout": "Se déconnecter"
+  },
   "dashboard": {
     "title": "Tableau de bord — {role}",
+    "welcome": "Bienvenue {name}",
     "descriptionPro": "Taux de concrétisation, panier moyen et qualité de vos consultations — actions recommandées par Clinic OS.",
     "descriptionAssistant": "Durée moyenne et qualité de vos appels — actions recommandées par Clinic OS.",
     "kpiPractitionerConversion": "Taux de concrétisation",

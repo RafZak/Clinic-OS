@@ -17,7 +17,7 @@ config({ path: ".env.local" });
 
 const CENTER_NAME = "Lyon 3";
 const CENTER_CITY = "Lyon";
-const PRACTITIONER_FULL_NAME = "Claire Moreau";
+const PRACTITIONER_FULL_NAME = "Jonathan Goldminc";
 
 async function main() {
   if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL manquant");

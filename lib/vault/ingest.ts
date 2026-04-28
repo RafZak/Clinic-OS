@@ -381,7 +381,7 @@ Mets à jour le vault en appelant l'outil emit_vault_updates. Au minimum produit
                   path: {
                     type: "string",
                     description:
-                      "Chemin relatif du fichier dans le vault, ex 'practitioners/moreau-claire.md'.",
+                      "Chemin relatif du fichier dans le vault, ex 'practitioners/goldminc-jonathan.md'.",
                   },
                   operation: {
                     type: "string",

@@ -170,7 +170,7 @@ avg_score: 76
 trend: improving
 ---
 
-# Dr Claire Moreau
+# Jonathan Goldminc
 
 **Synthèse** : Audioprothésiste expérimentée, excellente en relation patient (étape 3 : 89/100 moyen). Point de friction récurrent sur l'étape 7 (Objections) — tendance à éluder l'objection prix.
 

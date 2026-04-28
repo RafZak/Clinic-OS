@@ -94,7 +94,7 @@ const JOURNEYS: JourneySeed[] = [
       {
         kind: "appointment_scheduled",
         daysAgo: 30,
-        summary: "RDV bilan auditif fixé avec Dr Claire Moreau.",
+        summary: "RDV bilan auditif fixé avec Jonathan Goldminc.",
         metadata: {
           scheduled_for: "2026-04-04T14:00:00Z",
           duration_minutes: 60,
@@ -169,7 +169,7 @@ const JOURNEYS: JourneySeed[] = [
       {
         kind: "appointment_scheduled",
         daysAgo: 15,
-        summary: "RDV bilan + recommandation fixé avec Dr Claire Moreau.",
+        summary: "RDV bilan + recommandation fixé avec Jonathan Goldminc.",
         metadata: {
           scheduled_for: "2026-04-18T10:00:00Z",
           duration_minutes: 60,
@@ -227,7 +227,7 @@ const JOURNEYS: JourneySeed[] = [
       {
         kind: "appointment_scheduled",
         daysAgo: 10,
-        summary: "RDV bilan fixé avec Dr Claire Moreau.",
+        summary: "RDV bilan fixé avec Jonathan Goldminc.",
         metadata: {
           scheduled_for: "2026-04-22T16:00:00Z",
           duration_minutes: 60,
@@ -268,13 +268,13 @@ async function main() {
     .from(practitioners)
     .where(
       and(
-        eq(practitioners.fullName, "Claire Moreau"),
+        eq(practitioners.fullName, "Jonathan Goldminc"),
         eq(practitioners.centerId, center.id)
       )
     );
   if (!claire) {
     throw new Error(
-      "Audioprothésiste Claire Moreau absente — exécuter pnpm seed:replay d'abord"
+      "Audioprothésiste Jonathan Goldminc absente — exécuter pnpm seed:replay d'abord"
     );
   }
 

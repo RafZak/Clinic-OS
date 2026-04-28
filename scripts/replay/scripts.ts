@@ -64,7 +64,7 @@ export function estimateDurationSeconds(turns: ReplayTurn[]): number {
 const DURAND_TURNS: ReplayTurn[] = [
   { speaker: "practitioner", text: "Bonjour Madame Durand, entrez je vous en prie. Installez-vous. Vous avez trouvé facilement ?", pauseMsBefore: 300 },
   { speaker: "patient", text: "Oui oui, pas de souci. Merci." },
-  { speaker: "practitioner", text: "Alors on va prendre une petite heure ensemble pour faire le point. Je m'appelle Claire Moreau, je suis votre audioprothésiste. On va d'abord discuter de ce qui vous amène, puis on passera en cabine pour regarder votre audition. Ensuite je vous présenterai ce qui peut vous aider. Ça vous convient ?" },
+  { speaker: "practitioner", text: "Alors on va prendre une petite heure ensemble pour faire le point. Je m'appelle Jonathan Goldminc, je suis votre audioprothésiste. On va d'abord discuter de ce qui vous amène, puis on passera en cabine pour regarder votre audition. Ensuite je vous présenterai ce qui peut vous aider. Ça vous convient ?" },
   { speaker: "patient", text: "Oui, très bien." },
   { speaker: "practitioner", text: "Vous venez avec l'ordonnance de votre ORL ?" },
   { speaker: "patient", text: "Oui, voilà." },
@@ -217,7 +217,7 @@ export const REPLAY_SCENARIOS: ReplayScenario[] = [
   {
     slug: "durand-excellent",
     label: "Mme Durand — cas excellent",
-    practitionerName: "Claire Moreau",
+    practitionerName: "Jonathan Goldminc",
     patientLabel: "Mme Françoise Durand",
     patientAge: 68,
     patientStatus: "prospect",
@@ -230,7 +230,7 @@ export const REPLAY_SCENARIOS: ReplayScenario[] = [
   {
     slug: "martin-upsell-rate",
     label: "M. Martin — montée en gamme ratée",
-    practitionerName: "Claire Moreau",
+    practitionerName: "Jonathan Goldminc",
     patientLabel: "M. Henri Martin",
     patientAge: 72,
     patientStatus: "prospect",
@@ -243,7 +243,7 @@ export const REPLAY_SCENARIOS: ReplayScenario[] = [
   {
     slug: "lefevre-objection-price",
     label: "Mme Lefèvre — objection prix non traitée",
-    practitionerName: "Claire Moreau",
+    practitionerName: "Jonathan Goldminc",
     patientLabel: "Mme Isabelle Lefèvre",
     patientAge: 64,
     patientStatus: "lost",

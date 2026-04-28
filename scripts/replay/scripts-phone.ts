@@ -78,7 +78,7 @@ const DUBOIS_TURNS: ReplayTurn[] = [
   },
   {
     speaker: "practitioner",
-    text: "D'accord, donc on va vous proposer un premier bilan auditif avec notre audioprothésiste, Madame Moreau. Avant que je vous propose un créneau, dites-moi juste, c'est plutôt depuis quand que vous sentez que vous entendez moins bien ?",
+    text: "D'accord, donc on va vous proposer un premier bilan auditif avec notre audioprothésiste, Monsieur Goldminc. Avant que je vous propose un créneau, dites-moi juste, c'est plutôt depuis quand que vous sentez que vous entendez moins bien ?",
     pauseMsBefore: 500,
   },
   {

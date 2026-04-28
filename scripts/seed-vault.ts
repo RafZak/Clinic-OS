@@ -62,14 +62,14 @@ async function main() {
     .from(practitioners)
     .where(
       and(
-        eq(practitioners.fullName, "Claire Moreau"),
+        eq(practitioners.fullName, "Jonathan Goldminc"),
         eq(practitioners.centerId, center.id)
       )
     )
     .limit(1);
   if (!practitioner) {
     console.error(
-      "✗ Audioprothésiste 'Claire Moreau' introuvable. Lancez d'abord pnpm seed:replay."
+      "✗ Audioprothésiste 'Jonathan Goldminc' introuvable. Lancez d'abord pnpm seed:replay."
     );
     process.exit(1);
   }
@@ -103,7 +103,7 @@ async function main() {
 Pattern Karpathy : chaque session analysée enrichit cette mémoire vivante du réseau.
 
 ## Audioprothésistes
-- [[claire-moreau]]
+- [[jonathan-goldminc]]
 
 ## Centres
 - [[lyon-3]]
@@ -132,7 +132,7 @@ Pattern Karpathy : chaque session analysée enrichit cette mémoire vivante du r
       body: `# Centre ${center.name}
 
 **Ville** : ${center.city ?? "Lyon"}
-**Audioprothésistes** : [[claire-moreau]]
+**Audioprothésistes** : [[jonathan-goldminc]]
 
 ## Synthèse
 
@@ -193,11 +193,11 @@ _Aucune session analysée pour l'instant._
 **Âge** : ${durand.age ?? "—"} ans
 **Statut** : ${durand.status}
 **Centre** : [[${slugify(center.name)}]]
-**Audioprothésiste suivi** : [[claire-moreau]]
+**Audioprothésiste suivi** : [[jonathan-goldminc]]
 
 ## Synthèse parcours
 
-Patiente de démonstration — cas excellent. Score cible 88/100 sur la consultation de cadrage avec [[claire-moreau]].
+Patiente de démonstration — cas excellent. Score cible 88/100 sur la consultation de cadrage avec [[jonathan-goldminc]].
 
 ## Timeline
 
@@ -219,11 +219,11 @@ _Sera enrichie automatiquement à chaque session ou événement enregistré._
 **Âge** : ${martin.age ?? "—"} ans
 **Statut** : ${martin.status}
 **Centre** : [[${slugify(center.name)}]]
-**Audioprothésiste suivi** : [[claire-moreau]]
+**Audioprothésiste suivi** : [[jonathan-goldminc]]
 
 ## Synthèse parcours
 
-Patient de démonstration — cas moyen, montée en gamme ratée. Score cible 65/100 sur la consultation avec [[claire-moreau]].
+Patient de démonstration — cas moyen, montée en gamme ratée. Score cible 65/100 sur la consultation avec [[jonathan-goldminc]].
 
 ## Timeline
 
@@ -245,11 +245,11 @@ _Sera enrichie automatiquement à chaque session ou événement enregistré._
 **Âge** : ${lefevre.age ?? "—"} ans
 **Statut** : ${lefevre.status}
 **Centre** : [[${slugify(center.name)}]]
-**Audioprothésiste suivi** : [[claire-moreau]]
+**Audioprothésiste suivi** : [[jonathan-goldminc]]
 
 ## Synthèse parcours
 
-Patiente de démonstration — cas faible, [[objection-prix-non-traitee]]. Score cible 48/100 sur la consultation avec [[claire-moreau]].
+Patiente de démonstration — cas faible, [[objection-prix-non-traitee]]. Score cible 48/100 sur la consultation avec [[jonathan-goldminc]].
 
 ## Timeline
 

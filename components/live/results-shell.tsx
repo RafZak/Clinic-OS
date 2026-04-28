@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 import { type FrameworkKind } from "@/lib/frameworks";
 import { loadResultsBundle } from "@/lib/results";
 import { formatDuration, scoreTone, type ScoreTone } from "@/lib/format";
@@ -26,9 +26,21 @@ export async function ResultsShell({ session }: { session: SessionRow }) {
 
   const tResults = await getTranslations("results");
   const tFw = await getTranslations("framework");
+  const locale = await getLocale();
 
   const status = (bundle.session.analysisStatus ?? "pending") as AnalysisStatus;
   const globalScore = bundle.session.globalScore;
+  const startedAt = bundle.session.startedAt;
+  const dateLabel = startedAt
+    ? `${startedAt.toLocaleDateString(locale === "en" ? "en-GB" : "fr-FR", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })} · ${startedAt.toLocaleTimeString(locale === "en" ? "en-GB" : "fr-FR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })}`
+    : null;
   const phoneTags =
     kind === "phone_call"
       ? parsePhoneTags(
@@ -67,6 +79,7 @@ export async function ResultsShell({ session }: { session: SessionRow }) {
                 framework: tFw(kind),
                 duration: formatDuration(bundle.session.durationSeconds),
               })}
+              {dateLabel && ` · ${dateLabel}`}
             </p>
           </div>
           {status === "done" && (

@@ -1,9 +1,11 @@
 "use client";
 
-import { useMemo } from "react";
+import { Fragment, useMemo } from "react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { VaultMarkdown } from "@/components/admin/vault-markdown";
 import { parseMemoryMarkdown } from "@/lib/vault/parse-sections";
+import { humanizeSlug } from "@/lib/vault/label";
 import { cn } from "@/lib/utils";
 
 type PageIndexEntry = { slug: string; path: string; title?: string };
@@ -51,7 +53,7 @@ export function MemoryView({
                 {m.key}
               </dt>
               <dd className="mt-0.5 text-sm font-medium text-foreground">
-                {m.value}
+                {renderInlineValue(m.value, pageIndex)}
               </dd>
             </div>
           ))}
@@ -114,4 +116,40 @@ function SectionCard({
       {children}
     </section>
   );
+}
+
+const WIKILINK_RE = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
+
+function renderInlineValue(
+  value: string,
+  pageIndex: PageIndexEntry[]
+): React.ReactNode {
+  const parts: React.ReactNode[] = [];
+  let last = 0;
+  let i = 0;
+  for (const m of value.matchAll(WIKILINK_RE)) {
+    const idx = m.index ?? 0;
+    if (idx > last) parts.push(value.slice(last, idx));
+    const slug = m[1].trim();
+    const alias = m[2]?.trim() ?? null;
+    const indexed = pageIndex.find((p) => p.slug === slug);
+    const label = alias ?? indexed?.title ?? humanizeSlug(slug);
+    if (indexed) {
+      parts.push(
+        <Link
+          key={`v-${i}-${idx}`}
+          href={`/admin/vault/${indexed.path.replace(/\.md$/, "")}`}
+          className="text-brand hover:underline"
+        >
+          {label}
+        </Link>
+      );
+    } else {
+      parts.push(<Fragment key={`v-${i}-${idx}`}>{label}</Fragment>);
+    }
+    last = idx + m[0].length;
+    i += 1;
+  }
+  if (last < value.length) parts.push(value.slice(last));
+  return parts.length > 0 ? parts : value;
 }

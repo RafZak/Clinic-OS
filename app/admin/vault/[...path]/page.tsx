@@ -63,7 +63,11 @@ export default async function VaultPagePage({
 
       <div className="grid gap-6 lg:grid-cols-12">
         <div className="rounded-lg border border-border bg-surface px-6 py-5 lg:col-span-8">
-          <VaultMarkdown raw={page.contentMd} pageIndex={pageIndex} />
+          <VaultMarkdown
+            raw={page.contentMd}
+            pageIndex={pageIndex}
+            pageTitle={page.title}
+          />
         </div>
 
         <div className="flex flex-col gap-4 lg:col-span-4">

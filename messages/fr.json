@@ -573,6 +573,8 @@
       "filesGroupSummary": "{files, plural, one {# fichier} other {# fichiers}} · {chunks} passages",
       "filesEmpty": "Aucun fichier importé pour l'instant.",
       "fileChunks": "{count, plural, one {# passage} other {# passages}}",
+      "groupOthers": "Autres",
+      "moduleShort": "M{n}",
       "videoLabel": "Vidéo",
       "retrievalTitle": "Outil de diagnostic",
       "retrievalDescription": "Affiche les passages les plus proches d'une requête. Réservé au diagnostic interne.",

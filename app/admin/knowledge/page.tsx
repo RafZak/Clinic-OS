@@ -139,7 +139,6 @@ export default async function AdminKnowledgePage() {
             <h2 className="text-base font-semibold">{t("runsTitle")}</h2>
             <p className="text-xs text-muted-foreground">
               {t("runsDescription")}
-              <code className="rounded bg-surface-muted px-1 py-0.5">pnpm ingest</code>.
             </p>
           </div>
           <div className="flex flex-col gap-2">
@@ -153,7 +152,18 @@ export default async function AdminKnowledgePage() {
               >
                 <div className="min-w-0">
                   <p className="truncate font-mono text-[11px] text-ink">
-                    {run.startedAt?.toISOString().replace("T", " ").slice(0, 19)}
+                    {run.startedAt
+                      ? run.startedAt.toLocaleString(
+                          locale === "en" ? "en-GB" : "fr-FR",
+                          {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }
+                        )
+                      : "—"}
                   </p>
                   <p className="truncate text-muted-foreground">
                     {t("runFiles", {
@@ -162,7 +172,15 @@ export default async function AdminKnowledgePage() {
                     })}
                   </p>
                 </div>
-                <StatusPill status={run.status ?? "running"} />
+                <StatusPill
+                  status={run.status ?? "running"}
+                  labels={t.raw("runStatus") as {
+                    success: string;
+                    partial: string;
+                    failed: string;
+                    running: string;
+                  }}
+                />
               </div>
             ))}
           </div>
@@ -187,20 +205,28 @@ function Kpi({ label, value }: { label: string; value: string }) {
   );
 }
 
-function StatusPill({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    success: "bg-emerald-100 text-emerald-800",
-    partial: "bg-amber-100 text-amber-800",
-    failed: "bg-red-100 text-red-800",
-    running: "bg-blue-100 text-blue-800 animate-pulse",
+function StatusPill({
+  status,
+  labels,
+}: {
+  status: string;
+  labels: { success: string; partial: string; failed: string; running: string };
+}) {
+  const map: Record<string, { className: string; label: string }> = {
+    success: { className: "bg-emerald-100 text-emerald-800", label: labels.success },
+    partial: { className: "bg-amber-100 text-amber-800", label: labels.partial },
+    failed: { className: "bg-red-100 text-red-800", label: labels.failed },
+    running: {
+      className: "bg-blue-100 text-blue-800 animate-pulse",
+      label: labels.running,
+    },
   };
+  const entry = map[status] ?? { className: "bg-surface text-muted-foreground", label: status };
   return (
     <span
-      className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
-        map[status] ?? "bg-surface text-muted-foreground"
-      }`}
+      className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${entry.className}`}
     >
-      {status}
+      {entry.label}
     </span>
   );
 }

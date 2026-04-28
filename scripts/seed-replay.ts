@@ -10,6 +10,7 @@ import {
   transcriptLines,
   sessionScores,
   coachingInsights,
+  patientEvents,
 } from "../db/schema";
 import { REPLAY_SCENARIOS, computeTimedLines } from "./replay/scripts";
 
@@ -106,6 +107,7 @@ async function main() {
         and(eq(sessions.source, "replay"), eq(sessions.patientId, patient.id))
       );
     for (const s of existingSessions) {
+      await db.delete(patientEvents).where(eq(patientEvents.sessionId, s.id));
       await db.delete(sessionScores).where(eq(sessionScores.sessionId, s.id));
       await db
         .delete(coachingInsights)

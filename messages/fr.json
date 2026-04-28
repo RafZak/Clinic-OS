@@ -258,6 +258,10 @@
     "step": "Étape {number}",
     "trainingSources": "Sources formation",
     "stepNotEvaluated": "Étape non évaluée",
+    "missedSteps": {
+      "title": "{count, plural, one {# étape sautée} other {# étapes sautées}}",
+      "description": "Étapes prévues par le framework qui n'ont pas été abordées pendant la session."
+    },
     "scoreOver": "Score : {score}/100",
     "memory": {
       "title": "Mémoire",

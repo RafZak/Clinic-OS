@@ -258,6 +258,10 @@
     "step": "Step {number}",
     "trainingSources": "Training sources",
     "stepNotEvaluated": "Step not evaluated",
+    "missedSteps": {
+      "title": "{count, plural, one {# skipped step} other {# skipped steps}}",
+      "description": "Framework steps that weren't covered during the session."
+    },
     "scoreOver": "Score: {score}/100",
     "memory": {
       "title": "Memory",

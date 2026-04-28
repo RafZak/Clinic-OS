@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   ArrowUpRight,
   CheckCircle2,
+  CircleSlash,
   MessageSquare,
   NotebookPen,
   Sparkles,
@@ -104,6 +105,20 @@ export function ResultsView({ bundle }: { bundle: Bundle }) {
     [framework, scores, locale]
   );
 
+  const missedSteps = useMemo(
+    () =>
+      framework
+        .filter((step) => {
+          const s = scores.find((x) => x.stepNumber === step.number);
+          return !s || s.score === null;
+        })
+        .map((step) => ({
+          number: step.number,
+          label: getStepName(step, locale),
+        })),
+    [framework, scores, locale]
+  );
+
   const sortedInsights = useMemo(
     () =>
       [...insights].sort(
@@ -166,6 +181,11 @@ export function ResultsView({ bundle }: { bundle: Bundle }) {
       </TabsList>
 
       <TabsContent value="overview">
+        {missedSteps.length > 0 && (
+          <div className="mb-6">
+            <MissedStepsSection steps={missedSteps} />
+          </div>
+        )}
         <div className="grid gap-6 lg:grid-cols-5">
           <div className="rounded-lg border border-border bg-surface px-5 py-5 lg:col-span-3">
             <h3 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
@@ -255,7 +275,8 @@ export function ResultsView({ bundle }: { bundle: Bundle }) {
 
       <TabsContent value="coaching">
         <div className="flex flex-col gap-3">
-          {sortedInsights.length === 0 && (
+          {missedSteps.length > 0 && <MissedStepsSection steps={missedSteps} />}
+          {sortedInsights.length === 0 && missedSteps.length === 0 && (
             <p className="rounded-lg border border-border bg-surface px-5 py-8 text-center text-sm text-muted-foreground">
               {t("noInsights")}
             </p>
@@ -278,6 +299,49 @@ export function ResultsView({ bundle }: { bundle: Bundle }) {
         <MemoryPanel bundle={bundle} />
       </TabsContent>
     </Tabs>
+  );
+}
+
+function MissedStepsSection({
+  steps,
+}: {
+  steps: { number: number; label: string }[];
+}) {
+  const t = useTranslations("results");
+  return (
+    <div className="rounded-lg border border-red-300 bg-red-50/60 px-4 py-4">
+      <div className="flex items-start gap-2">
+        <CircleSlash
+          className="mt-0.5 size-5 shrink-0 text-red-600"
+          aria-hidden
+        />
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-semibold text-red-700">
+            {t("missedSteps.title", { count: steps.length })}
+          </h3>
+          <p className="mt-0.5 text-xs text-red-700/80">
+            {t("missedSteps.description")}
+          </p>
+        </div>
+      </div>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {steps.map((step) => (
+          <div
+            key={step.number}
+            className="rounded-md border border-red-300 bg-white/70 px-3 py-2"
+          >
+            <div className="flex items-center gap-2">
+              <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-red-600 text-[10px] font-semibold text-white">
+                {step.number}
+              </span>
+              <span className="truncate text-sm font-medium text-ink">
+                {step.label}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 

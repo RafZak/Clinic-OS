@@ -393,7 +393,12 @@ function Citations({ citations }: { citations: InsightCitation[] }) {
                   {inner}
                 </a>
               ) : link?.kind === "internal" ? (
-                <Link href={link.href} className={className}>
+                <Link
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={className}
+                >
                   {inner}
                 </Link>
               ) : (
@@ -476,7 +481,12 @@ function MemoryPanel({ bundle }: { bundle: Bundle }) {
 
       <div className="rounded-lg border border-dashed border-border bg-surface-muted px-5 py-3 text-xs text-muted-foreground">
         {t("fullVault")}{" "}
-        <a href="/admin/vault" className="text-brand hover:underline">
+        <a
+          href="/admin/vault"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-brand hover:underline"
+        >
           {tNav("memory")}
         </a>
         .
@@ -512,6 +522,8 @@ function VaultLinkCard({
   return (
     <a
       href={href}
+      target="_blank"
+      rel="noopener noreferrer"
       className="group rounded-lg border border-border bg-surface px-4 py-4 transition hover:border-brand/40 hover:bg-brand/5"
     >
       <div className="flex items-start justify-between gap-2">

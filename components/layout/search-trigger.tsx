@@ -1,7 +1,16 @@
 "use client";
 
-import { Search, Sparkles } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  ArrowRight,
+  GraduationCap,
+  Layers,
+  Search,
+  Sparkles,
+  User,
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   Dialog,
@@ -29,6 +38,42 @@ type StreamEvent =
   | { type: "text"; delta: string }
   | { type: "done" }
   | { type: "error"; message: string };
+
+type NavItem = {
+  type: "patient" | "program" | "module";
+  id: string;
+  label: string;
+  subtitle: string;
+  href: string;
+};
+
+const TYPE_ICON = {
+  patient: User,
+  program: GraduationCap,
+  module: Layers,
+} as const;
+
+function normalize(s: string) {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "");
+}
+
+function filterItems(items: NavItem[], q: string): NavItem[] {
+  if (!q) return [];
+  const needle = normalize(q.trim());
+  if (!needle) return [];
+  const scored: { item: NavItem; score: number }[] = [];
+  for (const item of items) {
+    const hay = normalize(`${item.label} ${item.subtitle}`);
+    const idx = hay.indexOf(needle);
+    if (idx === -1) continue;
+    scored.push({ item, score: idx });
+  }
+  scored.sort((a, b) => a.score - b.score);
+  return scored.map((s) => s.item);
+}
 
 export function SearchTrigger() {
   const [open, setOpen] = useState(false);
@@ -75,6 +120,7 @@ export function SearchTrigger() {
 function SearchBody({ onClose }: { onClose: () => void }) {
   const t = useTranslations("search");
   const tCommon = useTranslations("common");
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
   const [status, setStatus] = useState<
@@ -83,6 +129,7 @@ function SearchBody({ onClose }: { onClose: () => void }) {
   const [answer, setAnswer] = useState("");
   const [sources, setSources] = useState<Source[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [navIndex, setNavIndex] = useState<NavItem[]>([]);
   const abortRef = useRef<AbortController | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const examples = t.raw("examples") as string[];
@@ -91,6 +138,30 @@ function SearchBody({ onClose }: { onClose: () => void }) {
     const tt = setTimeout(() => inputRef.current?.focus(), 0);
     return () => clearTimeout(tt);
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/search/index")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data?.items) return;
+        setNavIndex(data.items as NavItem[]);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const filtered = useMemo(() => filterItems(navIndex, query), [navIndex, query]);
+  const grouped = useMemo(() => {
+    const max = 5;
+    return {
+      patients: filtered.filter((i) => i.type === "patient").slice(0, max),
+      programs: filtered.filter((i) => i.type === "program").slice(0, max),
+      modules: filtered.filter((i) => i.type === "module").slice(0, max),
+    };
+  }, [filtered]);
 
   const runSearch = useCallback(async (q: string) => {
     const trimmed = q.trim();
@@ -159,6 +230,17 @@ function SearchBody({ onClose }: { onClose: () => void }) {
     void runSearch(query);
   }
 
+  function handleNavigate(href: string) {
+    onClose();
+    router.push(href);
+  }
+
+  const hasNavResults =
+    grouped.patients.length + grouped.programs.length + grouped.modules.length >
+    0;
+  const trimmedQuery = query.trim();
+  const canAskCoach = trimmedQuery.length >= 3;
+
   return (
     <div className="flex max-h-[80vh] flex-col">
       <form
@@ -182,7 +264,7 @@ function SearchBody({ onClose }: { onClose: () => void }) {
       </form>
 
       <div className="min-h-[260px] flex-1 overflow-y-auto px-4 py-4">
-        {status === "idle" && (
+        {status === "idle" && !trimmedQuery && (
           <div className="flex flex-col gap-3">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               {t("examplesLabel")}
@@ -205,8 +287,63 @@ function SearchBody({ onClose }: { onClose: () => void }) {
           </div>
         )}
 
-        {submittedQuery && (
+        {trimmedQuery && (
           <div className="flex flex-col gap-4">
+            {hasNavResults && (
+              <div className="flex flex-col gap-3">
+                <NavGroup
+                  label={t("groupPatients")}
+                  items={grouped.patients}
+                  onNavigate={handleNavigate}
+                />
+                <NavGroup
+                  label={t("groupPrograms")}
+                  items={grouped.programs}
+                  onNavigate={handleNavigate}
+                />
+                <NavGroup
+                  label={t("groupModules")}
+                  items={grouped.modules}
+                  onNavigate={handleNavigate}
+                />
+              </div>
+            )}
+
+            {canAskCoach && status === "idle" && (
+              <button
+                type="button"
+                onClick={() => void runSearch(query)}
+                className="flex items-center gap-3 rounded-md border border-dashed border-brand/40 bg-brand/5 px-3 py-2.5 text-left transition-colors hover:bg-brand/10"
+              >
+                <Sparkles className="size-4 shrink-0 text-brand" aria-hidden />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-ink">
+                    {t("askCoach")}{" "}
+                    <span className="text-muted-foreground">
+                      « {trimmedQuery} »
+                    </span>
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {t("askCoachHint")}
+                  </p>
+                </div>
+                <ArrowRight
+                  className="size-4 shrink-0 text-muted-foreground"
+                  aria-hidden
+                />
+              </button>
+            )}
+
+            {!hasNavResults && status === "idle" && !canAskCoach && (
+              <p className="text-xs italic text-muted-foreground">
+                {t("noResults")}
+              </p>
+            )}
+          </div>
+        )}
+
+        {submittedQuery && status !== "idle" && (
+          <div className="mt-4 flex flex-col gap-4">
             <div className="flex flex-col gap-1.5 rounded-md border border-border bg-surface-muted px-4 py-3">
               <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-brand">
                 <Sparkles className="size-3.5" aria-hidden />
@@ -267,6 +404,57 @@ function SearchBody({ onClose }: { onClose: () => void }) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function NavGroup({
+  label,
+  items,
+  onNavigate,
+}: {
+  label: string;
+  items: NavItem[];
+  onNavigate: (href: string) => void;
+}) {
+  if (items.length === 0) return null;
+  return (
+    <div className="flex flex-col gap-1.5">
+      <p className="px-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
+      <ul className="flex flex-col gap-0.5">
+        {items.map((item) => {
+          const Icon = TYPE_ICON[item.type];
+          return (
+            <li key={`${item.type}-${item.id}`}>
+              <Link
+                href={item.href}
+                onClick={(e) => {
+                  e.preventDefault();
+                  onNavigate(item.href);
+                }}
+                className="flex items-center gap-3 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-surface-muted"
+              >
+                <Icon
+                  className="size-4 shrink-0 text-muted-foreground"
+                  aria-hidden
+                />
+                <span className="min-w-0 flex-1 truncate">
+                  <span className="font-medium text-ink">{item.label}</span>
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    {item.subtitle}
+                  </span>
+                </span>
+                <ArrowRight
+                  className="size-3.5 shrink-0 text-muted-foreground/60"
+                  aria-hidden
+                />
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

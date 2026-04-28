@@ -228,6 +228,8 @@ function TimelineItem({ event }: { event: PatientEventRow }) {
           {link && (
             <Link
               href={link}
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-1 self-start text-xs font-medium text-brand hover:text-brand-dark"
             >
               <Sparkles className="h-3 w-3" />

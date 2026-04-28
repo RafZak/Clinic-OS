@@ -51,13 +51,7 @@
     "patientsBadgeTooltip": "{count, plural, one {# lost patient — to call back} other {# lost patients — to call back}}",
     "memoryBadgeTooltip": "{count, plural, one {# entry updated today} other {# entries updated today}}",
     "patientsRecent": "Recent patients",
-    "lastAnalysis": "Latest analysis",
-    "systemStatus": "System status",
-    "transcription": "Transcription",
-    "aiCoach": "AI coach",
-    "memorySystem": "Memory",
-    "ok": "OK",
-    "down": "down"
+    "lastAnalysis": "Latest analysis"
   },
   "search": {
     "placeholderTrigger": "Search patient, training, question…",

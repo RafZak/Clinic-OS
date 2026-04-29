@@ -464,13 +464,13 @@ async function loadContext(
     }>(sql`
       SELECT
         e.patient_id,
-        p.label AS patient_label,
+        patients.label AS patient_label,
         e.metadata->>'product' AS product,
         e.occurred_at
       FROM patient_events e
-      JOIN patients p ON p.id = e.patient_id
+      JOIN patients ON patients.id = e.patient_id
       WHERE e.kind = 'trial_start'
-        AND p.status <> 'lost'
+        AND patients.status <> 'lost'
         AND e.occurred_at < now() - interval '14 days'
         AND NOT EXISTS (
           SELECT 1 FROM patient_events d

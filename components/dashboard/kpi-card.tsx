@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { Line, LineChart, ResponsiveContainer, YAxis } from "recharts";
 import {
   Activity,
   Clock,
@@ -10,7 +9,7 @@ import {
   Wallet,
   type LucideIcon,
 } from "lucide-react";
-import type { DashboardKpiKind, WeeklyScorePoint } from "@/lib/dashboard";
+import type { DashboardKpiKind } from "@/lib/dashboard";
 import type { ScoreTone } from "@/lib/score-tone";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +20,57 @@ const KIND_ICON: Record<DashboardKpiKind, LucideIcon> = {
   callDuration: Clock,
   callScore: Headphones,
 };
+
+const RING_STROKE: Record<ScoreTone, string> = {
+  neutral: "stroke-muted-foreground/40",
+  success: "stroke-emerald-500",
+  warning: "stroke-amber-500",
+  danger: "stroke-red-500",
+};
+
+function ScoreRing({
+  score,
+  tone,
+}: {
+  score: number | null;
+  tone: ScoreTone;
+}) {
+  const radius = 26;
+  const circumference = 2 * Math.PI * radius;
+  const pct = score == null ? 0 : Math.max(0, Math.min(100, score)) / 100;
+  const offset = circumference * (1 - pct);
+
+  return (
+    <svg
+      viewBox="0 0 64 64"
+      className="h-16 w-16 shrink-0 -rotate-90"
+      aria-hidden
+    >
+      <circle
+        cx="32"
+        cy="32"
+        r={radius}
+        fill="none"
+        className="stroke-surface-muted"
+        strokeWidth={5}
+      />
+      <circle
+        cx="32"
+        cy="32"
+        r={radius}
+        fill="none"
+        className={cn(
+          "transition-[stroke-dashoffset] duration-700",
+          RING_STROKE[tone]
+        )}
+        strokeWidth={5}
+        strokeDasharray={circumference}
+        strokeDashoffset={offset}
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
 
 const TONE_STYLES: Record<
   ScoreTone,
@@ -54,23 +104,22 @@ export function KpiCard({
   value,
   hint,
   tone = "neutral",
-  spark,
 }: {
   kind: DashboardKpiKind;
   label: string;
   value: string;
   hint?: string;
   tone?: ScoreTone;
-  spark?: WeeklyScorePoint[];
 }) {
   const Icon = KIND_ICON[kind];
   const styles = TONE_STYLES[tone];
-  const sparkData = spark
-    ? spark
-        .map((p, i) => ({ i, score: p.avgScore }))
-        .filter((p) => p.score != null)
-    : [];
-  const showSpark = sparkData.length >= 2;
+
+  const scoreMatch =
+    kind === "score" || kind === "callScore"
+      ? value.match(/^(\d+)\/100/)
+      : null;
+  const scoreNumber = scoreMatch ? parseInt(scoreMatch[1], 10) : null;
+  const showRing = scoreNumber != null;
 
   return (
     <div
@@ -100,27 +149,7 @@ export function KpiCard({
         <p className="text-[26px] font-semibold leading-none tracking-tight">
           {value}
         </p>
-        {showSpark && (
-          <div className="h-9 w-24 shrink-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                data={sparkData}
-                margin={{ top: 2, right: 0, bottom: 2, left: 0 }}
-              >
-                <YAxis hide domain={[0, 100]} />
-                <Line
-                  type="monotone"
-                  dataKey="score"
-                  stroke="var(--brand)"
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={false}
-                  isAnimationActive={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        )}
+        {showRing && <ScoreRing score={scoreNumber} tone={tone} />}
       </div>
 
       {hint && (

@@ -147,6 +147,10 @@
     "weekThis": "Cette sem.",
     "weekShort": "S-{n}"
   },
+  "heatmap": {
+    "strongest": "Étape forte",
+    "weakest": "Étape à travailler"
+  },
   "calendar": {
     "title": "Agenda 4 semaines",
     "monthLabel": "{month} · {count, plural, one {# RDV} other {# RDV}}",

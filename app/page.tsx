@@ -1,17 +1,11 @@
 import { getTranslations } from "next-intl/server";
-import { Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { StepHeatmap } from "@/components/dashboard/step-heatmap";
 import { NudgesPanel } from "@/components/dashboard/nudges-panel";
 import { MiniCalendar } from "@/components/dashboard/mini-calendar";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { scoreTone, type ScoreTone } from "@/lib/score-tone";
-import {
-  loadDashboard,
-  type DashboardKpi,
-  type DashboardKpiKind,
-  type WeeklyScorePoint,
-} from "@/lib/dashboard";
+import { loadDashboard, type DashboardKpi } from "@/lib/dashboard";
 import { buildNudges } from "@/lib/nudges";
 import { getRole } from "@/lib/role";
 import { getLocale } from "@/lib/locale";
@@ -39,9 +33,6 @@ export default async function DashboardPage() {
 
   const isPractitioner = role === "audioprothesiste";
 
-  const kpiSparkByKind = (kind: DashboardKpiKind): WeeklyScorePoint[] | undefined =>
-    kind === "score" || kind === "callScore" ? dashboard.weekly : undefined;
-
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
@@ -68,25 +59,19 @@ export default async function DashboardPage() {
             value={kpi.value}
             hint={kpi.hint}
             tone={kpiTone(kpi)}
-            spark={kpiSparkByKind(kpi.kind)}
           />
         ))}
       </section>
 
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-        <div className="rounded-lg border border-border bg-surface p-5 lg:col-span-7">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-                {tDash("heatmapTitle", { framework: dashboard.frameworkLabel })}
-              </h2>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                {tDash("heatmapDescription")}
-              </p>
-            </div>
-            <Sparkles className="hidden h-4 w-4 text-brand/40 sm:block" />
-          </div>
-          <div className="mt-4">
+        <div className="flex flex-col rounded-lg border border-border bg-surface p-5 lg:col-span-7">
+          <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+            {tDash("heatmapTitle", { framework: dashboard.frameworkLabel })}
+          </h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {tDash("heatmapDescription")}
+          </p>
+          <div className="mt-5 flex-1">
             <StepHeatmap cells={dashboard.heatmap} />
           </div>
         </div>

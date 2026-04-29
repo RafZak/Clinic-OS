@@ -147,6 +147,10 @@
     "weekThis": "This wk",
     "weekShort": "W-{n}"
   },
+  "heatmap": {
+    "strongest": "Strongest step",
+    "weakest": "Step to work on"
+  },
   "calendar": {
     "title": "4-week agenda",
     "monthLabel": "{month} · {count, plural, one {# appt} other {# appts}}",

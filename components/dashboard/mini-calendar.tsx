@@ -31,20 +31,26 @@ type DayCell = {
   isoDate: string;
   date: Date;
   dayNumber: number;
-  inMonth: boolean;
+  inPrimaryMonth: boolean;
   isToday: boolean;
+  isPast: boolean;
   appointments: UpcomingAppointment[];
 };
 
 function buildGrid(grid: CalendarGrid): DayCell[] {
-  const monthStart = new Date(grid.monthStart);
+  const primaryMonth = new Date(grid.primaryMonthStart);
   const gridStart = new Date(grid.gridStart);
-  const monthIndex = monthStart.getUTCMonth();
+  const monthIndex = primaryMonth.getUTCMonth();
 
   const today = new Date();
   const todayKey = `${today.getUTCFullYear()}-${String(
     today.getUTCMonth() + 1
   ).padStart(2, "0")}-${String(today.getUTCDate()).padStart(2, "0")}`;
+  const todayMidnight = Date.UTC(
+    today.getUTCFullYear(),
+    today.getUTCMonth(),
+    today.getUTCDate()
+  );
 
   const byDay = new Map<string, UpcomingAppointment[]>();
   for (const apt of grid.appointments) {
@@ -70,8 +76,9 @@ function buildGrid(grid: CalendarGrid): DayCell[] {
       isoDate: key,
       date: d,
       dayNumber: d.getUTCDate(),
-      inMonth: d.getUTCMonth() === monthIndex,
+      inPrimaryMonth: d.getUTCMonth() === monthIndex,
       isToday: key === todayKey,
+      isPast: d.getTime() < todayMidnight,
       appointments: (byDay.get(key) ?? []).sort((a, b) =>
         a.scheduledFor.localeCompare(b.scheduledFor)
       ),
@@ -106,9 +113,9 @@ function formatMonthYear(d: Date, locale: Locale): string {
   });
 }
 
-function densityClass(count: number, inMonth: boolean): string {
-  if (!inMonth) return "";
+function densityClass(count: number, isPast: boolean): string {
   if (count === 0) return "";
+  if (isPast) return "ring-1 ring-inset ring-border/60 bg-surface-muted/40";
   if (count === 1) return "ring-1 ring-inset ring-amber-300 bg-amber-50/70";
   return "ring-1 ring-inset ring-brand/40 bg-brand/5";
 }
@@ -122,11 +129,11 @@ export function MiniCalendar({
 }) {
   const t = useTranslations("calendar");
   const cells = React.useMemo(() => buildGrid(grid), [grid]);
-  const monthDate = new Date(grid.monthStart);
+  const monthDate = new Date(grid.primaryMonthStart);
   const monthLabel = formatMonthYear(monthDate, locale);
 
-  const totalInMonth = cells
-    .filter((c) => c.inMonth)
+  const totalUpcoming = cells
+    .filter((c) => !c.isPast)
     .reduce((acc, c) => acc + c.appointments.length, 0);
 
   const [openDay, setOpenDay] = React.useState<DayCell | null>(null);
@@ -143,7 +150,7 @@ export function MiniCalendar({
             {t("title")}
           </h2>
           <span className="text-xs text-muted-foreground">
-            {t("monthLabel", { month: monthLabel, count: totalInMonth })}
+            {t("monthLabel", { month: monthLabel, count: totalUpcoming })}
           </span>
         </div>
 
@@ -158,7 +165,7 @@ export function MiniCalendar({
         <div className="mt-1 grid flex-1 grid-cols-7 grid-rows-5 gap-1">
           {cells.map((cell) => {
             const count = cell.appointments.length;
-            const interactive = cell.inMonth && count > 0;
+            const interactive = count > 0;
             const trigger = (
               <button
                 type="button"
@@ -166,14 +173,15 @@ export function MiniCalendar({
                 disabled={!interactive}
                 className={cn(
                   "group relative flex aspect-square w-full flex-col items-start justify-between rounded-md border border-transparent px-1.5 py-1 text-left transition-colors",
-                  cell.inMonth
+                  cell.inPrimaryMonth
                     ? "text-foreground"
-                    : "text-muted-foreground/50",
+                    : "text-muted-foreground/60",
+                  cell.isPast && !cell.isToday && "opacity-60",
                   interactive &&
                     "cursor-pointer hover:border-border hover:bg-surface-muted",
                   !interactive && "cursor-default",
                   cell.isToday && "border-brand/60",
-                  densityClass(count, cell.inMonth)
+                  densityClass(count, cell.isPast)
                 )}
                 aria-label={
                   interactive
@@ -192,14 +200,15 @@ export function MiniCalendar({
                 >
                   {cell.dayNumber}
                 </span>
-                {count > 0 && cell.inMonth && (
+                {count > 0 && (
                   <div className="flex items-end gap-0.5">
                     {cell.appointments.slice(0, 3).map((apt) => (
                       <span
                         key={apt.id}
                         className={cn(
                           "h-1.5 w-1.5 rounded-full",
-                          STATUS_DOT[apt.patientStatus]
+                          STATUS_DOT[apt.patientStatus],
+                          cell.isPast && "opacity-50"
                         )}
                       />
                     ))}
@@ -242,7 +251,7 @@ export function MiniCalendar({
           })}
         </div>
 
-        {totalInMonth === 0 && (
+        {totalUpcoming === 0 && (
           <p className="mt-3 text-center text-xs text-muted-foreground">
             {t("empty")}
           </p>

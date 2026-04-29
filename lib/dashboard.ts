@@ -38,8 +38,8 @@ export type UpcomingAppointment = {
 };
 
 export type CalendarGrid = {
-  monthStart: string;
   gridStart: string;
+  primaryMonthStart: string;
   appointments: UpcomingAppointment[];
 };
 
@@ -163,16 +163,27 @@ export async function loadDashboard(
   };
 }
 
-function startOfMonthUTC(d: Date): Date {
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
-}
-
 async function loadCalendarGrid(locale: Locale): Promise<CalendarGrid> {
   const today = new Date();
-  const monthStart = startOfMonthUTC(today);
-  const gridStart = startOfWeek(monthStart);
+  const gridStart = startOfWeek(today);
   const gridEnd = new Date(gridStart);
   gridEnd.setUTCDate(gridEnd.getUTCDate() + 35);
+
+  const monthCount = new Map<string, number>();
+  for (let i = 0; i < 35; i++) {
+    const d = new Date(gridStart);
+    d.setUTCDate(d.getUTCDate() + i);
+    const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(
+      2,
+      "0"
+    )}`;
+    monthCount.set(key, (monthCount.get(key) ?? 0) + 1);
+  }
+  const primaryMonthKey = Array.from(monthCount.entries()).sort(
+    (a, b) => b[1] - a[1]
+  )[0][0];
+  const [py, pm] = primaryMonthKey.split("-").map((n) => parseInt(n, 10));
+  const primaryMonthStart = new Date(Date.UTC(py, pm - 1, 1));
 
   const rows = await db.execute<{
     id: string;
@@ -211,8 +222,8 @@ async function loadCalendarGrid(locale: Locale): Promise<CalendarGrid> {
   `);
 
   return {
-    monthStart: monthStart.toISOString(),
     gridStart: gridStart.toISOString(),
+    primaryMonthStart: primaryMonthStart.toISOString(),
     appointments: rows.map((r) => ({
       id: r.id,
       patientId: r.patient_id,

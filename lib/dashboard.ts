@@ -7,7 +7,15 @@ import type { Locale } from "@/lib/locale";
 import type { FrameworkKind } from "@/lib/frameworks";
 import { getScorableFramework, getStepName } from "@/lib/frameworks";
 
+export type DashboardKpiKind =
+  | "conversion"
+  | "basket"
+  | "score"
+  | "callDuration"
+  | "callScore";
+
 export type DashboardKpi = {
+  kind: DashboardKpiKind;
   label: string;
   value: string;
   hint?: string;
@@ -188,14 +196,16 @@ export async function loadDashboard(
   };
 }
 
+const GRID_DAYS = 28;
+
 async function loadCalendarGrid(locale: Locale): Promise<CalendarGrid> {
   const today = new Date();
   const gridStart = startOfWeek(today);
   const gridEnd = new Date(gridStart);
-  gridEnd.setUTCDate(gridEnd.getUTCDate() + 35);
+  gridEnd.setUTCDate(gridEnd.getUTCDate() + GRID_DAYS);
 
   const monthCount = new Map<string, number>();
-  for (let i = 0; i < 35; i++) {
+  for (let i = 0; i < GRID_DAYS; i++) {
     const d = new Date(gridStart);
     d.setUTCDate(d.getUTCDate() + i);
     const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(
@@ -664,6 +674,7 @@ function buildPractitionerKpis(
   const den = fittedDen || ctx.totalPatients;
   return [
     {
+      kind: "conversion",
       label: t("kpiPractitionerConversion"),
       value: pct(ctx.fittedPatients, den),
       hint: t("kpiPractitionerConversionHint", {
@@ -672,12 +683,14 @@ function buildPractitionerKpis(
       }),
     },
     {
+      kind: "basket",
       label: t("kpiPractitionerBasket"),
       value:
         ctx.basketAvgEur != null ? eurFormat(locale, ctx.basketAvgEur) : "—",
       hint: t("kpiPractitionerBasketHint"),
     },
     {
+      kind: "score",
       label: t("kpiPractitionerScore"),
       value:
         ctx.practitionerAvgScore != null
@@ -700,6 +713,7 @@ function buildAssistantKpis(
   const dur = ctx.callDurationAvgSec;
   return [
     {
+      kind: "callDuration",
       label: t("kpiAssistantDuration"),
       value:
         dur != null
@@ -708,6 +722,7 @@ function buildAssistantKpis(
       hint: t("kpiAssistantDurationHint"),
     },
     {
+      kind: "callScore",
       label: t("kpiAssistantScore"),
       value:
         ctx.assistantAvgScore != null

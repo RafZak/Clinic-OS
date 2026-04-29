@@ -21,6 +21,8 @@ import type { CalendarGrid, UpcomingAppointment } from "@/lib/dashboard";
 import type { Locale } from "@/lib/locale";
 import { cn } from "@/lib/utils";
 
+const GRID_DAYS = 28;
+
 const STATUS_DOT: Record<UpcomingAppointment["patientStatus"], string> = {
   prospect: "bg-amber-500",
   patient: "bg-emerald-500",
@@ -65,7 +67,7 @@ function buildGrid(grid: CalendarGrid): DayCell[] {
   }
 
   const cells: DayCell[] = [];
-  for (let i = 0; i < 35; i++) {
+  for (let i = 0; i < GRID_DAYS; i++) {
     const d = new Date(gridStart);
     d.setUTCDate(d.getUTCDate() + i);
     const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(
@@ -113,6 +115,39 @@ function formatMonthYear(d: Date, locale: Locale): string {
   });
 }
 
+function formatNextDate(
+  iso: string,
+  locale: Locale,
+  t: (key: string, params?: Record<string, string | number>) => string
+): string {
+  const d = new Date(iso);
+  const today = new Date();
+  const todayMidnight = Date.UTC(
+    today.getUTCFullYear(),
+    today.getUTCMonth(),
+    today.getUTCDate()
+  );
+  const dMidnight = Date.UTC(
+    d.getUTCFullYear(),
+    d.getUTCMonth(),
+    d.getUTCDate()
+  );
+  const days = Math.round((dMidnight - todayMidnight) / 86_400_000);
+  const time = d.toLocaleTimeString(locale === "en" ? "en-GB" : "fr-FR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "UTC",
+  });
+  if (days === 0) return `${t("nextToday")} ${time}`;
+  if (days === 1) return `${t("nextTomorrow")} ${time}`;
+  const dayLabel = d.toLocaleDateString(locale === "en" ? "en-GB" : "fr-FR", {
+    weekday: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+  return `${dayLabel} ${time}`;
+}
+
 
 export function MiniCalendar({
   grid,
@@ -129,6 +164,15 @@ export function MiniCalendar({
   const totalUpcoming = cells
     .filter((c) => !c.isPast)
     .reduce((acc, c) => acc + c.appointments.length, 0);
+
+  const upcomingFlat = React.useMemo(
+    () =>
+      cells
+        .filter((c) => !c.isPast)
+        .flatMap((c) => c.appointments)
+        .slice(0, 3),
+    [cells]
+  );
 
   const [openDay, setOpenDay] = React.useState<DayCell | null>(null);
 
@@ -247,6 +291,38 @@ export function MiniCalendar({
           <p className="mt-3 text-center text-xs text-muted-foreground">
             {t("empty")}
           </p>
+        )}
+
+        {upcomingFlat.length > 0 && (
+          <div className="mt-3 border-t border-border pt-3">
+            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              {t("nextLabel")}
+            </p>
+            <ul className="flex flex-col gap-0.5">
+              {upcomingFlat.map((apt) => (
+                <li key={apt.id}>
+                  <Link
+                    href={`/patients/${apt.patientId}`}
+                    className="flex items-center gap-2 rounded-md px-1.5 py-1 text-xs transition-colors hover:bg-surface-muted/70"
+                  >
+                    <span
+                      className={cn(
+                        "h-1.5 w-1.5 shrink-0 rounded-full",
+                        STATUS_DOT[apt.patientStatus]
+                      )}
+                    />
+                    <span className="w-20 shrink-0 font-medium tabular-nums text-foreground">
+                      {formatNextDate(apt.scheduledFor, locale, t)}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-foreground">
+                      {apt.patientLabel}
+                    </span>
+                    <ArrowUpRight className="h-3 w-3 shrink-0 text-muted-foreground" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
 
         <Sheet

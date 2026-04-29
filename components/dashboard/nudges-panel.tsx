@@ -4,20 +4,31 @@ import { getTranslations } from "next-intl/server";
 import type { Nudge, NudgeKind, NudgeSeverity } from "@/lib/nudges";
 import { cn } from "@/lib/utils";
 
-const SEVERITY_STYLES: Record<NudgeSeverity, { card: string; icon: string; Icon: typeof AlertTriangle }> = {
+const SEVERITY_STYLES: Record<
+  NudgeSeverity,
+  {
+    accent: string;
+    iconBg: string;
+    iconColor: string;
+    Icon: typeof AlertTriangle;
+  }
+> = {
   info: {
-    card: "border-border bg-surface",
-    icon: "text-sky-600",
+    accent: "before:bg-sky-400",
+    iconBg: "bg-sky-50",
+    iconColor: "text-sky-600",
     Icon: Lightbulb,
   },
   warning: {
-    card: "border-amber-200 bg-amber-50/60",
-    icon: "text-amber-700",
+    accent: "before:bg-amber-400",
+    iconBg: "bg-amber-50",
+    iconColor: "text-amber-700",
     Icon: Sparkles,
   },
   critical: {
-    card: "border-red-200 bg-red-50/60",
-    icon: "text-red-700",
+    accent: "before:bg-red-500",
+    iconBg: "bg-red-50",
+    iconColor: "text-red-700",
     Icon: AlertTriangle,
   },
 };
@@ -33,7 +44,7 @@ export async function NudgesPanel({
 
   if (nudges.length === 0) {
     return (
-      <div className="flex h-32 items-center justify-center rounded-md border border-dashed border-border bg-surface text-sm text-muted-foreground">
+      <div className="flex h-24 items-center justify-center rounded-md border border-dashed border-border bg-surface text-sm text-muted-foreground">
         {t("empty")}
       </div>
     );
@@ -43,13 +54,12 @@ export async function NudgesPanel({
   const improvements = nudges.filter((n) => n.kind === "improvement");
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5">
       {alerts.length > 0 && (
         <NudgeGroup
           kind="alert"
           nudges={alerts}
           title={t("groupAlertTitle")}
-          description={t("groupAlertDescription")}
         />
       )}
       {improvements.length > 0 && (
@@ -57,7 +67,6 @@ export async function NudgesPanel({
           kind="improvement"
           nudges={improvements}
           title={t("groupImprovementTitle")}
-          description={t("groupImprovementDescription")}
         />
       )}
       {hiddenCount > 0 && (
@@ -70,31 +79,26 @@ export async function NudgesPanel({
 }
 
 function NudgeGroup({
-  kind,
+  kind: _kind,
   nudges,
   title,
-  description,
 }: {
   kind: NudgeKind;
   nudges: Nudge[];
   title: string;
-  description: string;
 }) {
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-0.5">
-        <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-foreground">
-          {title}{" "}
-          <span className="ml-1 font-normal tabular-nums text-muted-foreground">
-            ({nudges.length})
-          </span>
-        </h3>
-        <p className="text-xs text-muted-foreground">{description}</p>
-      </div>
+    <div className="flex flex-col gap-2">
+      <h3 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        {title}
+        <span className="ml-1.5 font-normal tabular-nums opacity-60">
+          ({nudges.length})
+        </span>
+      </h3>
       <div
         className={cn(
-          "grid grid-cols-1 gap-3",
-          nudges.length >= 2 && "md:grid-cols-2 md:auto-rows-fr"
+          "grid grid-cols-1 gap-2.5",
+          nudges.length >= 2 && "md:grid-cols-2"
         )}
       >
         {nudges.map((nudge) => (
@@ -106,31 +110,48 @@ function NudgeGroup({
 }
 
 function NudgeCard({ nudge }: { nudge: Nudge }) {
-  const { card, icon, Icon } = SEVERITY_STYLES[nudge.severity];
-  return (
+  const { accent, iconBg, iconColor, Icon } = SEVERITY_STYLES[nudge.severity];
+
+  const inner = (
     <div
-      className={cn("flex flex-col gap-2 rounded-lg border px-4 py-3.5", card)}
-    >
-      <div className="flex items-start gap-2.5">
-        <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", icon)} />
-        <div className="flex-1">
-          <h4 className="text-sm font-semibold leading-snug">{nudge.title}</h4>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {nudge.description}
-          </p>
-        </div>
-      </div>
-      {nudge.cta && (
-        <div className="-mb-1 mt-auto flex justify-end pt-1">
-          <Link
-            href={nudge.cta.href}
-            className="inline-flex items-center gap-1 text-xs font-medium text-brand hover:text-brand-dark"
-          >
-            {nudge.cta.label}
-            <ArrowUpRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
+      className={cn(
+        "group relative flex items-start gap-3 overflow-hidden rounded-lg border border-border bg-surface px-3.5 py-3 transition-all",
+        "before:absolute before:inset-y-0 before:left-0 before:w-1",
+        accent,
+        nudge.cta && "cursor-pointer hover:border-foreground/20 hover:shadow-sm"
       )}
+    >
+      <span
+        className={cn(
+          "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
+          iconBg
+        )}
+      >
+        <Icon className={cn("h-3.5 w-3.5", iconColor)} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <h4 className="line-clamp-2 text-sm font-semibold leading-snug text-foreground">
+          {nudge.title}
+        </h4>
+        <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+          {nudge.description}
+        </p>
+        {nudge.cta && (
+          <p className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-medium text-brand transition-colors group-hover:text-brand-dark">
+            {nudge.cta.label}
+            <ArrowUpRight className="h-3 w-3" />
+          </p>
+        )}
+      </div>
     </div>
   );
+
+  if (nudge.cta) {
+    return (
+      <Link href={nudge.cta.href} className="block">
+        {inner}
+      </Link>
+    );
+  }
+  return inner;
 }

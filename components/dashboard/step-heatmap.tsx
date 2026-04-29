@@ -9,6 +9,14 @@ function fillClass(score: number | null): string {
   return "bg-red-500";
 }
 
+function pillClass(score: number | null): string {
+  if (score == null) return "bg-surface-muted text-muted-foreground";
+  if (score >= 80) return "bg-emerald-100 text-emerald-700";
+  if (score >= 60) return "bg-amber-100 text-amber-700";
+  if (score >= 40) return "bg-orange-100 text-orange-700";
+  return "bg-red-100 text-red-700";
+}
+
 function scoreTextClass(score: number | null): string {
   if (score == null) return "text-muted-foreground";
   if (score >= 80) return "text-emerald-700";
@@ -19,7 +27,7 @@ function scoreTextClass(score: number | null): string {
 
 export function StepHeatmap({ cells }: { cells: StepHeatmapCell[] }) {
   return (
-    <ul className="flex flex-col gap-2.5">
+    <ul className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
       {cells.map((cell, index) => {
         const score = cell.avgScore;
         const widthPct =
@@ -28,15 +36,20 @@ export function StepHeatmap({ cells }: { cells: StepHeatmapCell[] }) {
         return (
           <li
             key={cell.number}
-            className="flex items-center gap-3 text-xs"
+            className="flex items-center gap-2.5 text-xs"
           >
-            <span className="w-6 shrink-0 font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
-              {String(displayNumber).padStart(2, "0")}
+            <span
+              className={cn(
+                "flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-[10px] font-semibold tabular-nums",
+                pillClass(score)
+              )}
+            >
+              {displayNumber}
             </span>
-            <span className="min-w-0 flex-1 truncate font-medium text-foreground">
+            <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-foreground">
               {cell.name}
             </span>
-            <div className="h-1.5 w-24 shrink-0 overflow-hidden rounded-full bg-surface-muted sm:w-32">
+            <div className="h-1.5 w-20 shrink-0 overflow-hidden rounded-full bg-surface-muted">
               <div
                 className={cn(
                   "h-full rounded-full transition-[width] duration-500",
@@ -47,7 +60,7 @@ export function StepHeatmap({ cells }: { cells: StepHeatmapCell[] }) {
             </div>
             <span
               className={cn(
-                "w-10 shrink-0 text-right text-sm font-semibold tabular-nums",
+                "w-7 shrink-0 text-right text-sm font-semibold tabular-nums",
                 scoreTextClass(score)
               )}
             >

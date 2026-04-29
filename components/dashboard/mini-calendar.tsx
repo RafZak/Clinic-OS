@@ -113,12 +113,6 @@ function formatMonthYear(d: Date, locale: Locale): string {
   });
 }
 
-function densityClass(count: number, isPast: boolean): string {
-  if (count === 0) return "";
-  if (isPast) return "ring-1 ring-inset ring-border/60 bg-surface-muted/40";
-  if (count === 1) return "ring-1 ring-inset ring-amber-300 bg-amber-50/70";
-  return "ring-1 ring-inset ring-brand/40 bg-brand/5";
-}
 
 export function MiniCalendar({
   grid,
@@ -162,7 +156,7 @@ export function MiniCalendar({
           ))}
         </div>
 
-        <div className="mt-1 grid flex-1 grid-cols-7 grid-rows-5 gap-1">
+        <div className="mt-1 grid grid-cols-7 gap-px">
           {cells.map((cell) => {
             const count = cell.appointments.length;
             const interactive = count > 0;
@@ -172,16 +166,13 @@ export function MiniCalendar({
                 onClick={() => interactive && setOpenDay(cell)}
                 disabled={!interactive}
                 className={cn(
-                  "group relative flex aspect-square w-full flex-col items-start justify-between rounded-md border border-transparent px-1.5 py-1 text-left transition-colors",
-                  cell.inPrimaryMonth
-                    ? "text-foreground"
-                    : "text-muted-foreground/60",
-                  cell.isPast && !cell.isToday && "opacity-60",
-                  interactive &&
-                    "cursor-pointer hover:border-border hover:bg-surface-muted",
-                  !interactive && "cursor-default",
-                  cell.isToday && "border-brand/60",
-                  densityClass(count, cell.isPast)
+                  "group relative flex h-11 w-full flex-col items-center justify-center gap-1 rounded-md text-center transition-colors",
+                  !cell.inPrimaryMonth && "text-muted-foreground/45",
+                  cell.inPrimaryMonth && !cell.isPast && "text-foreground",
+                  cell.isPast && !cell.isToday && "text-muted-foreground/55",
+                  interactive
+                    ? "cursor-pointer hover:bg-surface-muted/70"
+                    : "cursor-default"
                 )}
                 aria-label={
                   interactive
@@ -194,21 +185,22 @@ export function MiniCalendar({
               >
                 <span
                   className={cn(
-                    "text-[11px] font-semibold tabular-nums leading-none",
-                    cell.isToday && "text-brand"
+                    "flex h-5 w-5 items-center justify-center text-[11px] font-semibold tabular-nums leading-none",
+                    cell.isToday &&
+                      "rounded-full bg-brand text-white"
                   )}
                 >
                   {cell.dayNumber}
                 </span>
                 {count > 0 && (
-                  <div className="flex items-end gap-0.5">
+                  <span className="flex items-center gap-0.5">
                     {cell.appointments.slice(0, 3).map((apt) => (
                       <span
                         key={apt.id}
                         className={cn(
-                          "h-1.5 w-1.5 rounded-full",
+                          "h-1 w-1 rounded-full",
                           STATUS_DOT[apt.patientStatus],
-                          cell.isPast && "opacity-50"
+                          cell.isPast && "opacity-40"
                         )}
                       />
                     ))}
@@ -217,7 +209,7 @@ export function MiniCalendar({
                         +{count - 3}
                       </span>
                     )}
-                  </div>
+                  </span>
                 )}
               </button>
             );

@@ -100,7 +100,7 @@ async function main() {
       metadata: { type: "index", updated_at: today },
       body: `# Vault — Mémoire organisationnelle
 
-Pattern Karpathy : chaque session analysée enrichit cette mémoire vivante du réseau.
+Chaque session analysée enrichit cette mémoire vivante du réseau.
 
 ## Audioprothésistes
 - [[jonathan-goldminc]]

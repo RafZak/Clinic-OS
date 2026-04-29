@@ -115,7 +115,7 @@
     "submit": "Sign in",
     "submitting": "Signing in…",
     "errorInvalid": "Invalid username or password.",
-    "demoHint": "Amplifon demo — restricted access."
+    "demoHint": "Demo — restricted access."
   },
   "userMenu": {
     "connectedAs": "Signed in as",

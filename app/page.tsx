@@ -1,12 +1,5 @@
 import { getTranslations } from "next-intl/server";
-import {
-  Activity,
-  Clock,
-  Headphones,
-  Sparkles,
-  Target,
-  Wallet,
-} from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { StepHeatmap } from "@/components/dashboard/step-heatmap";
 import { NudgesPanel } from "@/components/dashboard/nudges-panel";
@@ -23,17 +16,8 @@ import { buildNudges } from "@/lib/nudges";
 import { getRole } from "@/lib/role";
 import { getLocale } from "@/lib/locale";
 import { getCurrentUser } from "@/lib/auth";
-import type { LucideIcon } from "lucide-react";
 
 export const dynamic = "force-dynamic";
-
-const KPI_ICON: Record<DashboardKpiKind, LucideIcon> = {
-  conversion: Target,
-  basket: Wallet,
-  score: Activity,
-  callDuration: Clock,
-  callScore: Headphones,
-};
 
 function kpiTone(kpi: DashboardKpi): ScoreTone {
   if (kpi.kind === "score" || kpi.kind === "callScore") {
@@ -79,10 +63,10 @@ export default async function DashboardPage() {
         {dashboard.kpis.map((kpi) => (
           <KpiCard
             key={kpi.kind}
+            kind={kpi.kind}
             label={kpi.label}
             value={kpi.value}
             hint={kpi.hint}
-            icon={KPI_ICON[kpi.kind]}
             tone={kpiTone(kpi)}
             spark={kpiSparkByKind(kpi.kind)}
           />

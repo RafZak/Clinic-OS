@@ -2,10 +2,25 @@
 
 import * as React from "react";
 import { Line, LineChart, ResponsiveContainer, YAxis } from "recharts";
-import type { LucideIcon } from "lucide-react";
-import type { WeeklyScorePoint } from "@/lib/dashboard";
+import {
+  Activity,
+  Clock,
+  Headphones,
+  Target,
+  Wallet,
+  type LucideIcon,
+} from "lucide-react";
+import type { DashboardKpiKind, WeeklyScorePoint } from "@/lib/dashboard";
 import type { ScoreTone } from "@/lib/score-tone";
 import { cn } from "@/lib/utils";
+
+const KIND_ICON: Record<DashboardKpiKind, LucideIcon> = {
+  conversion: Target,
+  basket: Wallet,
+  score: Activity,
+  callDuration: Clock,
+  callScore: Headphones,
+};
 
 const TONE_STYLES: Record<
   ScoreTone,
@@ -34,20 +49,21 @@ const TONE_STYLES: Record<
 };
 
 export function KpiCard({
+  kind,
   label,
   value,
   hint,
-  icon: Icon,
   tone = "neutral",
   spark,
 }: {
+  kind: DashboardKpiKind;
   label: string;
   value: string;
   hint?: string;
-  icon: LucideIcon;
   tone?: ScoreTone;
   spark?: WeeklyScorePoint[];
 }) {
+  const Icon = KIND_ICON[kind];
   const styles = TONE_STYLES[tone];
   const sparkData = spark
     ? spark

@@ -4,12 +4,11 @@ import * as React from "react";
 import { Line, LineChart, ResponsiveContainer, YAxis } from "recharts";
 import type { LucideIcon } from "lucide-react";
 import type { WeeklyScorePoint } from "@/lib/dashboard";
+import type { ScoreTone } from "@/lib/score-tone";
 import { cn } from "@/lib/utils";
 
-type Tone = "neutral" | "success" | "warning" | "danger";
-
 const TONE_STYLES: Record<
-  Tone,
+  ScoreTone,
   { iconBg: string; iconColor: string; ring: string }
 > = {
   neutral: {
@@ -34,13 +33,6 @@ const TONE_STYLES: Record<
   },
 };
 
-export function scoreTone(score: number | null | undefined): Tone {
-  if (score == null) return "neutral";
-  if (score >= 80) return "success";
-  if (score >= 60) return "warning";
-  return "danger";
-}
-
 export function KpiCard({
   label,
   value,
@@ -53,7 +45,7 @@ export function KpiCard({
   value: string;
   hint?: string;
   icon: LucideIcon;
-  tone?: Tone;
+  tone?: ScoreTone;
   spark?: WeeklyScorePoint[];
 }) {
   const styles = TONE_STYLES[tone];

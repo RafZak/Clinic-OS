@@ -11,7 +11,8 @@ import { PageHeader } from "@/components/layout/page-header";
 import { StepHeatmap } from "@/components/dashboard/step-heatmap";
 import { NudgesPanel } from "@/components/dashboard/nudges-panel";
 import { MiniCalendar } from "@/components/dashboard/mini-calendar";
-import { KpiCard, scoreTone } from "@/components/dashboard/kpi-card";
+import { KpiCard } from "@/components/dashboard/kpi-card";
+import { scoreTone, type ScoreTone } from "@/lib/score-tone";
 import {
   loadDashboard,
   type DashboardKpi,
@@ -34,7 +35,7 @@ const KPI_ICON: Record<DashboardKpiKind, LucideIcon> = {
   callScore: Headphones,
 };
 
-function kpiTone(kpi: DashboardKpi): "neutral" | "success" | "warning" | "danger" {
+function kpiTone(kpi: DashboardKpi): ScoreTone {
   if (kpi.kind === "score" || kpi.kind === "callScore") {
     const match = kpi.value.match(/(\d+)\/100/);
     if (match) return scoreTone(parseInt(match[1], 10));

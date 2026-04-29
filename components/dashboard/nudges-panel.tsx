@@ -22,7 +22,13 @@ const SEVERITY_STYLES: Record<NudgeSeverity, { card: string; icon: string; Icon:
   },
 };
 
-export async function NudgesPanel({ nudges }: { nudges: Nudge[] }) {
+export async function NudgesPanel({
+  nudges,
+  hiddenCount = 0,
+}: {
+  nudges: Nudge[];
+  hiddenCount?: number;
+}) {
   const t = await getTranslations("nudgesPanel");
 
   if (nudges.length === 0) {
@@ -53,6 +59,11 @@ export async function NudgesPanel({ nudges }: { nudges: Nudge[] }) {
           title={t("groupImprovementTitle")}
           description={t("groupImprovementDescription")}
         />
+      )}
+      {hiddenCount > 0 && (
+        <p className="-mt-2 text-right text-xs text-muted-foreground">
+          {t("more", { count: hiddenCount })}
+        </p>
       )}
     </div>
   );

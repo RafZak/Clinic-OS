@@ -146,12 +146,27 @@
     "weekThis": "Cette sem.",
     "weekShort": "S-{n}"
   },
+  "calendar": {
+    "title": "Agenda du mois",
+    "monthLabel": "{month} · {count, plural, one {# RDV} other {# RDV}}",
+    "empty": "Aucun rendez-vous prévu ce mois.",
+    "moreAppointments": "+{count} autres",
+    "dayAria": "{date} — {count, plural, one {# RDV} other {# RDV}}",
+    "sheetDescription": "{count, plural, one {# rendez-vous prévu} other {# rendez-vous prévus}}",
+    "durationMin": "{n} min",
+    "status": {
+      "prospect": "Prospect",
+      "patient": "Patient",
+      "lost": "Perdu"
+    }
+  },
   "nudgesPanel": {
     "groupAlertTitle": "Alertes & relances",
     "groupAlertDescription": "Actions concrètes à mener maintenant — patients à rappeler, RDV à confirmer, livrables à valider.",
     "groupImprovementTitle": "Axes d'amélioration",
     "groupImprovementDescription": "Suggestions de coaching basées sur vos sessions analysées et la mémoire du réseau.",
-    "empty": "Aucune action recommandée pour l'instant."
+    "empty": "Aucune action recommandée pour l'instant.",
+    "more": "+ {count, plural, one {# autre action} other {# autres actions}} — affichage limité aux {count, plural, one {plus prioritaires} other {plus prioritaires}}."
   },
   "recentSessions": {
     "empty": "Aucune session analysée pour l'instant.",
@@ -173,11 +188,21 @@
       "description": "Patiente perdue après objection prix non traitée — un rappel téléphonique permettrait peut-être de relancer le parcours.",
       "cta": "Voir le parcours"
     },
-    "lastConsult": {
-      "titleZeroDay": "Consultation analysée il y a moins d'1 jour — {label}",
-      "titleOneDay": "Consultation analysée il y a 1 jour — {label}",
-      "description": "4 livrables prêts à envoyer (notes cliniques, email, SMS, courrier ORL). La fiche audioprothésiste a été enrichie automatiquement.",
-      "cta": "Voir l'analyse"
+    "trialInProgress": {
+      "title": "Essai en cours depuis {days} j — {label}",
+      "description": "Aucune livraison ni clôture enregistrée. Reprendre contact pour un point d'étape avant que la décision ne se refroidisse.",
+      "descriptionWithProduct": "Essai sur {product}, sans livraison ni clôture enregistrée. Reprendre contact pour un point d'étape avant que la décision ne se refroidisse.",
+      "cta": "Voir le parcours"
+    },
+    "prospectFollowUp": {
+      "title": "Relance recommandée — {label} ({days} j post-consultation)",
+      "description": "Patient toujours prospect alors que la consultation est analysée depuis 3 à 7 jours. Un appel court permet souvent de débloquer la décision.",
+      "cta": "Voir le parcours"
+    },
+    "lowScoreDebrief": {
+      "title": "Consultation à débriefer — {label} ({score}/100)",
+      "description": "Score critique sur une consultation récente. Revoir l'analyse et les insights pour identifier les points à corriger sur les prochains RDV.",
+      "cta": "Ouvrir l'analyse"
     },
     "weakStep": {
       "title": "Étape {number} sous tension : {name}",

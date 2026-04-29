@@ -146,12 +146,27 @@
     "weekThis": "This wk",
     "weekShort": "W-{n}"
   },
+  "calendar": {
+    "title": "Month at a glance",
+    "monthLabel": "{month} · {count, plural, one {# appt} other {# appts}}",
+    "empty": "No appointment scheduled this month.",
+    "moreAppointments": "+{count} more",
+    "dayAria": "{date} — {count, plural, one {# appointment} other {# appointments}}",
+    "sheetDescription": "{count, plural, one {# scheduled appointment} other {# scheduled appointments}}",
+    "durationMin": "{n} min",
+    "status": {
+      "prospect": "Prospect",
+      "patient": "Patient",
+      "lost": "Lost"
+    }
+  },
   "nudgesPanel": {
     "groupAlertTitle": "Alerts & follow-ups",
     "groupAlertDescription": "Actions to take now — patients to call back, appointments to confirm, deliverables to validate.",
     "groupImprovementTitle": "Improvement areas",
     "groupImprovementDescription": "Coaching suggestions based on your analyzed sessions and the network memory.",
-    "empty": "No recommended action right now."
+    "empty": "No recommended action right now.",
+    "more": "+ {count, plural, one {# more action} other {# more actions}} — only the highest priority shown."
   },
   "recentSessions": {
     "empty": "No analyzed session yet.",
@@ -173,11 +188,21 @@
       "description": "Patient lost after an unaddressed price objection — a follow-up call could revive the journey.",
       "cta": "View journey"
     },
-    "lastConsult": {
-      "titleZeroDay": "Consultation analyzed less than 1 day ago — {label}",
-      "titleOneDay": "Consultation analyzed 1 day ago — {label}",
-      "description": "4 deliverables ready to send (clinical notes, email, SMS, ENT specialist letter). The audiologist's vault entry was enriched automatically.",
-      "cta": "View analysis"
+    "trialInProgress": {
+      "title": "Trial in progress for {days} days — {label}",
+      "description": "No delivery or closure recorded. Re-engage with a check-in before the decision cools off.",
+      "descriptionWithProduct": "Trial on {product}, no delivery or closure recorded. Re-engage with a check-in before the decision cools off.",
+      "cta": "View journey"
+    },
+    "prospectFollowUp": {
+      "title": "Follow-up recommended — {label} ({days} days post-consultation)",
+      "description": "Patient still a prospect 3 to 7 days after analyzed consultation. A short call often unlocks the decision.",
+      "cta": "View journey"
+    },
+    "lowScoreDebrief": {
+      "title": "Consultation to debrief — {label} ({score}/100)",
+      "description": "Critical score on a recent consultation. Review the analysis and insights to fix patterns before the next appointments.",
+      "cta": "Open analysis"
     },
     "weakStep": {
       "title": "Step {number} under stress: {name}",

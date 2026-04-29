@@ -27,15 +27,20 @@ export type StepHeatmapCell = {
   coverageRatio: number;
 };
 
-export type RecentSessionRow = {
+export type UpcomingAppointment = {
   id: string;
+  patientId: string;
   patientLabel: string;
-  practitionerName: string | null;
-  centerName: string | null;
-  globalScore: number | null;
-  durationSeconds: number | null;
-  startedAt: Date | null;
-  kind: "consultation" | "phone_call";
+  patientStatus: "prospect" | "patient" | "lost";
+  scheduledFor: string;
+  durationMinutes: number | null;
+  summary: string | null;
+};
+
+export type CalendarGrid = {
+  gridStart: string;
+  primaryMonthStart: string;
+  appointments: UpcomingAppointment[];
 };
 
 export type DashboardContext = {
@@ -69,6 +74,31 @@ export type DashboardContext = {
         price: number;
       }
     | null;
+  trialInProgress:
+    | {
+        patientId: string;
+        patientLabel: string;
+        product: string | null;
+        daysSinceTrial: number;
+      }
+    | null;
+  prospectToFollowUp:
+    | {
+        sessionId: string;
+        patientId: string;
+        patientLabel: string;
+        score: number | null;
+        daysSinceConsult: number;
+      }
+    | null;
+  lowScoreToDebrief:
+    | {
+        sessionId: string;
+        patientLabel: string;
+        score: number;
+        daysAgo: number;
+      }
+    | null;
 };
 
 export type DashboardData = {
@@ -79,7 +109,7 @@ export type DashboardData = {
   kpis: DashboardKpi[];
   weekly: WeeklyScorePoint[];
   heatmap: StepHeatmapCell[];
-  recentSessions: RecentSessionRow[];
+  calendar: CalendarGrid;
   context: DashboardContext;
 };
 
@@ -140,9 +170,9 @@ export async function loadDashboard(
       ? buildPractitionerKpis(context, locale, tDash)
       : buildAssistantKpis(context, locale, tDash);
 
-  const [weekly, recentSessions] = await Promise.all([
+  const [weekly, calendar] = await Promise.all([
     loadWeeklyScores(frameworkKind, locale, tWeek),
-    loadRecentSessions(frameworkKind, locale),
+    loadCalendarGrid(locale),
   ]);
 
   return {
@@ -153,8 +183,81 @@ export async function loadDashboard(
     kpis,
     weekly,
     heatmap,
-    recentSessions,
+    calendar,
     context,
+  };
+}
+
+async function loadCalendarGrid(locale: Locale): Promise<CalendarGrid> {
+  const today = new Date();
+  const gridStart = startOfWeek(today);
+  const gridEnd = new Date(gridStart);
+  gridEnd.setUTCDate(gridEnd.getUTCDate() + 35);
+
+  const monthCount = new Map<string, number>();
+  for (let i = 0; i < 35; i++) {
+    const d = new Date(gridStart);
+    d.setUTCDate(d.getUTCDate() + i);
+    const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(
+      2,
+      "0"
+    )}`;
+    monthCount.set(key, (monthCount.get(key) ?? 0) + 1);
+  }
+  const primaryMonthKey = Array.from(monthCount.entries()).sort(
+    (a, b) => b[1] - a[1]
+  )[0][0];
+  const [py, pm] = primaryMonthKey.split("-").map((n) => parseInt(n, 10));
+  const primaryMonthStart = new Date(Date.UTC(py, pm - 1, 1));
+
+  const rows = await db.execute<{
+    id: string;
+    patient_id: string;
+    patient_label: string;
+    patient_status: string;
+    scheduled_for: string;
+    duration_minutes: number | null;
+    summary: string | null;
+  }>(sql`
+    SELECT
+      pe.id,
+      pe.patient_id,
+      p.label AS patient_label,
+      p.status AS patient_status,
+      (pe.metadata->>'scheduled_for')::timestamptz AS scheduled_for,
+      NULLIF(pe.metadata->>'duration_minutes', '')::int AS duration_minutes,
+      pe.summary
+    FROM patient_events pe
+    JOIN patients p ON p.id = pe.patient_id
+    WHERE pe.kind = 'appointment_scheduled'
+      AND pe.metadata->>'scheduled_for' IS NOT NULL
+      AND (pe.metadata->>'scheduled_for')::timestamptz >= ${gridStart.toISOString()}::timestamptz
+      AND (pe.metadata->>'scheduled_for')::timestamptz < ${gridEnd.toISOString()}::timestamptz
+      AND COALESCE(
+        (
+          SELECT metadata->>'locale'
+          FROM sessions
+          WHERE patient_id = pe.patient_id
+          ORDER BY started_at DESC NULLS LAST
+          LIMIT 1
+        ),
+        'fr'
+      ) = ${locale}
+    ORDER BY (pe.metadata->>'scheduled_for')::timestamptz ASC
+  `);
+
+  return {
+    gridStart: gridStart.toISOString(),
+    primaryMonthStart: primaryMonthStart.toISOString(),
+    appointments: rows.map((r) => ({
+      id: r.id,
+      patientId: r.patient_id,
+      patientLabel: r.patient_label,
+      patientStatus: (r.patient_status as "prospect" | "patient" | "lost") ?? "prospect",
+      scheduledFor: r.scheduled_for,
+      durationMinutes: r.duration_minutes,
+      summary: r.summary,
+    })),
   };
 }
 
@@ -203,6 +306,9 @@ async function loadContext(
     uncalledRow,
     lastConsultRow,
     upsellRow,
+    trialInProgressRow,
+    prospectFollowUpRow,
+    lowScoreRow,
   ] = await Promise.all([
     db.execute<{ total: number; fitted: number; lost: number }>(sql`
       SELECT
@@ -350,6 +456,80 @@ async function loadContext(
       ORDER BY e.occurred_at DESC
       LIMIT 1
     `),
+    db.execute<{
+      patient_id: string;
+      patient_label: string;
+      product: string | null;
+      occurred_at: string;
+    }>(sql`
+      SELECT
+        e.patient_id,
+        p.label AS patient_label,
+        e.metadata->>'product' AS product,
+        e.occurred_at
+      FROM patient_events e
+      JOIN patients p ON p.id = e.patient_id
+      WHERE e.kind = 'trial_start'
+        AND p.status <> 'lost'
+        AND e.occurred_at < now() - interval '14 days'
+        AND NOT EXISTS (
+          SELECT 1 FROM patient_events d
+          WHERE d.patient_id = e.patient_id
+            AND d.kind = 'delivery'
+            AND d.occurred_at >= e.occurred_at
+        )
+        AND ${patientLocaleFilter}
+      ORDER BY e.occurred_at ASC
+      LIMIT 1
+    `),
+    db.execute<{
+      session_id: string;
+      patient_id: string;
+      patient_label: string;
+      global_score: number | null;
+      analyzed_at: string;
+    }>(sql`
+      SELECT
+        s.id AS session_id,
+        s.patient_id,
+        p.label AS patient_label,
+        s.global_score,
+        s.analyzed_at
+      FROM sessions s
+      JOIN patients p ON p.id = s.patient_id
+      WHERE s.kind = 'consultation'
+        AND s.analysis_status = 'done'
+        AND s.analyzed_at IS NOT NULL
+        AND s.analyzed_at <= now() - interval '3 days'
+        AND s.analyzed_at >= now() - interval '7 days'
+        AND p.status = 'prospect'
+        AND COALESCE(s.metadata->>'locale', 'fr') = ${locale}
+      ORDER BY s.analyzed_at DESC
+      LIMIT 1
+    `),
+    db.execute<{
+      session_id: string;
+      patient_label: string;
+      global_score: number;
+      analyzed_at: string;
+    }>(sql`
+      SELECT
+        s.id AS session_id,
+        p.label AS patient_label,
+        s.global_score,
+        s.analyzed_at
+      FROM sessions s
+      JOIN patients p ON p.id = s.patient_id
+      WHERE s.kind = 'consultation'
+        AND s.analysis_status = 'done'
+        AND s.global_score IS NOT NULL
+        AND s.global_score < 50
+        AND s.analyzed_at IS NOT NULL
+        AND s.analyzed_at >= now() - interval '7 days'
+        AND COALESCE(s.metadata->>'locale', 'fr') = ${locale}
+      ORDER BY s.analyzed_at DESC
+      LIMIT 1
+    `),
   ]);
 
   const lostRow = uncalledRow[0];
@@ -399,6 +579,55 @@ async function loadContext(
         }
       : null;
 
+  const trialRow = trialInProgressRow[0];
+  const trialInProgress = trialRow
+    ? {
+        patientId: trialRow.patient_id,
+        patientLabel: trialRow.patient_label,
+        product: trialRow.product,
+        daysSinceTrial: Math.max(
+          1,
+          Math.round(
+            (Date.now() - new Date(trialRow.occurred_at).getTime()) /
+              86_400_000
+          )
+        ),
+      }
+    : null;
+
+  const followUpRow = prospectFollowUpRow[0];
+  const prospectToFollowUp = followUpRow
+    ? {
+        sessionId: followUpRow.session_id,
+        patientId: followUpRow.patient_id,
+        patientLabel: followUpRow.patient_label,
+        score: followUpRow.global_score,
+        daysSinceConsult: Math.max(
+          1,
+          Math.round(
+            (Date.now() - new Date(followUpRow.analyzed_at).getTime()) /
+              86_400_000
+          )
+        ),
+      }
+    : null;
+
+  const lowScore = lowScoreRow[0];
+  const lowScoreToDebrief = lowScore
+    ? {
+        sessionId: lowScore.session_id,
+        patientLabel: lowScore.patient_label,
+        score: lowScore.global_score,
+        daysAgo: Math.max(
+          0,
+          Math.round(
+            (Date.now() - new Date(lowScore.analyzed_at).getTime()) /
+              86_400_000
+          )
+        ),
+      }
+    : null;
+
   return {
     totalPatients: patientsRow[0]?.total ?? 0,
     fittedPatients: patientsRow[0]?.fitted ?? 0,
@@ -413,6 +642,9 @@ async function loadContext(
     uncalledLostPatient,
     lastConsultation,
     upsellOpportunity,
+    trialInProgress,
+    prospectToFollowUp,
+    lowScoreToDebrief,
   };
 }
 
@@ -588,49 +820,3 @@ async function loadHeatmap(
   });
 }
 
-async function loadRecentSessions(
-  kind: FrameworkKind,
-  locale: Locale
-): Promise<RecentSessionRow[]> {
-  const rows = await db.execute<{
-    id: string;
-    patient_label: string;
-    practitioner_name: string | null;
-    center_name: string | null;
-    global_score: number | null;
-    duration_seconds: number | null;
-    started_at: string | null;
-    kind: string;
-  }>(sql`
-    SELECT
-      s.id,
-      p.label AS patient_label,
-      pr.full_name AS practitioner_name,
-      c.name AS center_name,
-      s.global_score,
-      s.duration_seconds,
-      s.started_at,
-      s.kind
-    FROM sessions s
-    LEFT JOIN patients p ON p.id = s.patient_id
-    LEFT JOIN practitioners pr ON pr.id = s.practitioner_id
-    LEFT JOIN centers c ON c.id = pr.center_id
-    WHERE s.kind = ${kind}
-      AND s.analysis_status = 'done'
-      AND s.patient_id IS NOT NULL
-      AND COALESCE(s.metadata->>'locale', 'fr') = ${locale}
-    ORDER BY s.analyzed_at DESC NULLS LAST, s.started_at DESC NULLS LAST
-    LIMIT 5
-  `);
-
-  return rows.map((r) => ({
-    id: r.id,
-    patientLabel: r.patient_label,
-    practitionerName: r.practitioner_name,
-    centerName: r.center_name,
-    globalScore: r.global_score,
-    durationSeconds: r.duration_seconds,
-    startedAt: r.started_at ? new Date(r.started_at) : null,
-    kind: r.kind === "phone_call" ? "phone_call" : "consultation",
-  }));
-}

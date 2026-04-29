@@ -20,6 +20,32 @@ export type Nudge = {
   cta?: { label: string; href: string };
 };
 
+export type NudgeBundle = {
+  nudges: Nudge[];
+  hiddenCount: number;
+};
+
+const SEVERITY_RANK: Record<NudgeSeverity, number> = {
+  critical: 0,
+  warning: 1,
+  info: 2,
+};
+
+const MAX_DISPLAYED = 5;
+
+function sortAndCap(all: Nudge[]): NudgeBundle {
+  const sorted = [...all].sort(
+    (a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity]
+  );
+  if (sorted.length <= MAX_DISPLAYED) {
+    return { nudges: sorted, hiddenCount: 0 };
+  }
+  return {
+    nudges: sorted.slice(0, MAX_DISPLAYED),
+    hiddenCount: sorted.length - MAX_DISPLAYED,
+  };
+}
+
 function eurFormat(locale: Locale, n: number): string {
   return new Intl.NumberFormat(locale === "en" ? "en-GB" : "fr-FR", {
     style: "currency",
@@ -32,11 +58,13 @@ export async function buildNudges(
   role: Role,
   ctx: DashboardContext,
   locale: Locale
-): Promise<Nudge[]> {
+): Promise<NudgeBundle> {
   const t = await getTranslations("nudges");
-  return role === "audioprothesiste"
-    ? buildPractitionerNudges(ctx, locale, t)
-    : buildAssistantNudges(ctx, locale, t);
+  const all =
+    role === "audioprothesiste"
+      ? buildPractitionerNudges(ctx, locale, t)
+      : buildAssistantNudges(ctx, locale, t);
+  return sortAndCap(all);
 }
 
 type Trans = (key: string, params?: Record<string, string | number>) => string;
@@ -65,23 +93,57 @@ function buildPractitionerNudges(
     });
   }
 
-  if (ctx.lastConsultation && ctx.lastConsultation.daysAgo <= 1) {
+  if (ctx.lowScoreToDebrief) {
     nudges.push({
-      id: "last-consult",
+      id: "low-score-debrief",
       kind: "alert",
-      severity: "info",
-      title:
-        ctx.lastConsultation.daysAgo === 0
-          ? t("lastConsult.titleZeroDay", {
-              label: ctx.lastConsultation.patientLabel,
-            })
-          : t("lastConsult.titleOneDay", {
-              label: ctx.lastConsultation.patientLabel,
-            }),
-      description: t("lastConsult.description"),
+      severity: "critical",
+      title: t("lowScoreDebrief.title", {
+        label: ctx.lowScoreToDebrief.patientLabel,
+        score: ctx.lowScoreToDebrief.score,
+      }),
+      description: t("lowScoreDebrief.description"),
       cta: {
-        label: t("lastConsult.cta"),
-        href: `/consultations/${ctx.lastConsultation.id}`,
+        label: t("lowScoreDebrief.cta"),
+        href: `/consultations/${ctx.lowScoreToDebrief.sessionId}`,
+      },
+    });
+  }
+
+  if (ctx.trialInProgress) {
+    nudges.push({
+      id: "trial-in-progress",
+      kind: "alert",
+      severity: "warning",
+      title: t("trialInProgress.title", {
+        label: ctx.trialInProgress.patientLabel,
+        days: ctx.trialInProgress.daysSinceTrial,
+      }),
+      description: ctx.trialInProgress.product
+        ? t("trialInProgress.descriptionWithProduct", {
+            product: ctx.trialInProgress.product,
+          })
+        : t("trialInProgress.description"),
+      cta: {
+        label: t("trialInProgress.cta"),
+        href: `/patients/${ctx.trialInProgress.patientId}`,
+      },
+    });
+  }
+
+  if (ctx.prospectToFollowUp) {
+    nudges.push({
+      id: "prospect-follow-up",
+      kind: "alert",
+      severity: "warning",
+      title: t("prospectFollowUp.title", {
+        label: ctx.prospectToFollowUp.patientLabel,
+        days: ctx.prospectToFollowUp.daysSinceConsult,
+      }),
+      description: t("prospectFollowUp.description"),
+      cta: {
+        label: t("prospectFollowUp.cta"),
+        href: `/patients/${ctx.prospectToFollowUp.patientId}`,
       },
     });
   }
@@ -123,7 +185,7 @@ function buildPractitionerNudges(
     });
   }
 
-  return nudges.slice(0, 4);
+  return nudges;
 }
 
 function buildAssistantNudges(
@@ -198,5 +260,5 @@ function buildAssistantNudges(
     });
   }
 
-  return nudges.slice(0, 4);
+  return nudges;
 }

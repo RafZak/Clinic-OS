@@ -18,7 +18,7 @@ export default async function DashboardPage() {
   const locale = await getLocale();
   const user = await getCurrentUser();
   const dashboard = await loadDashboard(role, locale);
-  const nudges = await buildNudges(role, dashboard.context, locale);
+  const nudgeBundle = await buildNudges(role, dashboard.context, locale);
 
   const tDash = await getTranslations("dashboard");
   const tRoles = await getTranslations("roles");
@@ -104,7 +104,10 @@ export default async function DashboardPage() {
           {tDash("actionsTitle")}
         </h2>
         <div className="mt-4">
-          <NudgesPanel nudges={nudges} />
+          <NudgesPanel
+            nudges={nudgeBundle.nudges}
+            hiddenCount={nudgeBundle.hiddenCount}
+          />
         </div>
       </section>
     </div>

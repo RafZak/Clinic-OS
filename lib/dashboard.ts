@@ -74,6 +74,31 @@ export type DashboardContext = {
         price: number;
       }
     | null;
+  trialInProgress:
+    | {
+        patientId: string;
+        patientLabel: string;
+        product: string | null;
+        daysSinceTrial: number;
+      }
+    | null;
+  prospectToFollowUp:
+    | {
+        sessionId: string;
+        patientId: string;
+        patientLabel: string;
+        score: number | null;
+        daysSinceConsult: number;
+      }
+    | null;
+  lowScoreToDebrief:
+    | {
+        sessionId: string;
+        patientLabel: string;
+        score: number;
+        daysAgo: number;
+      }
+    | null;
 };
 
 export type DashboardData = {
@@ -281,6 +306,9 @@ async function loadContext(
     uncalledRow,
     lastConsultRow,
     upsellRow,
+    trialInProgressRow,
+    prospectFollowUpRow,
+    lowScoreRow,
   ] = await Promise.all([
     db.execute<{ total: number; fitted: number; lost: number }>(sql`
       SELECT
@@ -428,6 +456,80 @@ async function loadContext(
       ORDER BY e.occurred_at DESC
       LIMIT 1
     `),
+    db.execute<{
+      patient_id: string;
+      patient_label: string;
+      product: string | null;
+      occurred_at: string;
+    }>(sql`
+      SELECT
+        e.patient_id,
+        p.label AS patient_label,
+        e.metadata->>'product' AS product,
+        e.occurred_at
+      FROM patient_events e
+      JOIN patients p ON p.id = e.patient_id
+      WHERE e.kind = 'trial_start'
+        AND p.status <> 'lost'
+        AND e.occurred_at < now() - interval '14 days'
+        AND NOT EXISTS (
+          SELECT 1 FROM patient_events d
+          WHERE d.patient_id = e.patient_id
+            AND d.kind = 'delivery'
+            AND d.occurred_at >= e.occurred_at
+        )
+        AND ${patientLocaleFilter}
+      ORDER BY e.occurred_at ASC
+      LIMIT 1
+    `),
+    db.execute<{
+      session_id: string;
+      patient_id: string;
+      patient_label: string;
+      global_score: number | null;
+      analyzed_at: string;
+    }>(sql`
+      SELECT
+        s.id AS session_id,
+        s.patient_id,
+        p.label AS patient_label,
+        s.global_score,
+        s.analyzed_at
+      FROM sessions s
+      JOIN patients p ON p.id = s.patient_id
+      WHERE s.kind = 'consultation'
+        AND s.analysis_status = 'done'
+        AND s.analyzed_at IS NOT NULL
+        AND s.analyzed_at <= now() - interval '3 days'
+        AND s.analyzed_at >= now() - interval '7 days'
+        AND p.status = 'prospect'
+        AND COALESCE(s.metadata->>'locale', 'fr') = ${locale}
+      ORDER BY s.analyzed_at DESC
+      LIMIT 1
+    `),
+    db.execute<{
+      session_id: string;
+      patient_label: string;
+      global_score: number;
+      analyzed_at: string;
+    }>(sql`
+      SELECT
+        s.id AS session_id,
+        p.label AS patient_label,
+        s.global_score,
+        s.analyzed_at
+      FROM sessions s
+      JOIN patients p ON p.id = s.patient_id
+      WHERE s.kind = 'consultation'
+        AND s.analysis_status = 'done'
+        AND s.global_score IS NOT NULL
+        AND s.global_score < 50
+        AND s.analyzed_at IS NOT NULL
+        AND s.analyzed_at >= now() - interval '7 days'
+        AND COALESCE(s.metadata->>'locale', 'fr') = ${locale}
+      ORDER BY s.analyzed_at DESC
+      LIMIT 1
+    `),
   ]);
 
   const lostRow = uncalledRow[0];
@@ -477,6 +579,55 @@ async function loadContext(
         }
       : null;
 
+  const trialRow = trialInProgressRow[0];
+  const trialInProgress = trialRow
+    ? {
+        patientId: trialRow.patient_id,
+        patientLabel: trialRow.patient_label,
+        product: trialRow.product,
+        daysSinceTrial: Math.max(
+          1,
+          Math.round(
+            (Date.now() - new Date(trialRow.occurred_at).getTime()) /
+              86_400_000
+          )
+        ),
+      }
+    : null;
+
+  const followUpRow = prospectFollowUpRow[0];
+  const prospectToFollowUp = followUpRow
+    ? {
+        sessionId: followUpRow.session_id,
+        patientId: followUpRow.patient_id,
+        patientLabel: followUpRow.patient_label,
+        score: followUpRow.global_score,
+        daysSinceConsult: Math.max(
+          1,
+          Math.round(
+            (Date.now() - new Date(followUpRow.analyzed_at).getTime()) /
+              86_400_000
+          )
+        ),
+      }
+    : null;
+
+  const lowScore = lowScoreRow[0];
+  const lowScoreToDebrief = lowScore
+    ? {
+        sessionId: lowScore.session_id,
+        patientLabel: lowScore.patient_label,
+        score: lowScore.global_score,
+        daysAgo: Math.max(
+          0,
+          Math.round(
+            (Date.now() - new Date(lowScore.analyzed_at).getTime()) /
+              86_400_000
+          )
+        ),
+      }
+    : null;
+
   return {
     totalPatients: patientsRow[0]?.total ?? 0,
     fittedPatients: patientsRow[0]?.fitted ?? 0,
@@ -491,6 +642,9 @@ async function loadContext(
     uncalledLostPatient,
     lastConsultation,
     upsellOpportunity,
+    trialInProgress,
+    prospectToFollowUp,
+    lowScoreToDebrief,
   };
 }
 

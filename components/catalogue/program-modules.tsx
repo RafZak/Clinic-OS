@@ -41,7 +41,7 @@ type ProgressMap = Record<string, ClientProgressEntry>;
 type QuizMap = Record<string, ClientQuizEntry>;
 
 export function ProgramModules({
-  modules,
+  modules: rawModules,
   initialProgress,
   quizzes = [],
 }: {
@@ -49,6 +49,10 @@ export function ProgramModules({
   initialProgress: ClientProgressEntry[];
   quizzes?: ClientQuizEntry[];
 }) {
+  const modules = useMemo(
+    () => rawModules.filter((m) => m.number > 0),
+    [rawModules]
+  );
   const [progress, setProgress] = useState<ProgressMap>(() => {
     const m: ProgressMap = {};
     for (const p of initialProgress) m[p.driveFileId] = p;
@@ -94,7 +98,8 @@ export function ProgramModules({
   const quizzesByModule = useMemo(() => {
     const m = new Map<number, ClientQuizEntry[]>();
     for (const q of quizzes) {
-      if (q.moduleNumber == null || !moduleNumbers.has(q.moduleNumber)) continue;
+      if (q.moduleNumber == null || q.moduleNumber === 0) continue;
+      if (!moduleNumbers.has(q.moduleNumber)) continue;
       const arr = m.get(q.moduleNumber) ?? [];
       arr.push(quizState[q.id] ?? q);
       m.set(q.moduleNumber, arr);
@@ -105,9 +110,10 @@ export function ProgramModules({
   const transverseQuizzes = useMemo(
     () =>
       quizzes
-        .filter(
-          (q) => q.moduleNumber == null || !moduleNumbers.has(q.moduleNumber)
-        )
+        .filter((q) => {
+          if (q.moduleNumber === 0) return false;
+          return q.moduleNumber == null || !moduleNumbers.has(q.moduleNumber);
+        })
         .map((q) => quizState[q.id] ?? q),
     [quizzes, quizState, moduleNumbers]
   );
@@ -364,13 +370,11 @@ function ModuleAccordion({
                 : "bg-surface-muted text-muted-foreground"
           )}
         >
-          {mod.number > 0 ? mod.number : "·"}
+          {mod.number}
         </div>
         <div className="min-w-0 flex-1">
           <h3 className="text-sm font-semibold text-foreground">
-            {mod.number > 0
-              ? `Module ${mod.number}`
-              : "Ressources complémentaires"}
+            {`Module ${mod.number}`}
           </h3>
           <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
             {mod.video && <NatureBadge type="video" />}

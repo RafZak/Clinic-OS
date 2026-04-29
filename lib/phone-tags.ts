@@ -88,14 +88,14 @@ export const LEAD_TEMPERATURE_LABEL: Record<LeadTemperature, string> = {
   hot: "Chaud",
   warm: "Tiède",
   cold: "Froid",
-  lost: "Perdu",
+  lost: "Glacé",
 };
 
 export const LEAD_TEMPERATURE_LABEL_EN: Record<LeadTemperature, string> = {
   hot: "Hot",
   warm: "Warm",
   cold: "Cold",
-  lost: "Lost",
+  lost: "Frozen",
 };
 
 export const DATA_CAPTURE_LABEL: Record<DataCaptureLevel, string> = {

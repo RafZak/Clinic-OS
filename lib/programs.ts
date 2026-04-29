@@ -111,7 +111,6 @@ export async function getProgramModules(slug: string): Promise<ProgramModule[]> 
 }
 
 export function moduleTitle(m: ProgramModule): string {
-  if (m.number === 0) return "Ressources complémentaires";
   return `Module ${m.number}`;
 }
 

@@ -115,7 +115,7 @@
     "submit": "Se connecter",
     "submitting": "Connexion…",
     "errorInvalid": "Identifiant ou mot de passe incorrect.",
-    "demoHint": "Démo Amplifon — accès restreint."
+    "demoHint": "Démo — accès restreint."
   },
   "userMenu": {
     "connectedAs": "Connecté en tant que",

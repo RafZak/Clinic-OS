@@ -146,6 +146,20 @@
     "weekThis": "Cette sem.",
     "weekShort": "S-{n}"
   },
+  "calendar": {
+    "title": "Agenda du mois",
+    "monthLabel": "{month} · {count, plural, one {# RDV} other {# RDV}}",
+    "empty": "Aucun rendez-vous prévu ce mois.",
+    "moreAppointments": "+{count} autres",
+    "dayAria": "{date} — {count, plural, one {# RDV} other {# RDV}}",
+    "sheetDescription": "{count, plural, one {# rendez-vous prévu} other {# rendez-vous prévus}}",
+    "durationMin": "{n} min",
+    "status": {
+      "prospect": "Prospect",
+      "patient": "Patient",
+      "lost": "Perdu"
+    }
+  },
   "nudgesPanel": {
     "groupAlertTitle": "Alertes & relances",
     "groupAlertDescription": "Actions concrètes à mener maintenant — patients à rappeler, RDV à confirmer, livrables à valider.",

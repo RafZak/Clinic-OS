@@ -146,6 +146,20 @@
     "weekThis": "This wk",
     "weekShort": "W-{n}"
   },
+  "calendar": {
+    "title": "Month at a glance",
+    "monthLabel": "{month} · {count, plural, one {# appt} other {# appts}}",
+    "empty": "No appointment scheduled this month.",
+    "moreAppointments": "+{count} more",
+    "dayAria": "{date} — {count, plural, one {# appointment} other {# appointments}}",
+    "sheetDescription": "{count, plural, one {# scheduled appointment} other {# scheduled appointments}}",
+    "durationMin": "{n} min",
+    "status": {
+      "prospect": "Prospect",
+      "patient": "Patient",
+      "lost": "Lost"
+    }
+  },
   "nudgesPanel": {
     "groupAlertTitle": "Alerts & follow-ups",
     "groupAlertDescription": "Actions to take now — patients to call back, appointments to confirm, deliverables to validate.",

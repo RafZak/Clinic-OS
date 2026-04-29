@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { WeeklyScoreChart } from "@/components/dashboard/weekly-score-chart";
 import { StepHeatmap } from "@/components/dashboard/step-heatmap";
 import { NudgesPanel } from "@/components/dashboard/nudges-panel";
+import { MiniCalendar } from "@/components/dashboard/mini-calendar";
 import { loadDashboard } from "@/lib/dashboard";
 import { buildNudges } from "@/lib/nudges";
 import { getRole } from "@/lib/role";
@@ -82,15 +83,19 @@ export default async function DashboardPage() {
         </div>
 
         <div className="rounded-lg border border-border bg-surface p-5">
-          <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-            {tDash("heatmapTitle", { framework: dashboard.frameworkLabel })}
-          </h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {tDash("heatmapDescription")}
-          </p>
-          <div className="mt-4">
-            <StepHeatmap cells={dashboard.heatmap} />
-          </div>
+          <MiniCalendar grid={dashboard.calendar} locale={locale} />
+        </div>
+      </section>
+
+      <section className="rounded-lg border border-border bg-surface p-5">
+        <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+          {tDash("heatmapTitle", { framework: dashboard.frameworkLabel })}
+        </h2>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {tDash("heatmapDescription")}
+        </p>
+        <div className="mt-4">
+          <StepHeatmap cells={dashboard.heatmap} />
         </div>
       </section>
 

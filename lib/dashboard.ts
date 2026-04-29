@@ -27,6 +27,22 @@ export type StepHeatmapCell = {
   coverageRatio: number;
 };
 
+export type UpcomingAppointment = {
+  id: string;
+  patientId: string;
+  patientLabel: string;
+  patientStatus: "prospect" | "patient" | "lost";
+  scheduledFor: string;
+  durationMinutes: number | null;
+  summary: string | null;
+};
+
+export type CalendarGrid = {
+  monthStart: string;
+  gridStart: string;
+  appointments: UpcomingAppointment[];
+};
+
 export type DashboardContext = {
   totalPatients: number;
   fittedPatients: number;
@@ -68,6 +84,7 @@ export type DashboardData = {
   kpis: DashboardKpi[];
   weekly: WeeklyScorePoint[];
   heatmap: StepHeatmapCell[];
+  calendar: CalendarGrid;
   context: DashboardContext;
 };
 
@@ -128,7 +145,10 @@ export async function loadDashboard(
       ? buildPractitionerKpis(context, locale, tDash)
       : buildAssistantKpis(context, locale, tDash);
 
-  const weekly = await loadWeeklyScores(frameworkKind, locale, tWeek);
+  const [weekly, calendar] = await Promise.all([
+    loadWeeklyScores(frameworkKind, locale, tWeek),
+    loadCalendarGrid(locale),
+  ]);
 
   return {
     role,
@@ -138,7 +158,70 @@ export async function loadDashboard(
     kpis,
     weekly,
     heatmap,
+    calendar,
     context,
+  };
+}
+
+function startOfMonthUTC(d: Date): Date {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
+}
+
+async function loadCalendarGrid(locale: Locale): Promise<CalendarGrid> {
+  const today = new Date();
+  const monthStart = startOfMonthUTC(today);
+  const gridStart = startOfWeek(monthStart);
+  const gridEnd = new Date(gridStart);
+  gridEnd.setUTCDate(gridEnd.getUTCDate() + 35);
+
+  const rows = await db.execute<{
+    id: string;
+    patient_id: string;
+    patient_label: string;
+    patient_status: string;
+    scheduled_for: string;
+    duration_minutes: number | null;
+    summary: string | null;
+  }>(sql`
+    SELECT
+      pe.id,
+      pe.patient_id,
+      p.label AS patient_label,
+      p.status AS patient_status,
+      (pe.metadata->>'scheduled_for')::timestamptz AS scheduled_for,
+      NULLIF(pe.metadata->>'duration_minutes', '')::int AS duration_minutes,
+      pe.summary
+    FROM patient_events pe
+    JOIN patients p ON p.id = pe.patient_id
+    WHERE pe.kind = 'appointment_scheduled'
+      AND pe.metadata->>'scheduled_for' IS NOT NULL
+      AND (pe.metadata->>'scheduled_for')::timestamptz >= ${gridStart.toISOString()}::timestamptz
+      AND (pe.metadata->>'scheduled_for')::timestamptz < ${gridEnd.toISOString()}::timestamptz
+      AND COALESCE(
+        (
+          SELECT metadata->>'locale'
+          FROM sessions
+          WHERE patient_id = pe.patient_id
+          ORDER BY started_at DESC NULLS LAST
+          LIMIT 1
+        ),
+        'fr'
+      ) = ${locale}
+    ORDER BY (pe.metadata->>'scheduled_for')::timestamptz ASC
+  `);
+
+  return {
+    monthStart: monthStart.toISOString(),
+    gridStart: gridStart.toISOString(),
+    appointments: rows.map((r) => ({
+      id: r.id,
+      patientId: r.patient_id,
+      patientLabel: r.patient_label,
+      patientStatus: (r.patient_status as "prospect" | "patient" | "lost") ?? "prospect",
+      scheduledFor: r.scheduled_for,
+      durationMinutes: r.duration_minutes,
+      summary: r.summary,
+    })),
   };
 }
 

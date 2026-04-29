@@ -2,7 +2,6 @@ import { getTranslations } from "next-intl/server";
 import { PageHeader } from "@/components/layout/page-header";
 import { WeeklyScoreChart } from "@/components/dashboard/weekly-score-chart";
 import { StepHeatmap } from "@/components/dashboard/step-heatmap";
-import { RecentSessionsTable } from "@/components/dashboard/recent-sessions-table";
 import { NudgesPanel } from "@/components/dashboard/nudges-panel";
 import { loadDashboard } from "@/lib/dashboard";
 import { buildNudges } from "@/lib/nudges";
@@ -102,18 +101,6 @@ export default async function DashboardPage() {
         <div className="mt-4">
           <NudgesPanel nudges={nudges} />
         </div>
-      </section>
-
-      <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-          {isPractitioner
-            ? tDash("recentTitleConsultations")
-            : tDash("recentTitleCalls")}
-        </h2>
-        <RecentSessionsTable
-          rows={dashboard.recentSessions}
-          kind={dashboard.frameworkKind}
-        />
       </section>
     </div>
   );

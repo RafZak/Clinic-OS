@@ -1,9 +1,19 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { getTranslations, getLocale } from "next-intl/server";
-import type { RecentSessionRow } from "@/lib/dashboard";
 import { formatDuration, scoreTextColor } from "@/lib/format";
 import { cn } from "@/lib/utils";
+
+export type RecentSessionRow = {
+  id: string;
+  patientLabel: string;
+  practitionerName: string | null;
+  centerName: string | null;
+  globalScore: number | null;
+  durationSeconds: number | null;
+  startedAt: Date | null;
+  kind: "consultation" | "phone_call";
+};
 
 function formatRelative(
   date: Date | null,

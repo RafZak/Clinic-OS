@@ -27,17 +27,6 @@ export type StepHeatmapCell = {
   coverageRatio: number;
 };
 
-export type RecentSessionRow = {
-  id: string;
-  patientLabel: string;
-  practitionerName: string | null;
-  centerName: string | null;
-  globalScore: number | null;
-  durationSeconds: number | null;
-  startedAt: Date | null;
-  kind: "consultation" | "phone_call";
-};
-
 export type DashboardContext = {
   totalPatients: number;
   fittedPatients: number;
@@ -79,7 +68,6 @@ export type DashboardData = {
   kpis: DashboardKpi[];
   weekly: WeeklyScorePoint[];
   heatmap: StepHeatmapCell[];
-  recentSessions: RecentSessionRow[];
   context: DashboardContext;
 };
 
@@ -140,10 +128,7 @@ export async function loadDashboard(
       ? buildPractitionerKpis(context, locale, tDash)
       : buildAssistantKpis(context, locale, tDash);
 
-  const [weekly, recentSessions] = await Promise.all([
-    loadWeeklyScores(frameworkKind, locale, tWeek),
-    loadRecentSessions(frameworkKind, locale),
-  ]);
+  const weekly = await loadWeeklyScores(frameworkKind, locale, tWeek);
 
   return {
     role,
@@ -153,7 +138,6 @@ export async function loadDashboard(
     kpis,
     weekly,
     heatmap,
-    recentSessions,
     context,
   };
 }
@@ -588,49 +572,3 @@ async function loadHeatmap(
   });
 }
 
-async function loadRecentSessions(
-  kind: FrameworkKind,
-  locale: Locale
-): Promise<RecentSessionRow[]> {
-  const rows = await db.execute<{
-    id: string;
-    patient_label: string;
-    practitioner_name: string | null;
-    center_name: string | null;
-    global_score: number | null;
-    duration_seconds: number | null;
-    started_at: string | null;
-    kind: string;
-  }>(sql`
-    SELECT
-      s.id,
-      p.label AS patient_label,
-      pr.full_name AS practitioner_name,
-      c.name AS center_name,
-      s.global_score,
-      s.duration_seconds,
-      s.started_at,
-      s.kind
-    FROM sessions s
-    LEFT JOIN patients p ON p.id = s.patient_id
-    LEFT JOIN practitioners pr ON pr.id = s.practitioner_id
-    LEFT JOIN centers c ON c.id = pr.center_id
-    WHERE s.kind = ${kind}
-      AND s.analysis_status = 'done'
-      AND s.patient_id IS NOT NULL
-      AND COALESCE(s.metadata->>'locale', 'fr') = ${locale}
-    ORDER BY s.analyzed_at DESC NULLS LAST, s.started_at DESC NULLS LAST
-    LIMIT 5
-  `);
-
-  return rows.map((r) => ({
-    id: r.id,
-    patientLabel: r.patient_label,
-    practitionerName: r.practitioner_name,
-    centerName: r.center_name,
-    globalScore: r.global_score,
-    durationSeconds: r.duration_seconds,
-    startedAt: r.started_at ? new Date(r.started_at) : null,
-    kind: r.kind === "phone_call" ? "phone_call" : "consultation",
-  }));
-}

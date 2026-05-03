@@ -187,6 +187,7 @@
     "yesterday": "Hier",
     "daysAgo": "Il y a {n} j",
     "weeksAgo": "Il y a {n} sem",
+    "upcoming": "À venir",
     "consultation": "Consultation",
     "phone_call": "Appel"
   },

@@ -63,6 +63,7 @@ export async function loadSidebarContext(
         SELECT max(occurred_at) AS last_at
         FROM patient_events
         WHERE patient_id = p.id
+          AND occurred_at <= now()
       ) ev ON true
       WHERE ev.last_at IS NOT NULL
         AND ${patientLocaleFilter}

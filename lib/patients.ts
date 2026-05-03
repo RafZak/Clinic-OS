@@ -34,7 +34,8 @@ type RawPatientRow = {
   center_id: string | null;
   center_name: string | null;
   events_count: number;
-  last_event_at: string | null;
+  last_past_event_at: string | null;
+  next_future_event_at: string | null;
   consultations_count: number;
   phone_calls_count: number;
   avg_consultation_score: number | null;
@@ -57,7 +58,8 @@ export async function listPatients(locale: Locale = "fr"): Promise<PatientRow[]>
       p.center_id,
       c.name AS center_name,
       coalesce(ev.events_count, 0)::int AS events_count,
-      ev.last_event_at,
+      ev.last_past_event_at,
+      ev.next_future_event_at,
       coalesce(s.consultations_count, 0)::int AS consultations_count,
       coalesce(s.phone_calls_count, 0)::int AS phone_calls_count,
       s.avg_consultation_score::int AS avg_consultation_score,
@@ -68,7 +70,8 @@ export async function listPatients(locale: Locale = "fr"): Promise<PatientRow[]>
     LEFT JOIN LATERAL (
       SELECT
         count(*) AS events_count,
-        max(occurred_at) AS last_event_at
+        max(occurred_at) FILTER (WHERE occurred_at <= now()) AS last_past_event_at,
+        min(occurred_at) FILTER (WHERE occurred_at > now()) AS next_future_event_at
       FROM patient_events
       WHERE patient_id = p.id
     ) ev ON true
@@ -104,7 +107,10 @@ export async function listPatients(locale: Locale = "fr"): Promise<PatientRow[]>
       ),
       'fr'
     ) = ${locale}
-    ORDER BY ev.last_event_at DESC NULLS LAST, p.label ASC
+    ORDER BY
+      ev.last_past_event_at DESC NULLS LAST,
+      ev.next_future_event_at ASC NULLS LAST,
+      p.label ASC
   `);
 
   return rows.map((r) => ({
@@ -116,7 +122,8 @@ export async function listPatients(locale: Locale = "fr"): Promise<PatientRow[]>
     centerName: r.center_name,
     centerId: r.center_id,
     eventsCount: r.events_count,
-    lastEventAt: toDate(r.last_event_at),
+    lastPastEventAt: toDate(r.last_past_event_at),
+    nextFutureEventAt: toDate(r.next_future_event_at),
     consultationsCount: r.consultations_count,
     phoneCallsCount: r.phone_calls_count,
     avgConsultationScore: r.avg_consultation_score,

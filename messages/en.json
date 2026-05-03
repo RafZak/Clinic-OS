@@ -187,6 +187,7 @@
     "yesterday": "Yesterday",
     "daysAgo": "{n} days ago",
     "weeksAgo": "{n} weeks ago",
+    "upcoming": "Upcoming",
     "consultation": "Consultation",
     "phone_call": "Call"
   },

@@ -11,7 +11,8 @@ export type PatientRow = {
   centerName: string | null;
   centerId: string | null;
   eventsCount: number;
-  lastEventAt: Date | null;
+  lastPastEventAt: Date | null;
+  nextFutureEventAt: Date | null;
   consultationsCount: number;
   phoneCallsCount: number;
   avgConsultationScore: number | null;

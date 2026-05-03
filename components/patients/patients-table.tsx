@@ -259,8 +259,18 @@ export function PatientsTable({ rows }: { rows: PatientRow[] }) {
                       <span className="text-muted-foreground">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {formatRelative(p.lastEventAt)}
+                  <td className="px-4 py-3">
+                    {p.lastPastEventAt ? (
+                      <span className="text-muted-foreground">
+                        {formatRelative(p.lastPastEventAt)}
+                      </span>
+                    ) : p.nextFutureEventAt ? (
+                      <span className="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-2.5 py-0.5 text-xs font-medium text-sky-700">
+                        {tRecent("upcoming")}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <Link

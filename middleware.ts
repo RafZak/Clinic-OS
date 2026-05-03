@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { AUTH_COOKIE } from "@/lib/auth-shared";
+import { AUTH_COOKIE, INTERNAL_SECRET_HEADER } from "@/lib/auth-shared";
 
 const PUBLIC_PATHS = new Set(["/login"]);
 const PUBLIC_PREFIXES = ["/_next", "/favicon", "/icon", "/robots", "/sitemap"];
@@ -17,6 +17,12 @@ export function middleware(req: NextRequest) {
   headers.set("x-pathname", pathname);
 
   if (isPublic) {
+    return NextResponse.next({ request: { headers } });
+  }
+
+  const expectedSecret = process.env.INTERNAL_API_SECRET;
+  const presentedSecret = req.headers.get(INTERNAL_SECRET_HEADER);
+  if (expectedSecret && presentedSecret && presentedSecret === expectedSecret) {
     return NextResponse.next({ request: { headers } });
   }
 

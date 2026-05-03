@@ -2,6 +2,7 @@
 
 import { after } from "next/server";
 import { getSiteUrl } from "@/lib/site-url";
+import { INTERNAL_SECRET_HEADER } from "@/lib/auth-shared";
 import type { ArtifactType } from "@/lib/artifacts/generate";
 
 const VALID_TYPES: ArtifactType[] = [
@@ -28,11 +29,21 @@ export async function regenerateAllArtifacts(sessionId: string): Promise<{ ok: t
 }
 
 function kickArtifact(sessionId: string, type: ArtifactType | null): void {
+  const secret = process.env.INTERNAL_API_SECRET;
+  if (!secret) {
+    console.warn(
+      `INTERNAL_API_SECRET manquant — artifact kick impossible pour ${sessionId}`
+    );
+    return;
+  }
   after(async () => {
     try {
       const res = await fetch(`${getSiteUrl()}/api/sessions/${sessionId}/artifacts`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          [INTERNAL_SECRET_HEADER]: secret,
+        },
         body: JSON.stringify(type ? { type } : {}),
       });
       if (!res.ok) {

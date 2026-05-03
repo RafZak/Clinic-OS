@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { after } from "next/server";
 import { retranscribeSession } from "@/lib/analysis/retranscribe";
 import { getSiteUrl } from "@/lib/site-url";
+import { INTERNAL_SECRET_HEADER } from "@/lib/auth-shared";
 
 // Vercel Pro : jusqu'à 300 s. Deepgram batch sur un webm 15-20 min peut grimper ;
 // même marge que /analyze pour éviter les zombies.
@@ -18,21 +19,29 @@ export async function POST(
 
     // Chaîne vers analyze après envoi de la réponse (after() survit au retour
     // côté Vercel, sleep <quelques secondes> max pour laisser le kick partir).
-    after(async () => {
-      try {
-        const res = await fetch(`${getSiteUrl()}/api/sessions/${id}/analyze`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-        });
-        if (!res.ok) {
-          console.warn(
-            `analyze kick non-OK for ${id}: ${res.status} ${await res.text().catch(() => "")}`
-          );
+    const secret = process.env.INTERNAL_API_SECRET;
+    if (!secret) {
+      console.warn(`INTERNAL_API_SECRET manquant — analyze kick impossible pour ${id}`);
+    } else {
+      after(async () => {
+        try {
+          const res = await fetch(`${getSiteUrl()}/api/sessions/${id}/analyze`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              [INTERNAL_SECRET_HEADER]: secret,
+            },
+          });
+          if (!res.ok) {
+            console.warn(
+              `analyze kick non-OK for ${id}: ${res.status} ${await res.text().catch(() => "")}`
+            );
+          }
+        } catch (err) {
+          console.warn(`analyze kick failed for ${id}`, err);
         }
-      } catch (err) {
-        console.warn(`analyze kick failed for ${id}`, err);
-      }
-    });
+      });
+    }
 
     return NextResponse.json({ ok: true, sessionId: id, outcome }, { status: 202 });
   } catch (err) {

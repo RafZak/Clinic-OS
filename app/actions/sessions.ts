@@ -14,6 +14,7 @@ import { insertSession, markSessionCompleted, markSessionAborted } from "@/lib/s
 import type { SessionKind } from "@/lib/sessions";
 import { getSiteUrl } from "@/lib/site-url";
 import { getLocale } from "@/lib/locale";
+import { INTERNAL_SECRET_HEADER } from "@/lib/auth-shared";
 import { getScenarioBySlug } from "@/scripts/replay/scripts";
 import { getPhoneScenarioBySlug } from "@/scripts/replay/scripts-phone";
 import {
@@ -184,11 +185,21 @@ export async function startReplaySession(slug: string): Promise<void> {
 }
 
 function kickAnalysis(id: string): void {
+  const secret = process.env.INTERNAL_API_SECRET;
+  if (!secret) {
+    console.warn(
+      `INTERNAL_API_SECRET manquant — kickAnalysis impossible pour ${id}`
+    );
+    return;
+  }
   after(async () => {
     try {
       const res = await fetch(`${getSiteUrl()}/api/sessions/${id}/retranscribe`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          [INTERNAL_SECRET_HEADER]: secret,
+        },
       });
       if (!res.ok) {
         console.warn(`retranscribe kick non-OK for ${id}: ${res.status}`);

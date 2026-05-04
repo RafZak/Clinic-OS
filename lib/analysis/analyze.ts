@@ -251,7 +251,6 @@ L'appel entrant est un acte de **TRIAGE**, pas un mini-acte de vente. La standar
 2. Comprendre la raison de l'appel pour router vers la bonne durée de RDV
 3. Poser des questions génériques pour briefer l'audioprothésiste
 4. **JAMAIS** parler gammes / prix / classe 1-2 / 100% santé / forme d'appareil — c'est le job du pro en RDV
-5. **JAMAIS** demander l'ordonnance ORL en début d'appel (vécu comme agressif) — la mentionner en clôture si pertinent
 
 Pour les appels téléphoniques, en plus des scores/insights/summary/global_score, tu dois produire un objet **phone_tags** avec exactement 5 champs :
 

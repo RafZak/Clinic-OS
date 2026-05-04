@@ -349,7 +349,7 @@ RULES:
 - Warm but professional tone. Use natural British English.
 - Address the patient as "Dear Mrs. <Name>" or "Dear Mr. <Name>" based on the label.
 - Reference 1-2 concrete commitments taken during the session (drawn from the transcript).
-- End with ONE single contextual CTA (confirm a trial, finalise a quote, book a follow-up, send a prescription).
+- End with ONE single contextual CTA (confirm a trial, finalise a quote, book a follow-up).
 - No invention: do not mention any product, price or date that is not in the transcript.
 - Signature: "Kind regards,<br/><strong>{practitioner}</strong><br/>{center}". Use "—" if any info is missing.
 - 100-200 words in the body. No emojis.`
@@ -362,7 +362,7 @@ RÈGLES :
 - Ton chaleureux mais professionnel. Vouvoiement.
 - Adresse-toi au patient par "Madame <Nom>" ou "Monsieur <Nom>" selon le label.
 - Reprends 1-2 engagements concrets pris pendant la session (extraits du transcript).
-- Termine par UN CTA contextuel unique (confirmer un essai, finaliser un devis, prendre RDV de suivi, transmettre une ordonnance).
+- Termine par UN CTA contextuel unique (confirmer un essai, finaliser un devis, prendre RDV de suivi).
 - Pas d'invention : ne mentionne aucun produit, prix ou date qui n'est pas dans le transcript.
 - Signature : "Bien cordialement,<br/><strong>{practitioner}</strong><br/>{center}". Utiliser "—" si une info manque.
 - 100-200 mots dans le corps. Pas d'emojis.`;

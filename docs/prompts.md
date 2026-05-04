@@ -272,7 +272,7 @@ RÈGLES :
 - Reprends 1-2 engagements concrets pris pendant la session
   (extraits du transcript).
 - Termine par un CTA UNIQUE et contextuel (confirmer un essai, finaliser
-  un devis, prendre RDV de suivi, transmettre une ordonnance, etc.).
+  un devis, prendre RDV de suivi, etc.).
 - Pas d'invention : ne mentionne aucun produit, prix, ou date qui n'est
   pas dans le transcript.
 - Signature : "Bien cordialement,<br/><strong>{practitioner_name}</strong><br/>

@@ -244,7 +244,7 @@ export const PHONE_CALL_FRAMEWORK: FrameworkStep[] = [
     criteria: [
       { id: "ancr_repetition", label: "Date/heure répétées 2 fois", label_en: "Date/time repeated twice" },
       { id: "ancr_sms", label: "Engagement sur SMS/email de confirmation", label_en: "Commitment to send SMS/email confirmation" },
-      { id: "ancr_documents", label: "Documents à apporter rappelés — ordonnance ORL mentionnée ICI si pertinent (jamais en début d'appel)", label_en: "Documents to bring mentioned — ENT prescription mentioned HERE if relevant (never at the start of the call)" },
+      { id: "ancr_documents", label: "Documents à apporter rappelés (carte vitale, mutuelle, audiogramme antérieur si existant)", label_en: "Documents to bring mentioned (health card, insurance, prior audiogram if any)" },
       { id: "ancr_cloture", label: "Clôture chaleureuse non-transactionnelle", label_en: "Warm, non-transactional close" },
     ],
   },

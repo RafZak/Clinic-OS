@@ -79,14 +79,14 @@ const JOURNEYS: JourneySeed[] = [
           durationSeconds: 142,
           globalScore: 82,
           summary:
-            "Appel entrant bien géré : besoin identifié, RDV pris à 7 jours, ordonnance ORL confirmée.",
+            "Appel entrant bien géré : besoin identifié, RDV bilan 60 min pris à 7 jours, briefing complet pour l'audioprothésiste.",
           insights: [
             {
               type: "good_practice",
               severity: "info",
-              title: "Validation de l'ordonnance ORL",
+              title: "Briefing clair pour l'audioprothésiste",
               description:
-                "L'assistante a reformulé la prescription pour rassurer la patiente avant de proposer le créneau.",
+                "L'assistante a reformulé le motif de visite et noté les attentes de la patiente pour préparer le RDV avec Jonathan.",
             },
           ],
         },

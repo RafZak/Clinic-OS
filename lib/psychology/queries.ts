@@ -108,8 +108,8 @@ export async function searchPatientsByTags(opts: {
   if (opts.daysSinceLastSession !== undefined) {
     const cutoff = new Date(
       Date.now() - opts.daysSinceLastSession * 24 * 3600 * 1000
-    );
-    conditions.push(sql`${latest.maxAt} <= ${cutoff}`);
+    ).toISOString();
+    conditions.push(sql`${latest.maxAt} <= ${cutoff}::timestamptz`);
   }
 
   const rows = await db

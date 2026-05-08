@@ -168,24 +168,70 @@ export function PsychologyRadar({
         })}
       </g>
 
-      {/* Layers — polygone fermé sur les axes scorés (skip null), posé sur le fond
-          hexagonal coloré. Pas de zones blanches : le fond brand léger remplit toujours
-          l'hexagone, le polygone dessine la forme du profil par-dessus. */}
+      {/* Layers — pour chaque layer, on dessine :
+            1. Un polygone de fond (fill) sur les 6 axes (null = bord extérieur de
+               l'hexagone) → couvre toujours toute la surface, pas de zones blanches.
+            2. 6 segments individuels formant la perimeter : solide entre 2 axes scorés,
+               POINTILLÉ dès qu'un axe est null. Le pointillé indique "frame théorique,
+               pas de mesure réelle ici". */}
       <g>
         {layers.map((layer) => {
-          const points = radarToPolygon(layer.radar);
-          if (!points) return null;
+          // Fill polygon : couvre toute la surface en passant par le bord extérieur
+          // pour les axes null. Toujours fermé.
+          const fillPoints = PSY_AXES.map((axis) => {
+            const raw = layer.radar[axis];
+            const v01 = raw === null ? 1 : raw / 10;
+            const [x, y] = pointFor(axis, v01);
+            return `${x.toFixed(2)},${y.toFixed(2)}`;
+          }).join(" ");
+
+          // 6 segments : pour chaque paire d'axes adjacents
+          const segments = PSY_AXES.map((axisA, i) => {
+            const axisB = PSY_AXES[(i + 1) % PSY_AXES.length];
+            const rawA = layer.radar[axisA];
+            const rawB = layer.radar[axisB];
+            const aNull = rawA === null;
+            const bNull = rawB === null;
+            const v01A = aNull ? 1 : rawA / 10;
+            const v01B = bNull ? 1 : rawB / 10;
+            const [xA, yA] = pointFor(axisA, v01A);
+            const [xB, yB] = pointFor(axisB, v01B);
+            const dashed = aNull || bNull;
+            return {
+              key: `${layer.key}-${axisA}-${axisB}`,
+              x1: xA,
+              y1: yA,
+              x2: xB,
+              y2: yB,
+              dashed,
+            };
+          });
+
           return (
-            <polygon
-              key={layer.key}
-              points={points}
-              fill={layer.color}
-              fillOpacity={layer.fillOpacity}
-              stroke={layer.color}
-              strokeWidth={layer.strokeWidth}
-              strokeDasharray={layer.dasharray}
-              strokeLinejoin="round"
-            />
+            <g key={layer.key}>
+              <polygon
+                points={fillPoints}
+                fill={layer.color}
+                fillOpacity={layer.fillOpacity}
+                stroke="none"
+              />
+              {segments.map((seg) => (
+                <line
+                  key={seg.key}
+                  x1={seg.x1}
+                  y1={seg.y1}
+                  x2={seg.x2}
+                  y2={seg.y2}
+                  stroke={layer.color}
+                  strokeWidth={layer.strokeWidth}
+                  strokeDasharray={
+                    seg.dashed ? "4 3" : layer.dasharray
+                  }
+                  strokeOpacity={seg.dashed ? 0.55 : 1}
+                  strokeLinecap="round"
+                />
+              ))}
+            </g>
           );
         })}
       </g>

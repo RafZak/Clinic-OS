@@ -1,6 +1,7 @@
 import {
   BookOpen,
   Database,
+  Heart,
   LayoutDashboard,
   Notebook,
   Users,
@@ -13,7 +14,8 @@ export type NavKey =
   | "patients"
   | "catalogue"
   | "knowledge"
-  | "memory";
+  | "memory"
+  | "psychology";
 
 export type NavItem = {
   key: NavKey;
@@ -57,6 +59,13 @@ export const ADMIN_NAV: NavItem[] = [
     href: "/admin/vault",
     icon: Notebook,
     roles: ["audioprothesiste", "assistant"],
+  },
+  {
+    key: "psychology",
+    href: "/admin/psychology",
+    icon: Heart,
+    roles: ["audioprothesiste", "assistant"],
+    match: "prefix",
   },
 ];
 

@@ -181,6 +181,26 @@ export async function analyzeSession(sessionId: string): Promise<AnalyzeOutcome>
         .where(eq(sessions.id, sessionId));
     });
 
+    // Scoring psychologique du patient — best-effort, ne casse pas l'analyse coaching
+    if (locked[0]) {
+      try {
+        const { scorePatientPsychology } = await import("@/lib/psychology/score-session");
+        const psyResult = await scorePatientPsychology(sessionId);
+        if ("ok" in psyResult) {
+          log(sessionId, "psy-score", "ok", 0, {
+            tags: psyResult.tags,
+            radar: psyResult.radar,
+          });
+        } else {
+          log(sessionId, "psy-score", `skipped:${psyResult.skipped}`, 0);
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        log(sessionId, "psy-score", "failed", 0, { error: msg });
+        // ne pas re-throw : l'analyse coaching a déjà réussi
+      }
+    }
+
     log(sessionId, "analyze", "ok", Date.now() - t0, {
       insights: insightsWithCitations.length,
       globalScore: normalized.global_score,

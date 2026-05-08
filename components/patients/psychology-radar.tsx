@@ -135,18 +135,19 @@ export function PsychologyRadar({
         aria-hidden="true"
       />
 
-      {/* Grid hexagons concentriques — papier graphique. Couleurs assez dark pour
-          rester visibles malgré le fond brand léger. Outer hexagon plus marqué. */}
+      {/* Grid hexagons concentriques INTÉRIEURS — sous les données. */}
       <g aria-hidden="true">
-        {gridScales.map((scale) => (
-          <polygon
-            key={`grid-${scale}`}
-            points={gridPolygon(scale)}
-            fill="none"
-            stroke={scale === 1 ? "#9CA3AF" : "#CBD5E1"}
-            strokeWidth={scale === 1 ? 1.25 : 1}
-          />
-        ))}
+        {gridScales
+          .filter((s) => s !== 1)
+          .map((scale) => (
+            <polygon
+              key={`grid-${scale}`}
+              points={gridPolygon(scale)}
+              fill="none"
+              stroke="#CBD5E1"
+              strokeWidth={1}
+            />
+          ))}
       </g>
 
       {/* Axis lines — dimmed/dashed sur les axes non observés (union de tous les layers) */}
@@ -238,6 +239,18 @@ export function PsychologyRadar({
           );
         })}
       </g>
+
+      {/* Contour HEXAGONAL EXTÉRIEUR posé PAR-DESSUS les données — garantit que
+          les 6 côtés du cadre sont toujours visibles, peu importe le profil.
+          Évite l'impression "papillon" quand les données ne couvrent que certains côtés. */}
+      <polygon
+        points={gridPolygon(1)}
+        fill="none"
+        stroke="#475569"
+        strokeWidth={1.5}
+        strokeLinejoin="round"
+        aria-hidden="true"
+      />
 
       {/* Dots aux vertex effectivement scorés — ancre visuelle sur les vraies données.
           Pour les couches multi-session, on ne dessine que les dots de la dernière couche

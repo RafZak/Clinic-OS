@@ -28,6 +28,9 @@ yarn-error.log*
 # Claude Code (user-local state)
 .claude/
 
+# Superpowers brainstorming workspace (mockups + state)
+.superpowers/
+
 # Stray empty bin shims
 /tsx
 

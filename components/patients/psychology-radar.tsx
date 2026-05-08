@@ -126,6 +126,15 @@ export function PsychologyRadar({
       className={cn("block", className)}
       preserveAspectRatio="xMidYMid meet"
     >
+      {/* Hexagone de fond rempli (très léger) — pas de zones blanches dans l'hexagone */}
+      <polygon
+        points={gridPolygon(1)}
+        fill="#FCE7EE"
+        fillOpacity={0.5}
+        stroke="none"
+        aria-hidden="true"
+      />
+
       {/* Grid hexagons */}
       <g aria-hidden="true">
         {gridScales.map((scale) => (
@@ -159,37 +168,11 @@ export function PsychologyRadar({
         })}
       </g>
 
-      {/* Layers — quand le profil est complet (6/6 axes), on dessine un vrai polygone
-          rempli (gestalt du radar). Quand il est partiel, on n'affiche QUE des bars
-          radiales (lignes du centre vers les vertex scorés) — pas de polygone, pas de
-          forme trompeuse. Les dots posés au-dessus restent l'ancre visuelle. */}
+      {/* Layers — polygone fermé sur les axes scorés (skip null), posé sur le fond
+          hexagonal coloré. Pas de zones blanches : le fond brand léger remplit toujours
+          l'hexagone, le polygone dessine la forme du profil par-dessus. */}
       <g>
         {layers.map((layer) => {
-          const partial = scoredAxesCount(layer.radar) < PSY_AXES.length;
-          if (partial) {
-            // Bars radiales : pour chaque axe scoré, ligne center → vertex
-            return (
-              <g key={layer.key}>
-                {scoredAxes(layer.radar).map(({ axis, value01 }) => {
-                  const [x, y] = pointFor(axis, value01);
-                  return (
-                    <line
-                      key={`${layer.key}-${axis}`}
-                      x1={CX}
-                      y1={CY}
-                      x2={x}
-                      y2={y}
-                      stroke={layer.color}
-                      strokeWidth={Math.max(2, layer.strokeWidth + 1)}
-                      strokeLinecap="round"
-                      strokeOpacity={0.85}
-                    />
-                  );
-                })}
-              </g>
-            );
-          }
-          // Profil complet : polygone fermé classique
           const points = radarToPolygon(layer.radar);
           if (!points) return null;
           return (

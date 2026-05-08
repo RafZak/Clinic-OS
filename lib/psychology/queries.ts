@@ -1,5 +1,5 @@
 import "server-only";
-import { and, arrayOverlaps, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { patients, sessionPsychologySnapshots } from "@/db/schema";
 import { type PsyRadar, type PsySnapshot } from "./axes";
@@ -89,8 +89,12 @@ export async function searchPatientsByTags(opts: {
 
   if (opts.tags.length === 0) return [];
 
+  const tagsList = sql.join(
+    opts.tags.map((t) => sql`${t}`),
+    sql`, `
+  );
   const conditions = [
-    arrayOverlaps(sessionPsychologySnapshots.tags, opts.tags),
+    sql`${sessionPsychologySnapshots.tags} && ARRAY[${tagsList}]::text[]`,
   ];
   if (opts.requireConsent) {
     conditions.push(sql`${patients.marketingPsyConsentAt} IS NOT NULL`);

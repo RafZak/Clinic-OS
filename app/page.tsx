@@ -4,6 +4,7 @@ import { StepHeatmap } from "@/components/dashboard/step-heatmap";
 import { NudgesPanel } from "@/components/dashboard/nudges-panel";
 import { MiniCalendar } from "@/components/dashboard/mini-calendar";
 import { KpiCard } from "@/components/dashboard/kpi-card";
+import { RecallList } from "@/components/dashboard/recall-list";
 import { scoreTone, type ScoreTone } from "@/lib/score-tone";
 import { loadDashboard, type DashboardKpi } from "@/lib/dashboard";
 import { buildNudges } from "@/lib/nudges";
@@ -80,6 +81,8 @@ export default async function DashboardPage() {
           <MiniCalendar grid={dashboard.calendar} locale={locale} />
         </div>
       </section>
+
+      <RecallList centerId={null} locale={locale} />
 
       <section className="rounded-lg border border-border bg-surface p-5">
         <div className="flex items-baseline justify-between">

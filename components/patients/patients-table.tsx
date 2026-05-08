@@ -3,7 +3,15 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowUpRight, Phone, Stethoscope, Trash2, X } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowUpRight,
+  Download,
+  Phone,
+  Stethoscope,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { DeletePatientsDialog } from "@/components/patients/delete-patients-dialog";
@@ -18,6 +26,11 @@ import {
   LEAD_TEMPERATURE_LABEL_EN,
   type LeadTemperature,
 } from "@/lib/phone-tags";
+import {
+  PSY_TAGS,
+  PSY_TAG_LABEL,
+  type PsyTag,
+} from "@/lib/psychology/tags";
 import { cn } from "@/lib/utils";
 
 const STATUS_BADGE_CLASS: Record<PatientStatus, string> = {
@@ -75,7 +88,31 @@ function initials(label: string): string {
     .join("");
 }
 
-export function PatientsTable({ rows }: { rows: PatientRow[] }) {
+type ConsentMode = "any" | "active" | "missing";
+
+function buildPatientsHref(opts: {
+  statusFilter: "all" | PatientStatus;
+  tags: PsyTag[];
+  consentMode: ConsentMode;
+}): string {
+  const sp = new URLSearchParams();
+  if (opts.statusFilter !== "all") sp.set("status", opts.statusFilter);
+  if (opts.tags.length > 0) sp.set("tags", opts.tags.join(","));
+  if (opts.consentMode !== "any") sp.set("consent", opts.consentMode);
+  return sp.toString() ? `/patients?${sp.toString()}` : "/patients";
+}
+
+export function PatientsTable({
+  rows,
+  selectedTags = [],
+  consentMode = "any",
+  statusFilter = "all",
+}: {
+  rows: PatientRow[];
+  selectedTags?: PsyTag[];
+  consentMode?: ConsentMode;
+  statusFilter?: "all" | PatientStatus;
+}) {
   const t = useTranslations("patients");
   const tRecent = useTranslations("recentSessions");
   const locale = useLocale();
@@ -126,16 +163,139 @@ export function PatientsTable({ rows }: { rows: PatientRow[] }) {
 
   const selectedIds = useMemo(() => Array.from(selected), [selected]);
 
-  if (rows.length === 0) {
-    return (
-      <div className="flex h-48 items-center justify-center rounded-lg border border-dashed border-border bg-surface text-sm text-muted-foreground">
-        {t("empty")}
-      </div>
+  function toggleTag(tag: PsyTag) {
+    const next = new Set(selectedTags);
+    if (next.has(tag)) next.delete(tag);
+    else next.add(tag);
+    router.push(
+      buildPatientsHref({
+        statusFilter,
+        tags: Array.from(next) as PsyTag[],
+        consentMode,
+      })
     );
   }
 
+  function setConsent(mode: ConsentMode) {
+    router.push(
+      buildPatientsHref({ statusFilter, tags: selectedTags, consentMode: mode })
+    );
+  }
+
+  function exportCsv() {
+    // Si une sélection existe → exporter les lignes sélectionnées.
+    // Sinon → exporter toutes les lignes filtrées affichées.
+    const ids = selected.size > 0 ? selectedIds : rows.map((r) => r.id);
+    if (ids.length === 0) return;
+
+    const exportConsent: "active" | "all" = consentMode === "missing" ? "all" : "active";
+    if (exportConsent === "all") {
+      const ok = window.confirm(
+        locale === "en"
+          ? "You are including patients without active marketing consent. This file MUST NOT be used for direct marketing campaigns. Continue?"
+          : "Vous incluez des patients sans consentement marketing actif. Ce fichier ne peut PAS être utilisé en marketing direct (sanctions RGPD). Confirmer ?"
+      );
+      if (!ok) return;
+    }
+    const url = new URL("/admin/psychology/export", window.location.origin);
+    url.searchParams.set("ids", ids.join(","));
+    url.searchParams.set("consent", exportConsent);
+    window.location.href = url.toString();
+  }
+
+  const filterBarActive = selectedTags.length > 0 || consentMode !== "any";
+  const exportableCount = selected.size > 0 ? selected.size : rows.length;
+
   return (
     <>
+      {/* Barre de filtres psychologie */}
+      <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            {locale === "en" ? "Tags" : "Tags"}
+          </span>
+          {PSY_TAGS.map((tag) => {
+            const active = selectedTags.includes(tag);
+            return (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => toggleTag(tag)}
+                className={cn(
+                  "rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition",
+                  active
+                    ? "border-brand bg-brand text-white"
+                    : "border-border bg-surface-muted text-foreground hover:border-brand/40"
+                )}
+              >
+                {PSY_TAG_LABEL[tag]}
+              </button>
+            );
+          })}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            {locale === "en" ? "Consent" : "Consent."}
+          </span>
+          {([
+            ["any", locale === "en" ? "Any" : "Tous", "border-border bg-surface-muted text-foreground"],
+            ["active", locale === "en" ? "Active only" : "Consentants", "border-emerald-200 bg-emerald-50 text-emerald-700"],
+            ["missing", locale === "en" ? "Missing only" : "Non consentants", "border-amber-200 bg-amber-50 text-amber-800"],
+          ] as const).map(([k, label, activeCls]) => (
+            <button
+              key={k}
+              type="button"
+              onClick={() => setConsent(k)}
+              className={cn(
+                "rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition",
+                consentMode === k
+                  ? activeCls
+                  : "border-border bg-surface text-muted-foreground hover:bg-surface-muted"
+              )}
+            >
+              {label}
+            </button>
+          ))}
+          <span className="ml-auto inline-flex items-center gap-2">
+            {filterBarActive && (
+              <Link
+                href="/patients"
+                className="text-[11px] font-medium text-muted-foreground hover:text-foreground"
+              >
+                {locale === "en" ? "Clear filters" : "Réinitialiser"}
+              </Link>
+            )}
+            <button
+              type="button"
+              onClick={exportCsv}
+              disabled={exportableCount === 0}
+              className="inline-flex items-center gap-1.5 rounded-md bg-brand px-2.5 py-1 text-[11px] font-medium text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
+              title={
+                locale === "en"
+                  ? "Export selected patients (or all filtered if no selection) as CSV"
+                  : "Exporter les patients sélectionnés (ou tous les filtrés si aucune sélection) en CSV"
+              }
+            >
+              <Download className="h-3 w-3" />
+              {locale === "en" ? "Export CSV" : "Exporter CSV"} ({exportableCount})
+            </button>
+          </span>
+        </div>
+        {consentMode === "missing" && (
+          <p className="flex items-start gap-1.5 text-[11px] text-amber-800">
+            <AlertTriangle className="mt-px h-3 w-3 flex-shrink-0" />
+            {locale === "en"
+              ? "Patients without active marketing consent. Cannot be used for direct marketing campaigns."
+              : "Patients sans consentement marketing actif. Inutilisables pour des campagnes marketing directes."}
+          </p>
+        )}
+      </div>
+
+      {rows.length === 0 ? (
+        <div className="flex h-48 items-center justify-center rounded-lg border border-dashed border-border bg-surface text-sm text-muted-foreground">
+          {t("empty")}
+        </div>
+      ) : (
       <div className="overflow-hidden rounded-lg border border-border bg-surface">
         <table className="w-full text-sm">
           <thead className="border-b border-border bg-surface-muted text-xs uppercase tracking-wide text-muted-foreground">
@@ -154,6 +314,9 @@ export function PatientsTable({ rows }: { rows: PatientRow[] }) {
               </th>
               <th className="px-4 py-3 text-left font-medium">{t("tableLabel")}</th>
               <th className="px-4 py-3 text-left font-medium">{t("tableStatus")}</th>
+              <th className="px-4 py-3 text-left font-medium">
+                {locale === "en" ? "Psy tags" : "Tags psy"}
+              </th>
               <th className="px-4 py-3 text-left font-medium">
                 {locale === "en" ? "Temperature" : "Température"}
               </th>
@@ -213,6 +376,31 @@ export function PatientsTable({ rows }: { rows: PatientRow[] }) {
                     >
                       {statusMap[p.status]}
                     </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    {p.psyTags.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {p.psyTags.slice(0, 3).map((tag) => (
+                          <span
+                            key={tag}
+                            className="rounded-full bg-brand/10 px-2 py-0.5 text-[10px] font-medium text-brand"
+                            title={PSY_TAG_LABEL[tag as PsyTag]}
+                          >
+                            {PSY_TAG_LABEL[tag as PsyTag]}
+                          </span>
+                        ))}
+                        {p.psyTags.length > 3 && (
+                          <span
+                            className="text-[10px] text-muted-foreground"
+                            title={p.psyTags.slice(3).map((t) => PSY_TAG_LABEL[t as PsyTag]).join(", ")}
+                          >
+                            +{p.psyTags.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     {p.lastPhoneTemperature ? (
@@ -287,6 +475,7 @@ export function PatientsTable({ rows }: { rows: PatientRow[] }) {
           </tbody>
         </table>
       </div>
+      )}
 
       {selected.size > 0 && (
         <div className="pointer-events-none fixed inset-x-0 bottom-6 z-40 flex justify-center px-4">

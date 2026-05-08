@@ -1,6 +1,7 @@
 import "server-only";
-import { sql } from "drizzle-orm";
+import { inArray, sql } from "drizzle-orm";
 import { db } from "@/db/client";
+import { sessionPsychologySnapshots } from "@/db/schema";
 import type { Locale } from "@/lib/locale";
 import {
   LEAD_TEMPERATURES,
@@ -16,6 +17,9 @@ import {
   type PatientRow,
   type PatientStatus,
 } from "@/lib/patients-shared";
+import { computeGlobalTags } from "@/lib/psychology/aggregate";
+import { type PsyRadar, type PsySnapshot } from "@/lib/psychology/axes";
+import { hasActiveMarketingConsent } from "@/lib/psychology/consent";
 
 export {
   EVENT_LABEL,
@@ -41,6 +45,8 @@ type RawPatientRow = {
   avg_consultation_score: number | null;
   last_consultation_score: number | null;
   last_phone_temperature: string | null;
+  marketing_psy_consent_at: string | null;
+  marketing_psy_revoked_at: string | null;
 };
 
 function toDate(v: string | null): Date | null {
@@ -64,7 +70,9 @@ export async function listPatients(locale: Locale = "fr"): Promise<PatientRow[]>
       coalesce(s.phone_calls_count, 0)::int AS phone_calls_count,
       s.avg_consultation_score::int AS avg_consultation_score,
       s.last_consultation_score AS last_consultation_score,
-      s.last_phone_temperature AS last_phone_temperature
+      s.last_phone_temperature AS last_phone_temperature,
+      p.marketing_psy_consent_at,
+      p.marketing_psy_revoked_at
     FROM patients p
     LEFT JOIN centers c ON c.id = p.center_id
     LEFT JOIN LATERAL (
@@ -113,27 +121,70 @@ export async function listPatients(locale: Locale = "fr"): Promise<PatientRow[]>
       p.label ASC
   `);
 
-  return rows.map((r) => ({
-    id: r.id,
-    label: r.label,
-    age: r.age,
-    status: (r.status as PatientStatus) ?? "prospect",
-    firstContactAt: toDate(r.first_contact_at),
-    centerName: r.center_name,
-    centerId: r.center_id,
-    eventsCount: r.events_count,
-    lastPastEventAt: toDate(r.last_past_event_at),
-    nextFutureEventAt: toDate(r.next_future_event_at),
-    consultationsCount: r.consultations_count,
-    phoneCallsCount: r.phone_calls_count,
-    avgConsultationScore: r.avg_consultation_score,
-    lastConsultationScore: r.last_consultation_score,
-    lastPhoneTemperature: LEAD_TEMPERATURES.includes(
-      r.last_phone_temperature as LeadTemperature
-    )
-      ? (r.last_phone_temperature as LeadTemperature)
-      : null,
-  }));
+  // Charge tous les snapshots psy pour les patients affichés en 1 query, puis
+  // calcule le radar global / tags en TS via les helpers existants.
+  const patientIds = rows.map((r) => r.id);
+  const snapshotsByPatient = new Map<string, PsySnapshot[]>();
+  if (patientIds.length > 0) {
+    const snapshotRows = await db
+      .select()
+      .from(sessionPsychologySnapshots)
+      .where(inArray(sessionPsychologySnapshots.patientId, patientIds));
+    for (const row of snapshotRows) {
+      const radar: PsyRadar = {
+        acceptance: row.acceptanceScore,
+        motivation: row.motivationScore,
+        trust: row.trustScore,
+        priceSensitivity: row.priceSensitivityScore,
+        externalInfluence: row.externalInfluenceScore,
+        decisionStage: row.decisionStageScore,
+      };
+      const snap: PsySnapshot = {
+        id: row.id,
+        sessionId: row.sessionId,
+        patientId: row.patientId,
+        radar,
+        tags: row.tags,
+        rawOutput: row.rawOutput,
+        promptVersion: row.promptVersion,
+        model: row.model,
+        createdAt: row.createdAt,
+      };
+      const existing = snapshotsByPatient.get(row.patientId);
+      if (existing) existing.push(snap);
+      else snapshotsByPatient.set(row.patientId, [snap]);
+    }
+  }
+
+  return rows.map((r) => {
+    const snaps = snapshotsByPatient.get(r.id) ?? [];
+    return {
+      id: r.id,
+      label: r.label,
+      age: r.age,
+      status: (r.status as PatientStatus) ?? "prospect",
+      firstContactAt: toDate(r.first_contact_at),
+      centerName: r.center_name,
+      centerId: r.center_id,
+      eventsCount: r.events_count,
+      lastPastEventAt: toDate(r.last_past_event_at),
+      nextFutureEventAt: toDate(r.next_future_event_at),
+      consultationsCount: r.consultations_count,
+      phoneCallsCount: r.phone_calls_count,
+      avgConsultationScore: r.avg_consultation_score,
+      lastConsultationScore: r.last_consultation_score,
+      lastPhoneTemperature: LEAD_TEMPERATURES.includes(
+        r.last_phone_temperature as LeadTemperature
+      )
+        ? (r.last_phone_temperature as LeadTemperature)
+        : null,
+      psyTags: computeGlobalTags(snaps),
+      marketingConsentActive: hasActiveMarketingConsent({
+        marketingPsyConsentAt: toDate(r.marketing_psy_consent_at),
+        marketingPsyRevokedAt: toDate(r.marketing_psy_revoked_at),
+      }),
+    };
+  });
 }
 
 export type PatientDetail = {

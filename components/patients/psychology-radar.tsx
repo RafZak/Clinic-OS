@@ -21,6 +21,7 @@ export type PsychologyRadarProps = {
   layers: Layer[];
   size?: number;
   className?: string;
+  showLabels?: boolean;
 };
 
 const VIEW = 360;
@@ -70,6 +71,7 @@ export function PsychologyRadar({
   layers,
   size = 320,
   className,
+  showLabels = true,
 }: PsychologyRadarProps) {
   const gridScales = [0.25, 0.5, 0.75, 1];
 
@@ -130,25 +132,27 @@ export function PsychologyRadar({
       </g>
 
       {/* Axis labels */}
-      <g>
-        {PSY_AXES.map((axis) => {
-          const [x, y] = pointFor(axis, 1.15);
-          return (
-            <text
-              key={`label-${axis}`}
-              x={x}
-              y={y}
-              textAnchor={labelAnchor(x)}
-              dominantBaseline="middle"
-              fontSize={11}
-              fontWeight={500}
-              fill="#374151"
-            >
-              {PSY_AXIS_LABEL[axis]}
-            </text>
-          );
-        })}
-      </g>
+      {showLabels && (
+        <g>
+          {PSY_AXES.map((axis) => {
+            const [x, y] = pointFor(axis, 1.15);
+            return (
+              <text
+                key={`label-${axis}`}
+                x={x}
+                y={y}
+                textAnchor={labelAnchor(x)}
+                dominantBaseline="middle"
+                fontSize={11}
+                fontWeight={500}
+                fill="#374151"
+              >
+                {PSY_AXIS_LABEL[axis]}
+              </text>
+            );
+          })}
+        </g>
+      )}
     </svg>
   );
 }

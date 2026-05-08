@@ -21,6 +21,7 @@
     "seed:upcoming": "tsx scripts/seed-upcoming-appointments.ts",
     "seed:vault": "tsx --conditions react-server scripts/seed-vault.ts",
     "psy:score-session": "tsx --conditions react-server scripts/psy-score-session.ts",
+    "psy:rescore-all": "tsx --conditions react-server scripts/psy-rescore-all.ts",
     "test:j8": "tsx --conditions react-server scripts/test-j8-pipeline.ts",
     "ingest": "tsx scripts/ingest.ts",
     "ingest:local": "tsx scripts/ingest-local.ts",

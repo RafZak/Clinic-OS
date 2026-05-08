@@ -2,7 +2,15 @@
 
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
-import type { PsyRadar, PsySnapshot } from "@/lib/psychology/axes";
+import {
+  PSY_AXES,
+  PSY_AXIS_POLARITY,
+  PSY_AXIS_SHORT_LABEL,
+  interpretAxis,
+  type PsyAxis,
+  type PsyRadar,
+  type PsySnapshot,
+} from "@/lib/psychology/axes";
 import { PSY_TAG_LABEL, type PsyTag } from "@/lib/psychology/tags";
 import { PsychologyRadar } from "./psychology-radar";
 import { cn } from "@/lib/utils";
@@ -173,8 +181,60 @@ export function PsychologyRadarCard({
         </div>
       </div>
 
+      {/* Lecture détaillée — chaque axe scoré + interprétation en mots simples.
+          Clarifie d'un coup d'œil ce que chaque score veut dire pour le patient. */}
+      <div className="mt-5 rounded-md border border-border bg-light/40 p-3">
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          Lecture du profil
+        </p>
+        <ul className="grid grid-cols-1 gap-1.5 text-xs sm:grid-cols-2">
+          {PSY_AXES.map((axis) => {
+            const score = globalRadar[axis];
+            const polarity = PSY_AXIS_POLARITY[axis];
+            const isFavorable =
+              score !== null &&
+              ((polarity === "positive" && score >= 6) ||
+                (polarity === "negative" && score <= 4));
+            const isUnfavorable =
+              score !== null &&
+              ((polarity === "positive" && score <= 4) ||
+                (polarity === "negative" && score >= 6));
+            return (
+              <li key={axis} className="flex items-baseline gap-2 leading-tight">
+                <span
+                  className={cn(
+                    "inline-block w-1.5 h-1.5 rounded-full mt-1 flex-shrink-0",
+                    score === null
+                      ? "bg-muted-foreground/40"
+                      : isFavorable
+                        ? "bg-emerald-500"
+                        : isUnfavorable
+                          ? "bg-red-500"
+                          : "bg-amber-500"
+                  )}
+                />
+                <span className="text-foreground">
+                  <span className="font-medium">{PSY_AXIS_SHORT_LABEL[axis]}</span>
+                  {score === null ? (
+                    <span className="text-muted-foreground italic"> — non observé</span>
+                  ) : (
+                    <>
+                      {" "}
+                      <span className="text-muted-foreground">{score}/10</span>
+                      <span className="text-muted-foreground">
+                        {" "}— {interpretAxis(axis as PsyAxis, score)}
+                      </span>
+                    </>
+                  )}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+
       {globalTags.length > 0 ? (
-        <div className="mt-5 flex flex-wrap gap-1.5">
+        <div className="mt-3 flex flex-wrap gap-1.5">
           {globalTags.map((tag) => (
             <span
               key={tag}

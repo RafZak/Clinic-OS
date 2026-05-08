@@ -228,24 +228,43 @@ export function PsychologyRadar({
         aria-hidden="true"
       />
 
-      {/* Dots aux vertex effectivement scorés — ancre visuelle sur les vraies données.
-          Pour les couches multi-session, on ne dessine que les dots de la dernière couche
-          (généralement le global ou la session la plus récente) afin de ne pas surcharger. */}
+      {/* Dots aux vertex effectivement scorés + valeur affichée à côté.
+          Multi-session : seulement la dernière couche (sinon trop chargé). */}
       {layers.length > 0 && (
-        <g aria-hidden="true">
+        <g>
           {scoredAxes(layers[layers.length - 1].radar).map(({ axis, value01 }) => {
             const [x, y] = pointFor(axis, value01);
+            const score = Math.round(value01 * 10);
             const last = layers[layers.length - 1];
+            // Position du label valeur : légèrement décalé vers l'extérieur
+            const [lx, ly] = pointFor(axis, Math.min(value01 + 0.12, 1.05));
             return (
-              <circle
-                key={`dot-${axis}`}
-                cx={x}
-                cy={y}
-                r={3.5}
-                fill={last.color}
-                stroke="#FFFFFF"
-                strokeWidth={1.5}
-              />
+              <g key={`dot-${axis}`}>
+                <circle
+                  cx={x}
+                  cy={y}
+                  r={3.5}
+                  fill={last.color}
+                  stroke="#FFFFFF"
+                  strokeWidth={1.5}
+                />
+                <text
+                  x={lx}
+                  y={ly}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fontSize={9.5}
+                  fontWeight={700}
+                  fill={last.color}
+                  paintOrder="stroke"
+                  stroke="#FFFFFF"
+                  strokeWidth={3}
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  {score}
+                </text>
+              </g>
             );
           })}
         </g>

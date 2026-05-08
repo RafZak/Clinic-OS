@@ -55,6 +55,57 @@ export const PSY_AXIS_POLARITY: Record<PsyAxis, PsyAxisPolarity> = {
   decisionStage: "positive",
 };
 
+/**
+ * Interprétation lisible de chaque axe selon le niveau de score.
+ * "low" = score 0-3, "mid" = 4-6, "high" = 7-10.
+ * Permet d'afficher "Prix 8/10 — réfractaire" plutôt que de laisser
+ * l'utilisateur deviner la sémantique du score.
+ */
+type Tier = "low" | "mid" | "high";
+
+export function tierFor(score: number): Tier {
+  if (score <= 3) return "low";
+  if (score <= 6) return "mid";
+  return "high";
+}
+
+export const PSY_AXIS_INTERPRETATION: Record<PsyAxis, Record<Tier, string>> = {
+  acceptance: {
+    low: "en déni / refuse le déficit",
+    mid: "ambivalent",
+    high: "accepte son déficit auditif",
+  },
+  motivation: {
+    low: "peu engagé / passif",
+    mid: "modérément motivé",
+    high: "très motivé / moteur",
+  },
+  trust: {
+    low: "méfiant envers le pro",
+    mid: "neutre",
+    high: "très confiant envers le pro",
+  },
+  priceSensitivity: {
+    low: "peu sensible au prix",
+    mid: "sensibilité prix modérée",
+    high: "très sensible au prix / frein financier",
+  },
+  externalInfluence: {
+    low: "autonome dans sa décision",
+    mid: "écoute son entourage",
+    high: "décision dépend fortement de l'entourage",
+  },
+  decisionStage: {
+    low: "phase d'exploration / pas prêt",
+    mid: "réfléchit, hésite",
+    high: "prêt à décider / signature proche",
+  },
+};
+
+export function interpretAxis(axis: PsyAxis, score: number): string {
+  return PSY_AXIS_INTERPRETATION[axis][tierFor(score)];
+}
+
 export const PSY_AXIS_LABEL_EN: Record<PsyAxis, string> = {
   acceptance: "Hearing loss acceptance",
   motivation: "Motivation",

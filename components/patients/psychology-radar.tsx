@@ -49,21 +49,27 @@ function pointFor(axis: PsyAxis, value01: number): [number, number] {
 }
 
 /**
- * Construit le path SVG du polygone en SAUTANT les axes null.
- * Cela évite que la forme passe par le centre et crée des "papillons"
- * quand certains axes ne sont pas observables depuis le transcript.
- * Si moins de 3 axes sont scorés, on retourne null (rendu vide géré par le caller).
+ * Path SVG du polygone fermé sur les 6 axes. Null est traité comme 0 (au centre)
+ * pour préserver la gestalt du radar. Les dots posés à part marqueront les
+ * VRAIES mesures, et les labels d'axes null seront dimmed visuellement.
  */
-function radarToPolygon(radar: PsyRadar): string | null {
-  const points: string[] = [];
+function radarToPolygon(radar: PsyRadar): string {
+  return PSY_AXES.map((axis) => {
+    const raw = radar[axis];
+    const v = raw === null ? 0 : raw / 10;
+    const [x, y] = pointFor(axis, v);
+    return `${x.toFixed(2)},${y.toFixed(2)}`;
+  }).join(" ");
+}
+
+/** Renvoie la liste des axes effectivement scorés sur ce radar (pour dessiner les dots). */
+function scoredAxes(radar: PsyRadar): Array<{ axis: PsyAxis; value01: number }> {
+  const out: Array<{ axis: PsyAxis; value01: number }> = [];
   for (const axis of PSY_AXES) {
     const raw = radar[axis];
-    if (raw === null) continue;
-    const [x, y] = pointFor(axis, raw / 10);
-    points.push(`${x.toFixed(2)},${y.toFixed(2)}`);
+    if (raw !== null) out.push({ axis, value01: raw / 10 });
   }
-  if (points.length < 3) return null;
-  return points.join(" ");
+  return out;
 }
 
 function gridPolygon(scale: number): string {
@@ -125,10 +131,11 @@ export function PsychologyRadar({
         ))}
       </g>
 
-      {/* Axis lines */}
+      {/* Axis lines — dimmed/dashed sur les axes non observés (union de tous les layers) */}
       <g aria-hidden="true">
         {PSY_AXES.map((axis) => {
           const [x, y] = pointFor(axis, 1);
+          const observed = axisHasValue[axis];
           return (
             <line
               key={`axis-${axis}`}
@@ -136,32 +143,52 @@ export function PsychologyRadar({
               y1={CY}
               x2={x}
               y2={y}
-              stroke="#E5E7EB"
+              stroke={observed ? "#E5E7EB" : "#F3F4F6"}
               strokeWidth={1}
+              strokeDasharray={observed ? undefined : "2 2"}
             />
           );
         })}
       </g>
 
-      {/* Layers (oldest first → most recent → global on top) */}
+      {/* Layers (oldest first → most recent → global on top) — polygones fermés sur 6 axes */}
       <g>
-        {layers.map((layer) => {
-          const points = radarToPolygon(layer.radar);
-          if (!points) return null;
-          return (
-            <polygon
-              key={layer.key}
-              points={points}
-              fill={layer.color}
-              fillOpacity={layer.fillOpacity}
-              stroke={layer.color}
-              strokeWidth={layer.strokeWidth}
-              strokeDasharray={layer.dasharray}
-              strokeLinejoin="round"
-            />
-          );
-        })}
+        {layers.map((layer) => (
+          <polygon
+            key={layer.key}
+            points={radarToPolygon(layer.radar)}
+            fill={layer.color}
+            fillOpacity={layer.fillOpacity}
+            stroke={layer.color}
+            strokeWidth={layer.strokeWidth}
+            strokeDasharray={layer.dasharray}
+            strokeLinejoin="round"
+          />
+        ))}
       </g>
+
+      {/* Dots aux vertex effectivement scorés — ancre visuelle sur les vraies données.
+          Pour les couches multi-session, on ne dessine que les dots de la dernière couche
+          (généralement le global ou la session la plus récente) afin de ne pas surcharger. */}
+      {layers.length > 0 && (
+        <g aria-hidden="true">
+          {scoredAxes(layers[layers.length - 1].radar).map(({ axis, value01 }) => {
+            const [x, y] = pointFor(axis, value01);
+            const last = layers[layers.length - 1];
+            return (
+              <circle
+                key={`dot-${axis}`}
+                cx={x}
+                cy={y}
+                r={3.5}
+                fill={last.color}
+                stroke="#FFFFFF"
+                strokeWidth={1.5}
+              />
+            );
+          })}
+        </g>
+      )}
 
       {/* Axis labels — courts sur le radar, complets en title (tooltip natif) */}
       {showLabels && (

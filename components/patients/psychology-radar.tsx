@@ -41,6 +41,23 @@ const ANGLES: Record<PsyAxis, number> = {
   priceSensitivity: -Math.PI / 2 + (5 * Math.PI) / 3,
 };
 
+/**
+ * IMPORTANT : ordre HORAIRE autour de l'hexagone (par angle croissant).
+ * PSY_AXES définit un ordre sémantique qui n'est PAS l'ordre géométrique :
+ * il alterne (top, top-right, lower-right, top-left, lower-left, bottom),
+ * ce qui crée un polygone auto-intersectant en forme de "papillon" si on
+ * itère dans cet ordre pour dessiner. On utilise cet array partout pour
+ * les rendus géométriques (grid, fill, segments perimeter).
+ */
+const PSY_AXES_CLOCKWISE: PsyAxis[] = [
+  "acceptance", // top, -π/2
+  "motivation", // top-right, -π/2 + π/3
+  "trust", // lower-right, -π/2 + 2π/3
+  "decisionStage", // bottom, π/2
+  "externalInfluence", // lower-left, -π/2 + 4π/3
+  "priceSensitivity", // top-left, -π/2 + 5π/3
+];
+
 function pointFor(axis: PsyAxis, value01: number): [number, number] {
   const angle = ANGLES[axis];
   const x = CX + Math.cos(angle) * R * value01;
@@ -81,7 +98,7 @@ function scoredAxes(radar: PsyRadar): Array<{ axis: PsyAxis; value01: number }> 
 }
 
 function gridPolygon(scale: number): string {
-  return PSY_AXES.map((axis) => {
+  return PSY_AXES_CLOCKWISE.map((axis) => {
     const [x, y] = pointFor(axis, scale);
     return `${x.toFixed(2)},${y.toFixed(2)}`;
   }).join(" ");
@@ -187,16 +204,17 @@ export function PsychologyRadar({
           // hexagonal (rose uniforme) reste le visuel dominant.
           const fillPoints = partial
             ? null
-            : PSY_AXES.map((axis) => {
+            : PSY_AXES_CLOCKWISE.map((axis) => {
                 const raw = layer.radar[axis];
                 const v01 = raw === null ? 0 : raw / 10;
                 const [x, y] = pointFor(axis, v01);
                 return `${x.toFixed(2)},${y.toFixed(2)}`;
               }).join(" ");
 
-          // 6 segments : pour chaque paire d'axes adjacents
-          const segments = PSY_AXES.map((axisA, i) => {
-            const axisB = PSY_AXES[(i + 1) % PSY_AXES.length];
+          // 6 segments : pour chaque paire d'axes adjacents (ordre horaire)
+          const segments = PSY_AXES_CLOCKWISE.map((axisA, i) => {
+            const axisB =
+              PSY_AXES_CLOCKWISE[(i + 1) % PSY_AXES_CLOCKWISE.length];
             const rawA = layer.radar[axisA];
             const rawB = layer.radar[axisB];
             const aNull = rawA === null;

@@ -62,10 +62,10 @@ export function PsychologyFilters() {
           Consentement marketing
         </p>
         <div className="flex gap-1.5">
-          {[
-            ["active", "Consentants uniquement"],
-            ["all", "Tous (avec avertissement)"],
-          ].map(([k, label]) => (
+          {([
+            ["active", "Consentants uniquement", "border-emerald-200 bg-emerald-50 text-emerald-700"],
+            ["all", "Tous (avec avertissement)", "border-amber-200 bg-amber-50 text-amber-800"],
+          ] as const).map(([k, label, activeClass]) => (
             <button
               key={k}
               type="button"
@@ -73,8 +73,8 @@ export function PsychologyFilters() {
               className={
                 "rounded-full border px-3 py-1 text-xs font-medium transition " +
                 (consentMode === k
-                  ? "border-brand bg-brand text-white"
-                  : "border-border bg-surface-muted text-foreground")
+                  ? activeClass
+                  : "border-border bg-surface-muted text-foreground hover:border-emerald-200")
               }
             >
               {label}

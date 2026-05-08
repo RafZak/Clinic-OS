@@ -62,12 +62,3 @@ export type PsySnapshot = {
   createdAt: Date;
 };
 
-/** Snapshot column name in DB ↔ axis key in TS. Used by query mappers. */
-export const PSY_AXIS_COLUMN: Record<PsyAxis, string> = {
-  acceptance: "acceptance_score",
-  motivation: "motivation_score",
-  trust: "trust_score",
-  priceSensitivity: "price_sensitivity_score",
-  externalInfluence: "external_influence_score",
-  decisionStage: "decision_stage_score",
-};

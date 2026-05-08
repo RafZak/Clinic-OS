@@ -28,7 +28,7 @@ export const PSY_TAG_LABEL: Record<PsyTag, string> = {
   "réfractaire-prix": "Réfractaire prix",
   "en-déni": "En déni",
   "entourage-décisif": "Entourage décisif",
-  méfiant: "Méfiant",
+  "méfiant": "Méfiant",
   "décisionnaire-éclairé": "Décisionnaire éclairé",
   "à-rassurer": "À rassurer",
   "à-éduquer": "À éduquer",
@@ -40,8 +40,7 @@ type Rule = {
   test: (r: PsyRadar) => boolean;
 };
 
-const all = (...vals: (number | null | undefined)[]) =>
-  vals.every((v) => v !== null && v !== undefined);
+const all = (...vals: (number | null)[]) => vals.every((v) => v !== null);
 
 /**
  * L'ordre des règles définit la priorité d'affichage UI quand on
@@ -76,19 +75,15 @@ export const PSY_TAG_RULES: ReadonlyArray<Rule> = [
   },
   {
     tag: "méfiant",
-    test: (r) => r.trust !== null && r.trust !== undefined && r.trust <= 3,
+    test: (r) => r.trust !== null && r.trust <= 3,
   },
   {
     tag: "en-déni",
-    test: (r) =>
-      r.acceptance !== null && r.acceptance !== undefined && r.acceptance <= 3,
+    test: (r) => r.acceptance !== null && r.acceptance <= 3,
   },
   {
     tag: "entourage-décisif",
-    test: (r) =>
-      r.externalInfluence !== null &&
-      r.externalInfluence !== undefined &&
-      r.externalInfluence >= 7,
+    test: (r) => r.externalInfluence !== null && r.externalInfluence >= 7,
   },
   {
     tag: "décisionnaire-éclairé",

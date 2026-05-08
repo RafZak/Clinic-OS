@@ -133,5 +133,14 @@ export async function searchPatientsByTags(opts: {
     .where(and(...conditions))
     .orderBy(desc(latest.maxAt));
 
-  return rows;
+  // postgres-js renvoie max(created_at) comme string (pas Date) car l'aggregate
+  // n'est pas typé par Drizzle. On normalise pour éviter "b.getTime is not a function"
+  // côté React server components.
+  return rows.map((row) => ({
+    ...row,
+    lastSessionAt:
+      row.lastSessionAt instanceof Date
+        ? row.lastSessionAt
+        : new Date(row.lastSessionAt as unknown as string),
+  }));
 }

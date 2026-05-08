@@ -58,26 +58,25 @@ export function PsychologyRadarCard({
   const visibleSnapshots = snapshots.slice(0, 3).reverse();
   const hiddenCount = Math.max(0, snapshots.length - 3);
 
-  const sessionLayers = showHistory
-    ? visibleSnapshots.map((snap, i) => {
-        const palette =
-          SESSION_COLORS[
-            Math.max(0, SESSION_COLORS.length - visibleSnapshots.length + i)
-          ];
-        return {
-          key: snap.id,
-          radar: snap.radar,
-          color: palette.color,
-          fillOpacity: palette.fillOpacity,
-          strokeWidth: 1.5,
-          dasharray: palette.dasharray,
-          snap,
-        };
-      })
-    : [];
+  const paletteFor = (i: number) =>
+    SESSION_COLORS[
+      Math.max(0, SESSION_COLORS.length - visibleSnapshots.length + i)
+    ];
 
   const layers = [
-    ...sessionLayers.map(({ snap: _snap, ...layer }) => layer),
+    ...(showHistory
+      ? visibleSnapshots.map((snap, i) => {
+          const palette = paletteFor(i);
+          return {
+            key: snap.id,
+            radar: snap.radar,
+            color: palette.color,
+            fillOpacity: palette.fillOpacity,
+            strokeWidth: 1.5,
+            dasharray: palette.dasharray,
+          };
+        })
+      : []),
     {
       key: "global",
       radar: globalRadar,
@@ -98,16 +97,21 @@ export function PsychologyRadarCard({
       strokeWidth: 2.5,
     },
     ...(showHistory
-      ? [...sessionLayers].reverse().map(({ snap, ...layer }) => ({
-          key: layer.key,
-          label: `${SESSION_KIND_LABEL[snap.sessionKind]} · ${formatSessionDate(
-            snap.sessionStartedAt
-          )}`,
-          color: layer.color,
-          fillOpacity: layer.fillOpacity,
-          strokeWidth: layer.strokeWidth,
-          dasharray: layer.dasharray,
-        }))
+      ? visibleSnapshots
+          .map((snap, i) => {
+            const palette = paletteFor(i);
+            return {
+              key: snap.id,
+              label: `${SESSION_KIND_LABEL[snap.sessionKind]} · ${formatSessionDate(
+                snap.sessionStartedAt
+              )}`,
+              color: palette.color,
+              fillOpacity: palette.fillOpacity,
+              strokeWidth: 1.5,
+              dasharray: palette.dasharray,
+            };
+          })
+          .reverse()
       : []),
   ];
 

@@ -145,6 +145,8 @@ export type PatientDetail = {
     firstContactAt: Date | null;
     centerName: string | null;
     centerId: string | null;
+    marketingPsyConsentAt: Date | null;
+    marketingPsyRevokedAt: Date | null;
   };
   events: PatientEventRow[];
 };
@@ -172,6 +174,8 @@ type RawPatientDetailRow = {
   first_contact_at: string | null;
   center_id: string | null;
   center_name: string | null;
+  marketing_psy_consent_at: string | null;
+  marketing_psy_revoked_at: string | null;
 };
 
 export async function getPatientDetail(
@@ -185,7 +189,9 @@ export async function getPatientDetail(
       p.status,
       p.first_contact_at,
       p.center_id,
-      c.name AS center_name
+      c.name AS center_name,
+      p.marketing_psy_consent_at,
+      p.marketing_psy_revoked_at
     FROM patients p
     LEFT JOIN centers c ON c.id = p.center_id
     WHERE p.id = ${patientId}
@@ -225,6 +231,8 @@ export async function getPatientDetail(
       firstContactAt: toDate(head.first_contact_at),
       centerName: head.center_name,
       centerId: head.center_id,
+      marketingPsyConsentAt: toDate(head.marketing_psy_consent_at),
+      marketingPsyRevokedAt: toDate(head.marketing_psy_revoked_at),
     },
     events: eventRows.map((r) => ({
       id: r.id,

@@ -108,7 +108,7 @@ export async function analyzeSession(sessionId: string): Promise<AnalyzeOutcome>
     const transcriptText = formatTranscript(lines, kind, locale);
 
     const payload = await callClaude(kind, framework, transcriptText, locale);
-    const normalized = normalize(payload, framework, locale);
+    const normalized = normalize(payload, framework, locale, sessionId);
     const phoneTags = kind === "phone_call" ? parsePhoneTags(payload.phone_tags) : null;
 
     // Enrichissement citations Layer A (best effort — une panne retrieval
@@ -422,8 +422,47 @@ Analyse cette session selon le framework. Appelle l'outil submit_analysis avec l
   return toolUse.input as AnalysisPayload;
 }
 
-function normalize(raw: AnalysisPayload, framework: FrameworkStep[], locale: Locale): AnalysisPayload {
-  const byStep = new Map(raw.scores.map((s) => [s.step_number, s]));
+function coerceArray<T>(v: unknown, sessionId: string, field: string): T[] {
+  if (Array.isArray(v)) return v as T[];
+  if (typeof v === "string") {
+    try {
+      const parsed = JSON.parse(v);
+      if (Array.isArray(parsed)) {
+        console.warn(
+          JSON.stringify({
+            tag: "analysis",
+            sessionId,
+            event: "coerced_string_to_array",
+            field,
+          })
+        );
+        return parsed as T[];
+      }
+    } catch {
+      // not valid JSON — fall through
+    }
+  }
+  console.warn(
+    JSON.stringify({
+      tag: "analysis",
+      sessionId,
+      event: "invalid_field_type",
+      field,
+      receivedType: v === null ? "null" : Array.isArray(v) ? "array" : typeof v,
+    })
+  );
+  return [];
+}
+
+function normalize(
+  raw: AnalysisPayload,
+  framework: FrameworkStep[],
+  locale: Locale,
+  sessionId: string
+): AnalysisPayload {
+  const rawScores = coerceArray<RawScore>(raw.scores, sessionId, "scores");
+  const rawInsights = coerceArray<RawInsight>(raw.insights, sessionId, "insights");
+  const byStep = new Map(rawScores.map((s) => [s.step_number, s]));
   const notEvaluated =
     locale === "en"
       ? "Step not evaluated by the analyzer."
@@ -449,7 +488,7 @@ function normalize(raw: AnalysisPayload, framework: FrameworkStep[], locale: Loc
     };
   });
 
-  const insights: RawInsight[] = raw.insights
+  const insights: RawInsight[] = rawInsights
     .filter((i) => INSIGHT_TYPES.includes(i.type))
     .map((i) => ({
       type: i.type,

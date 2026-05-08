@@ -3,6 +3,7 @@
 import {
   PSY_AXES,
   PSY_AXIS_LABEL,
+  PSY_AXIS_SHORT_LABEL,
   type PsyAxis,
   type PsyRadar,
 } from "@/lib/psychology/axes";
@@ -24,10 +25,12 @@ export type PsychologyRadarProps = {
   showLabels?: boolean;
 };
 
-const VIEW = 360;
-const CX = 180;
+/** Plus large horizontalement pour laisser de la place aux labels (« Influence entourage », etc). */
+const VIEW_W = 440;
+const VIEW_H = 360;
+const CX = 220;
 const CY = 180;
-const R = 140;
+const R = 130;
 
 const ANGLES: Record<PsyAxis, number> = {
   acceptance: -Math.PI / 2,
@@ -45,13 +48,22 @@ function pointFor(axis: PsyAxis, value01: number): [number, number] {
   return [x, y];
 }
 
-function radarToPolygon(radar: PsyRadar): string {
-  return PSY_AXES.map((axis) => {
+/**
+ * Construit le path SVG du polygone en SAUTANT les axes null.
+ * Cela évite que la forme passe par le centre et crée des "papillons"
+ * quand certains axes ne sont pas observables depuis le transcript.
+ * Si moins de 3 axes sont scorés, on retourne null (rendu vide géré par le caller).
+ */
+function radarToPolygon(radar: PsyRadar): string | null {
+  const points: string[] = [];
+  for (const axis of PSY_AXES) {
     const raw = radar[axis];
-    const v = raw === null ? 0 : raw / 10;
-    const [x, y] = pointFor(axis, v);
-    return `${x.toFixed(2)},${y.toFixed(2)}`;
-  }).join(" ");
+    if (raw === null) continue;
+    const [x, y] = pointFor(axis, raw / 10);
+    points.push(`${x.toFixed(2)},${y.toFixed(2)}`);
+  }
+  if (points.length < 3) return null;
+  return points.join(" ");
 }
 
 function gridPolygon(scale: number): string {
@@ -75,14 +87,30 @@ export function PsychologyRadar({
 }: PsychologyRadarProps) {
   const gridScales = [0.25, 0.5, 0.75, 1];
 
+  // Détecter les axes au moins partiellement scorés sur l'union des layers
+  const axisHasValue: Record<PsyAxis, boolean> = {
+    acceptance: false,
+    motivation: false,
+    trust: false,
+    priceSensitivity: false,
+    externalInfluence: false,
+    decisionStage: false,
+  };
+  for (const layer of layers) {
+    for (const axis of PSY_AXES) {
+      if (layer.radar[axis] !== null) axisHasValue[axis] = true;
+    }
+  }
+
   return (
     <svg
       role="img"
       aria-label="Profil psychologique patient"
-      viewBox={`0 0 ${VIEW} ${VIEW}`}
+      viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
       width={size}
-      height={size}
+      height={size * (VIEW_H / VIEW_W)}
       className={cn("block", className)}
+      preserveAspectRatio="xMidYMid meet"
     >
       {/* Grid hexagons */}
       <g aria-hidden="true">
@@ -117,25 +145,30 @@ export function PsychologyRadar({
 
       {/* Layers (oldest first → most recent → global on top) */}
       <g>
-        {layers.map((layer) => (
-          <polygon
-            key={layer.key}
-            points={radarToPolygon(layer.radar)}
-            fill={layer.color}
-            fillOpacity={layer.fillOpacity}
-            stroke={layer.color}
-            strokeWidth={layer.strokeWidth}
-            strokeDasharray={layer.dasharray}
-            strokeLinejoin="round"
-          />
-        ))}
+        {layers.map((layer) => {
+          const points = radarToPolygon(layer.radar);
+          if (!points) return null;
+          return (
+            <polygon
+              key={layer.key}
+              points={points}
+              fill={layer.color}
+              fillOpacity={layer.fillOpacity}
+              stroke={layer.color}
+              strokeWidth={layer.strokeWidth}
+              strokeDasharray={layer.dasharray}
+              strokeLinejoin="round"
+            />
+          );
+        })}
       </g>
 
-      {/* Axis labels */}
+      {/* Axis labels — courts sur le radar, complets en title (tooltip natif) */}
       {showLabels && (
         <g>
           {PSY_AXES.map((axis) => {
-            const [x, y] = pointFor(axis, 1.15);
+            const [x, y] = pointFor(axis, 1.18);
+            const observed = axisHasValue[axis];
             return (
               <text
                 key={`label-${axis}`}
@@ -145,9 +178,14 @@ export function PsychologyRadar({
                 dominantBaseline="middle"
                 fontSize={11}
                 fontWeight={500}
-                fill="#374151"
+                fill={observed ? "#374151" : "#9CA3AF"}
+                fontStyle={observed ? "normal" : "italic"}
               >
-                {PSY_AXIS_LABEL[axis]}
+                {PSY_AXIS_SHORT_LABEL[axis]}
+                <title>
+                  {PSY_AXIS_LABEL[axis]}
+                  {observed ? "" : " — non observé"}
+                </title>
               </text>
             );
           })}

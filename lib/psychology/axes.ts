@@ -24,6 +24,16 @@ export const PSY_AXIS_LABEL: Record<PsyAxis, string> = {
   decisionStage: "Stade décisionnel",
 };
 
+/** Labels courts pour affichage sur le radar SVG (place limitée). */
+export const PSY_AXIS_SHORT_LABEL: Record<PsyAxis, string> = {
+  acceptance: "Acceptation",
+  motivation: "Motivation",
+  trust: "Confiance",
+  priceSensitivity: "Prix",
+  externalInfluence: "Entourage",
+  decisionStage: "Décision",
+};
+
 export const PSY_AXIS_LABEL_EN: Record<PsyAxis, string> = {
   acceptance: "Hearing loss acceptance",
   motivation: "Motivation",

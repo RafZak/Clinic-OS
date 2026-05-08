@@ -223,12 +223,14 @@ export function PsychologyRadar({
                   y1={seg.y1}
                   x2={seg.x2}
                   y2={seg.y2}
-                  stroke={layer.color}
-                  strokeWidth={layer.strokeWidth}
-                  strokeDasharray={
-                    seg.dashed ? "4 3" : layer.dasharray
+                  stroke={seg.dashed ? "#A50534" : layer.color}
+                  strokeWidth={
+                    seg.dashed ? layer.strokeWidth : layer.strokeWidth
                   }
-                  strokeOpacity={seg.dashed ? 0.55 : 1}
+                  strokeDasharray={
+                    seg.dashed ? "6 4" : layer.dasharray
+                  }
+                  strokeOpacity={seg.dashed ? 0.9 : 1}
                   strokeLinecap="round"
                 />
               ))}

@@ -49,20 +49,28 @@ function pointFor(axis: PsyAxis, value01: number): [number, number] {
 }
 
 /**
- * Path SVG du polygone fermé sur les 6 axes. Null est traité comme 0 (au centre)
- * pour préserver la gestalt du radar. Les dots posés à part marqueront les
- * VRAIES mesures, et les labels d'axes null seront dimmed visuellement.
+ * Path SVG du polygone fermé sur les axes SCORÉS uniquement.
+ * Si un axe est null, on le saute — le polygone se ferme directement entre
+ * les vertex scorés. Évite que la forme passe par le centre (problème du
+ * "papillon" quand null = 0). Quand ce n'est pas un hexagone complet, le
+ * caller dessine en pointillé pour signaler les données partielles.
  */
-function radarToPolygon(radar: PsyRadar): string {
-  return PSY_AXES.map((axis) => {
+function radarToPolygon(radar: PsyRadar): string | null {
+  const points: string[] = [];
+  for (const axis of PSY_AXES) {
     const raw = radar[axis];
-    const v = raw === null ? 0 : raw / 10;
-    const [x, y] = pointFor(axis, v);
-    return `${x.toFixed(2)},${y.toFixed(2)}`;
-  }).join(" ");
+    if (raw === null) continue;
+    const [x, y] = pointFor(axis, raw / 10);
+    points.push(`${x.toFixed(2)},${y.toFixed(2)}`);
+  }
+  if (points.length < 3) return null;
+  return points.join(" ");
 }
 
-/** Renvoie la liste des axes effectivement scorés sur ce radar (pour dessiner les dots). */
+function scoredAxesCount(radar: PsyRadar): number {
+  return PSY_AXES.reduce((acc, a) => acc + (radar[a] !== null ? 1 : 0), 0);
+}
+
 function scoredAxes(radar: PsyRadar): Array<{ axis: PsyAxis; value01: number }> {
   const out: Array<{ axis: PsyAxis; value01: number }> = [];
   for (const axis of PSY_AXES) {
@@ -151,20 +159,29 @@ export function PsychologyRadar({
         })}
       </g>
 
-      {/* Layers (oldest first → most recent → global on top) — polygones fermés sur 6 axes */}
+      {/* Layers (oldest first → most recent → global on top) — polygones sur axes scorés.
+          Si profil partiel (< 6 axes), trait pointillé pour signaler "données incomplètes". */}
       <g>
-        {layers.map((layer) => (
-          <polygon
-            key={layer.key}
-            points={radarToPolygon(layer.radar)}
-            fill={layer.color}
-            fillOpacity={layer.fillOpacity}
-            stroke={layer.color}
-            strokeWidth={layer.strokeWidth}
-            strokeDasharray={layer.dasharray}
-            strokeLinejoin="round"
-          />
-        ))}
+        {layers.map((layer) => {
+          const points = radarToPolygon(layer.radar);
+          if (!points) return null;
+          const partial = scoredAxesCount(layer.radar) < PSY_AXES.length;
+          // Si layer a déjà un dasharray (sessions historiques), on le garde.
+          // Sinon, on en applique un seulement si partiel.
+          const dash = layer.dasharray ?? (partial ? "5 4" : undefined);
+          return (
+            <polygon
+              key={layer.key}
+              points={points}
+              fill={layer.color}
+              fillOpacity={layer.fillOpacity}
+              stroke={layer.color}
+              strokeWidth={layer.strokeWidth}
+              strokeDasharray={dash}
+              strokeLinejoin="round"
+            />
+          );
+        })}
       </g>
 
       {/* Dots aux vertex effectivement scorés — ancre visuelle sur les vraies données.
@@ -190,30 +207,33 @@ export function PsychologyRadar({
         </g>
       )}
 
-      {/* Axis labels — courts sur le radar, complets en title (tooltip natif) */}
+      {/* Axis labels — courts sur le radar, complets en title (tooltip natif au hover SVG).
+          Le <title> est wrappé dans un <g> parent pour éviter un mismatch d'hydratation
+          quand on le met directement enfant de <text>. */}
       {showLabels && (
         <g>
           {PSY_AXES.map((axis) => {
             const [x, y] = pointFor(axis, 1.18);
             const observed = axisHasValue[axis];
             return (
-              <text
-                key={`label-${axis}`}
-                x={x}
-                y={y}
-                textAnchor={labelAnchor(x)}
-                dominantBaseline="middle"
-                fontSize={11}
-                fontWeight={500}
-                fill={observed ? "#374151" : "#9CA3AF"}
-                fontStyle={observed ? "normal" : "italic"}
-              >
-                {PSY_AXIS_SHORT_LABEL[axis]}
+              <g key={`label-${axis}`}>
                 <title>
                   {PSY_AXIS_LABEL[axis]}
                   {observed ? "" : " — non observé"}
                 </title>
-              </text>
+                <text
+                  x={x}
+                  y={y}
+                  textAnchor={labelAnchor(x)}
+                  dominantBaseline="middle"
+                  fontSize={11}
+                  fontWeight={500}
+                  fill={observed ? "#374151" : "#9CA3AF"}
+                  fontStyle={observed ? "normal" : "italic"}
+                >
+                  {PSY_AXIS_SHORT_LABEL[axis]}
+                </text>
+              </g>
             );
           })}
         </g>

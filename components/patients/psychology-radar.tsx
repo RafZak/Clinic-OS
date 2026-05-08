@@ -3,6 +3,7 @@
 import {
   PSY_AXES,
   PSY_AXIS_LABEL,
+  PSY_AXIS_POLARITY,
   PSY_AXIS_SHORT_LABEL,
   type PsyAxis,
   type PsyRadar,
@@ -82,10 +83,6 @@ function radarToPolygon(radar: PsyRadar): string | null {
   }
   if (points.length < 3) return null;
   return points.join(" ");
-}
-
-function scoredAxesCount(radar: PsyRadar): number {
-  return PSY_AXES.reduce((acc, a) => acc + (radar[a] !== null ? 1 : 0), 0);
 }
 
 function scoredAxes(radar: PsyRadar): Array<{ axis: PsyAxis; value01: number }> {
@@ -189,76 +186,32 @@ export function PsychologyRadar({
         })}
       </g>
 
-      {/* Layers — pour chaque layer, on dessine :
-            1. Un polygone de fond (fill) sur les 6 axes (null = bord extérieur de
-               l'hexagone) → couvre toujours toute la surface, pas de zones blanches.
-            2. 6 segments individuels formant la perimeter : solide entre 2 axes scorés,
-               POINTILLÉ dès qu'un axe est null. Le pointillé indique "frame théorique,
-               pas de mesure réelle ici". */}
+      {/* Polygone des données — fermé UNIQUEMENT sur les axes scorés (skip null).
+          Lecture simple : la zone colorée correspond aux dimensions mesurées, l'espace
+          hexagonal restant montre les dimensions non observées. Le grid hexagonal en
+          fond reste le cadre. */}
       <g>
         {layers.map((layer) => {
-          const partial = scoredAxesCount(layer.radar) < PSY_AXES.length;
-          // Fill rendu UNIQUEMENT si profil complet (6/6) — sinon le fill asymétrique
-          // créerait des "losanges + triangles vides" qui rendent le radar illisible.
-          // Sur profil partiel, on n'affiche que les segments + dots, et le fond
-          // hexagonal (rose uniforme) reste le visuel dominant.
-          const fillPoints = partial
-            ? null
-            : PSY_AXES_CLOCKWISE.map((axis) => {
-                const raw = layer.radar[axis];
-                const v01 = raw === null ? 0 : raw / 10;
-                const [x, y] = pointFor(axis, v01);
-                return `${x.toFixed(2)},${y.toFixed(2)}`;
-              }).join(" ");
-
-          // 6 segments : pour chaque paire d'axes adjacents (ordre horaire)
-          const segments = PSY_AXES_CLOCKWISE.map((axisA, i) => {
-            const axisB =
-              PSY_AXES_CLOCKWISE[(i + 1) % PSY_AXES_CLOCKWISE.length];
-            const rawA = layer.radar[axisA];
-            const rawB = layer.radar[axisB];
-            const aNull = rawA === null;
-            const bNull = rawB === null;
-            const v01A = aNull ? 1 : rawA / 10;
-            const v01B = bNull ? 1 : rawB / 10;
-            const [xA, yA] = pointFor(axisA, v01A);
-            const [xB, yB] = pointFor(axisB, v01B);
-            const dashed = aNull || bNull;
-            return {
-              key: `${layer.key}-${axisA}-${axisB}`,
-              x1: xA,
-              y1: yA,
-              x2: xB,
-              y2: yB,
-              dashed,
-            };
-          });
-
+          const points = PSY_AXES_CLOCKWISE
+            .filter((axis) => layer.radar[axis] !== null)
+            .map((axis) => {
+              const v01 = (layer.radar[axis] as number) / 10;
+              const [x, y] = pointFor(axis, v01);
+              return `${x.toFixed(2)},${y.toFixed(2)}`;
+            })
+            .join(" ");
+          if (!points || points.split(" ").length < 3) return null;
           return (
-            <g key={layer.key}>
-              {fillPoints && (
-                <polygon
-                  points={fillPoints}
-                  fill={layer.color}
-                  fillOpacity={layer.fillOpacity}
-                  stroke="none"
-                />
-              )}
-              {segments.map((seg) => (
-                <line
-                  key={seg.key}
-                  x1={seg.x1}
-                  y1={seg.y1}
-                  x2={seg.x2}
-                  y2={seg.y2}
-                  stroke={seg.dashed ? "#A50534" : layer.color}
-                  strokeWidth={layer.strokeWidth}
-                  strokeDasharray={seg.dashed ? "6 4" : layer.dasharray}
-                  strokeOpacity={seg.dashed ? 0.9 : 1}
-                  strokeLinecap="round"
-                />
-              ))}
-            </g>
+            <polygon
+              key={layer.key}
+              points={points}
+              fill={layer.color}
+              fillOpacity={layer.fillOpacity}
+              stroke={layer.color}
+              strokeWidth={layer.strokeWidth}
+              strokeDasharray={layer.dasharray}
+              strokeLinejoin="round"
+            />
           );
         })}
       </g>
@@ -298,18 +251,25 @@ export function PsychologyRadar({
         </g>
       )}
 
-      {/* Axis labels — courts sur le radar, complets en title (tooltip natif au hover SVG).
-          Le <title> est wrappé dans un <g> parent pour éviter un mismatch d'hydratation
-          quand on le met directement enfant de <text>. */}
+      {/* Axis labels — courts + indicateur de polarité (+/−) pour lever l'ambiguïté
+          de lecture. Tooltip natif explicite au hover.
+          - "+" = haut sur le radar = signal favorable (acceptation, motivation, …)
+          - "−" = haut = signal défavorable / friction (sensibilité prix, dépendance) */}
       {showLabels && (
         <g>
           {PSY_AXES.map((axis) => {
             const [x, y] = pointFor(axis, 1.18);
             const observed = axisHasValue[axis];
+            const polarity = PSY_AXIS_POLARITY[axis];
+            const polaritySymbol = polarity === "positive" ? "+" : "−";
+            const polarityHint =
+              polarity === "positive"
+                ? "haut = favorable"
+                : "haut = point de friction";
             return (
               <g key={`label-${axis}`}>
                 <title>
-                  {PSY_AXIS_LABEL[axis]}
+                  {PSY_AXIS_LABEL[axis]} ({polarityHint})
                   {observed ? "" : " — non observé"}
                 </title>
                 <text
@@ -322,7 +282,14 @@ export function PsychologyRadar({
                   fill={observed ? "#374151" : "#9CA3AF"}
                   fontStyle={observed ? "normal" : "italic"}
                 >
-                  {PSY_AXIS_SHORT_LABEL[axis]}
+                  {PSY_AXIS_SHORT_LABEL[axis]}{" "}
+                  <tspan
+                    fontSize={9}
+                    fontWeight={600}
+                    fill={polarity === "positive" ? "#16A34A" : "#B91C1C"}
+                  >
+                    {polaritySymbol}
+                  </tspan>
                 </text>
               </g>
             );

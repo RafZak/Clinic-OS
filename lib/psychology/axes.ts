@@ -34,6 +34,27 @@ export const PSY_AXIS_SHORT_LABEL: Record<PsyAxis, string> = {
   decisionStage: "Décision",
 };
 
+/**
+ * Polarité de chaque axe pour la lecture du radar :
+ *  - "positive" → haut sur le radar = signal FAVORABLE pour la vente
+ *    (ex: motivation, acceptation, confiance, stade décisionnel)
+ *  - "negative" → haut sur le radar = signal DÉFAVORABLE / point de friction
+ *    (ex: sensibilité prix élevée = réfractaire ; influence entourage forte
+ *    = décision dépendante d'un tiers)
+ *
+ * Affiché à côté du label pour lever l'ambiguïté ("Prix +" vs "Prix −").
+ */
+export type PsyAxisPolarity = "positive" | "negative";
+
+export const PSY_AXIS_POLARITY: Record<PsyAxis, PsyAxisPolarity> = {
+  acceptance: "positive",
+  motivation: "positive",
+  trust: "positive",
+  priceSensitivity: "negative",
+  externalInfluence: "negative",
+  decisionStage: "positive",
+};
+
 export const PSY_AXIS_LABEL_EN: Record<PsyAxis, string> = {
   acceptance: "Hearing loss acceptance",
   motivation: "Motivation",

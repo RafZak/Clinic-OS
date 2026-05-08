@@ -130,20 +130,21 @@ export function PsychologyRadar({
       <polygon
         points={gridPolygon(1)}
         fill="#FCE7EE"
-        fillOpacity={0.5}
+        fillOpacity={0.4}
         stroke="none"
         aria-hidden="true"
       />
 
-      {/* Grid hexagons */}
+      {/* Grid hexagons concentriques — papier graphique. Couleurs assez dark pour
+          rester visibles malgré le fond brand léger. Outer hexagon plus marqué. */}
       <g aria-hidden="true">
         {gridScales.map((scale) => (
           <polygon
             key={`grid-${scale}`}
             points={gridPolygon(scale)}
             fill="none"
-            stroke="#E5E7EB"
-            strokeWidth={1}
+            stroke={scale === 1 ? "#9CA3AF" : "#CBD5E1"}
+            strokeWidth={scale === 1 ? 1.25 : 1}
           />
         ))}
       </g>

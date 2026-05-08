@@ -225,7 +225,7 @@ export function NewSessionButton({ role }: { role: Role }) {
             <label
               className={`flex cursor-pointer items-start gap-3 rounded-md border px-4 py-3 transition ${
                 consent
-                  ? "border-brand/40 bg-brand/5"
+                  ? "border-emerald-200 bg-emerald-50"
                   : "border-border bg-surface-muted"
               }`}
             >
@@ -233,11 +233,11 @@ export function NewSessionButton({ role }: { role: Role }) {
                 type="checkbox"
                 checked={consent}
                 onChange={(e) => setConsent(e.target.checked)}
-                className="mt-0.5 size-4 cursor-pointer accent-brand"
+                className="mt-0.5 size-4 cursor-pointer accent-emerald-600"
               />
               <span className="flex-1 text-xs leading-relaxed">
                 <span className="inline-flex items-center gap-1.5 font-medium text-ink">
-                  <ShieldCheck className="size-3.5 text-brand" aria-hidden />
+                  <ShieldCheck className={`size-3.5 ${consent ? "text-emerald-700" : "text-muted-foreground"}`} aria-hidden />
                   {isPro ? t("consentLabelConsultation") : t("consentLabelPhone")}
                 </span>
                 {!consent && (

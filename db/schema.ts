@@ -8,6 +8,7 @@ import {
   numeric,
   pgTable,
   primaryKey,
+  smallint,
   text,
   timestamp,
   unique,
@@ -117,6 +118,12 @@ export const patients = pgTable(
     status: text("status").notNull().default("prospect"),
     firstContactAt: timestamp("first_contact_at", { withTimezone: true }),
     centerId: uuid("center_id").references(() => centers.id),
+    marketingPsyConsentAt: timestamp("marketing_psy_consent_at", {
+      withTimezone: true,
+    }),
+    marketingPsyRevokedAt: timestamp("marketing_psy_revoked_at", {
+      withTimezone: true,
+    }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   },
   (t) => [
@@ -454,6 +461,97 @@ export const quizAttempts = pgTable(
     index("quiz_attempts_practitioner_idx").on(t.practitionerId),
     index("quiz_attempts_set_idx").on(t.quizSetId),
   ]
+);
+
+// ==================================================================
+// 15quater. Session psychology snapshots (1 par session, IA auto post-analyse)
+// ==================================================================
+export const sessionPsychologySnapshots = pgTable(
+  "session_psychology_snapshots",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sessionId: uuid("session_id")
+      .notNull()
+      .references(() => sessions.id, { onDelete: "cascade" }),
+    patientId: uuid("patient_id")
+      .notNull()
+      .references(() => patients.id, { onDelete: "cascade" }),
+    acceptanceScore: smallint("acceptance_score"),
+    motivationScore: smallint("motivation_score"),
+    trustScore: smallint("trust_score"),
+    priceSensitivityScore: smallint("price_sensitivity_score"),
+    externalInfluenceScore: smallint("external_influence_score"),
+    decisionStageScore: smallint("decision_stage_score"),
+    tags: text("tags")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    rawOutput: jsonb("raw_output").notNull(),
+    promptVersion: text("prompt_version").notNull(),
+    model: text("model").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    unique("session_psychology_session_unique").on(t.sessionId),
+    index("session_psychology_patient_idx").on(t.patientId, t.createdAt),
+    // GIN index sur tags ajouté manuellement dans la migration SQL (Drizzle ne génère pas GIN)
+  ]
+);
+
+// ==================================================================
+// 17. Consent audit log (RGPD)
+// ==================================================================
+export const consentAuditLog = pgTable(
+  "consent_audit_log",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    patientId: uuid("patient_id")
+      .notNull()
+      .references(() => patients.id, { onDelete: "cascade" }),
+    action: text("action").notNull(),
+    scope: text("scope").notNull(),
+    actorId: uuid("actor_id").references(() => practitioners.id),
+    source: text("source").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    check(
+      "consent_audit_action_check",
+      sql`${t.action} in ('granted', 'revoked')`
+    ),
+    check("consent_audit_scope_check", sql`${t.scope} in ('marketing_psy')`),
+    check(
+      "consent_audit_source_check",
+      sql`${t.source} in ('patient_page', 'admin', 'api')`
+    ),
+    index("consent_audit_patient_idx").on(t.patientId, t.createdAt),
+  ]
+);
+
+// ==================================================================
+// 18. Psychology export log (RGPD)
+// ==================================================================
+export const psychologyExportLog = pgTable(
+  "psychology_export_log",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    actorId: uuid("actor_id")
+      .notNull()
+      .references(() => practitioners.id),
+    patientCount: integer("patient_count").notNull(),
+    filters: jsonb("filters").notNull(),
+    overrideNonConsenting: boolean("override_non_consenting")
+      .notNull()
+      .default(false),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("psy_export_actor_idx").on(t.actorId, t.createdAt)]
 );
 
 // ==================================================================

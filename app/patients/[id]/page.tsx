@@ -1,15 +1,17 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, BookOpen } from "lucide-react";
-import { asc } from "drizzle-orm";
+import { asc, inArray } from "drizzle-orm";
 import { getTranslations, getLocale } from "next-intl/server";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { PatientTimeline } from "@/components/patients/patient-timeline";
 import { MemoryView } from "@/components/patients/memory-view";
 import { DeletePatientButton } from "@/components/patients/delete-patient-button";
+import { PsychologyRadarCard } from "@/components/patients/psychology-radar-card";
+import { MarketingConsentToggle } from "@/components/patients/marketing-consent-toggle";
 import { db } from "@/db/client";
-import { vaultPages } from "@/db/schema";
+import { sessions as sessionsTable, vaultPages } from "@/db/schema";
 import {
   getPatientDetail,
   patientSlug,
@@ -17,6 +19,11 @@ import {
   STATUS_LABEL_EN,
   type PatientStatus,
 } from "@/lib/patients";
+import { getPatientSnapshots } from "@/lib/psychology/queries";
+import {
+  computeGlobalRadar,
+  computeGlobalTags,
+} from "@/lib/psychology/aggregate";
 import { getVaultPageByPath } from "@/lib/vault/ingest";
 import { cn } from "@/lib/utils";
 
@@ -67,6 +74,44 @@ export default async function PatientDetailPage({
     title: p.title,
   }));
 
+  const psySnapshots = await getPatientSnapshots(patient.id);
+
+  const sessionMeta =
+    psySnapshots.length === 0
+      ? []
+      : await db
+          .select({
+            id: sessionsTable.id,
+            kind: sessionsTable.kind,
+            startedAt: sessionsTable.startedAt,
+          })
+          .from(sessionsTable)
+          .where(
+            inArray(
+              sessionsTable.id,
+              psySnapshots.map((s) => s.sessionId)
+            )
+          );
+
+  const sessionMetaById = new Map(sessionMeta.map((s) => [s.id, s]));
+
+  const enrichedSnapshots = psySnapshots
+    .map((s) => {
+      const meta = sessionMetaById.get(s.sessionId);
+      return meta
+        ? {
+            ...s,
+            sessionKind: meta.kind as "consultation" | "phone_call",
+            sessionStartedAt: meta.startedAt ?? s.createdAt,
+          }
+        : null;
+    })
+    .filter((s): s is NonNullable<typeof s> => s !== null);
+
+  const globalRadar = computeGlobalRadar(psySnapshots);
+  const globalTags = computeGlobalTags(psySnapshots);
+  const hasAnyScore = Object.values(globalRadar).some((v) => v !== null);
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -82,6 +127,11 @@ export default async function PatientDetailPage({
           .join(" · ")}
         actions={
           <div className="flex items-center gap-2">
+            <MarketingConsentToggle
+              patientId={patient.id}
+              consentAt={patient.marketingPsyConsentAt}
+              revokedAt={patient.marketingPsyRevokedAt}
+            />
             <span
               className={cn(
                 "inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium",
@@ -110,49 +160,59 @@ export default async function PatientDetailPage({
         </section>
 
         <aside className="lg:col-span-5">
-          <div className="sticky top-4 flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-                {t("memoryHeader")}
-              </h2>
-              {vaultPage && (
-                <Link
-                  href={`/admin/vault/${vaultPath.replace(/\.md$/, "")}`}
-                  className="inline-flex items-center gap-1 text-xs font-medium text-brand hover:text-brand-dark"
-                >
-                  <BookOpen className="h-3.5 w-3.5" />
-                  {t("openFullCard")}
-                </Link>
-              )}
-            </div>
-            {vaultPage ? (
-              <div className="flex flex-col gap-3">
-                <MemoryView
-                  raw={vaultPage.contentMd}
-                  pageIndex={pageIndex}
-                />
-                {vaultPage.updatedAt && (
-                  <p className="px-1 text-xs text-muted-foreground">
-                    {t("memoryUpdatedAt", {
-                      date: vaultPage.updatedAt.toLocaleString(
-                        locale === "en" ? "en-GB" : "fr-FR",
-                        {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        }
-                      ),
-                    })}
-                  </p>
+          <div className="sticky top-4 flex flex-col gap-6">
+            {hasAnyScore && (
+              <PsychologyRadarCard
+                globalRadar={globalRadar}
+                globalTags={globalTags}
+                snapshots={enrichedSnapshots}
+              />
+            )}
+
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+                  {t("memoryHeader")}
+                </h2>
+                {vaultPage && (
+                  <Link
+                    href={`/admin/vault/${vaultPath.replace(/\.md$/, "")}`}
+                    className="inline-flex items-center gap-1 text-xs font-medium text-brand hover:text-brand-dark"
+                  >
+                    <BookOpen className="h-3.5 w-3.5" />
+                    {t("openFullCard")}
+                  </Link>
                 )}
               </div>
-            ) : (
-              <div className="rounded-lg border border-dashed border-border bg-surface px-5 py-8 text-center text-sm text-muted-foreground">
-                {t("noVaultYet")}
-              </div>
-            )}
+              {vaultPage ? (
+                <div className="flex flex-col gap-3">
+                  <MemoryView
+                    raw={vaultPage.contentMd}
+                    pageIndex={pageIndex}
+                  />
+                  {vaultPage.updatedAt && (
+                    <p className="px-1 text-xs text-muted-foreground">
+                      {t("memoryUpdatedAt", {
+                        date: vaultPage.updatedAt.toLocaleString(
+                          locale === "en" ? "en-GB" : "fr-FR",
+                          {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }
+                        ),
+                      })}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="rounded-lg border border-dashed border-border bg-surface px-5 py-8 text-center text-sm text-muted-foreground">
+                  {t("noVaultYet")}
+                </div>
+              )}
+            </div>
           </div>
         </aside>
       </div>

@@ -1,4 +1,5 @@
 import type { LeadTemperature } from "@/lib/phone-tags";
+import type { PsyTag } from "@/lib/psychology/tags";
 
 export type PatientStatus = "prospect" | "patient" | "lost";
 
@@ -18,6 +19,10 @@ export type PatientRow = {
   avgConsultationScore: number | null;
   lastConsultationScore: number | null;
   lastPhoneTemperature: LeadTemperature | null;
+  /** Tags du radar global (calculé depuis tous les snapshots du patient). Vide si aucun snapshot. */
+  psyTags: PsyTag[];
+  /** Consentement marketing actif au sens de hasActiveMarketingConsent. */
+  marketingConsentActive: boolean;
 };
 
 export type PatientEventKind =

@@ -126,11 +126,13 @@ export function PsychologyRadar({
       className={cn("block", className)}
       preserveAspectRatio="xMidYMid meet"
     >
-      {/* Hexagone de fond rempli (très léger) — pas de zones blanches dans l'hexagone */}
+      {/* Hexagone de fond rempli — uniforme sur toute la surface du cadre.
+          Le data layer ne rajoute PAS de fill quand le profil est partiel,
+          pour ne pas créer d'asymétrie qui briserait l'identité hexagonale. */}
       <polygon
         points={gridPolygon(1)}
-        fill="#FCE7EE"
-        fillOpacity={0.4}
+        fill="#FBE0E8"
+        fillOpacity={0.7}
         stroke="none"
         aria-hidden="true"
       />
@@ -178,14 +180,19 @@ export function PsychologyRadar({
                pas de mesure réelle ici". */}
       <g>
         {layers.map((layer) => {
-          // Fill polygon : couvre toute la surface en passant par le bord extérieur
-          // pour les axes null. Toujours fermé.
-          const fillPoints = PSY_AXES.map((axis) => {
-            const raw = layer.radar[axis];
-            const v01 = raw === null ? 1 : raw / 10;
-            const [x, y] = pointFor(axis, v01);
-            return `${x.toFixed(2)},${y.toFixed(2)}`;
-          }).join(" ");
+          const partial = scoredAxesCount(layer.radar) < PSY_AXES.length;
+          // Fill rendu UNIQUEMENT si profil complet (6/6) — sinon le fill asymétrique
+          // créerait des "losanges + triangles vides" qui rendent le radar illisible.
+          // Sur profil partiel, on n'affiche que les segments + dots, et le fond
+          // hexagonal (rose uniforme) reste le visuel dominant.
+          const fillPoints = partial
+            ? null
+            : PSY_AXES.map((axis) => {
+                const raw = layer.radar[axis];
+                const v01 = raw === null ? 0 : raw / 10;
+                const [x, y] = pointFor(axis, v01);
+                return `${x.toFixed(2)},${y.toFixed(2)}`;
+              }).join(" ");
 
           // 6 segments : pour chaque paire d'axes adjacents
           const segments = PSY_AXES.map((axisA, i) => {
@@ -211,12 +218,14 @@ export function PsychologyRadar({
 
           return (
             <g key={layer.key}>
-              <polygon
-                points={fillPoints}
-                fill={layer.color}
-                fillOpacity={layer.fillOpacity}
-                stroke="none"
-              />
+              {fillPoints && (
+                <polygon
+                  points={fillPoints}
+                  fill={layer.color}
+                  fillOpacity={layer.fillOpacity}
+                  stroke="none"
+                />
+              )}
               {segments.map((seg) => (
                 <line
                   key={seg.key}
@@ -225,12 +234,8 @@ export function PsychologyRadar({
                   x2={seg.x2}
                   y2={seg.y2}
                   stroke={seg.dashed ? "#A50534" : layer.color}
-                  strokeWidth={
-                    seg.dashed ? layer.strokeWidth : layer.strokeWidth
-                  }
-                  strokeDasharray={
-                    seg.dashed ? "6 4" : layer.dasharray
-                  }
+                  strokeWidth={layer.strokeWidth}
+                  strokeDasharray={seg.dashed ? "6 4" : layer.dasharray}
                   strokeOpacity={seg.dashed ? 0.9 : 1}
                   strokeLinecap="round"
                 />

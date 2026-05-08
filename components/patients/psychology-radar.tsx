@@ -159,16 +159,39 @@ export function PsychologyRadar({
         })}
       </g>
 
-      {/* Layers (oldest first → most recent → global on top) — polygones sur axes scorés.
-          Si profil partiel (< 6 axes), trait pointillé pour signaler "données incomplètes". */}
+      {/* Layers — quand le profil est complet (6/6 axes), on dessine un vrai polygone
+          rempli (gestalt du radar). Quand il est partiel, on n'affiche QUE des bars
+          radiales (lignes du centre vers les vertex scorés) — pas de polygone, pas de
+          forme trompeuse. Les dots posés au-dessus restent l'ancre visuelle. */}
       <g>
         {layers.map((layer) => {
+          const partial = scoredAxesCount(layer.radar) < PSY_AXES.length;
+          if (partial) {
+            // Bars radiales : pour chaque axe scoré, ligne center → vertex
+            return (
+              <g key={layer.key}>
+                {scoredAxes(layer.radar).map(({ axis, value01 }) => {
+                  const [x, y] = pointFor(axis, value01);
+                  return (
+                    <line
+                      key={`${layer.key}-${axis}`}
+                      x1={CX}
+                      y1={CY}
+                      x2={x}
+                      y2={y}
+                      stroke={layer.color}
+                      strokeWidth={Math.max(2, layer.strokeWidth + 1)}
+                      strokeLinecap="round"
+                      strokeOpacity={0.85}
+                    />
+                  );
+                })}
+              </g>
+            );
+          }
+          // Profil complet : polygone fermé classique
           const points = radarToPolygon(layer.radar);
           if (!points) return null;
-          const partial = scoredAxesCount(layer.radar) < PSY_AXES.length;
-          // Si layer a déjà un dasharray (sessions historiques), on le garde.
-          // Sinon, on en applique un seulement si partiel.
-          const dash = layer.dasharray ?? (partial ? "5 4" : undefined);
           return (
             <polygon
               key={layer.key}
@@ -177,7 +200,7 @@ export function PsychologyRadar({
               fillOpacity={layer.fillOpacity}
               stroke={layer.color}
               strokeWidth={layer.strokeWidth}
-              strokeDasharray={dash}
+              strokeDasharray={layer.dasharray}
               strokeLinejoin="round"
             />
           );

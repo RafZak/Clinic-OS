@@ -23,6 +23,7 @@ import type {
   ExportPayload,
   ExportSessionRow,
   ExportTimelineRow,
+  PatientEventKind,
   PatientExportRecord,
   PatientStatus,
   TopInsight,
@@ -169,7 +170,7 @@ export async function buildPatientExportData(opts: {
         : null,
 
       status: pat.status as PatientStatus,
-      current_stage: (lastEvent?.kind ?? null) as import("./types").PatientEventKind | null,
+      current_stage: (lastEvent?.kind ?? null) as PatientEventKind | null,
       first_contact_at: firstContactAt ? firstContactAt.toISOString() : null,
       last_interaction_at: lastInteractionAt ? lastInteractionAt.toISOString() : null,
       days_in_pipeline: firstContactAt

@@ -19,28 +19,10 @@ type Props = {
   onBeforeExport?: (format: ExportFormat, locale: ExportLocale) => boolean | void;
 };
 
-const FORMAT_LABEL_FR: Record<ExportFormat, string> = {
+const FORMAT_LABEL: Record<ExportFormat, string> = {
   csv: "CSV",
   xlsx: "Excel (.xlsx)",
   json: "JSON",
-};
-
-const FORMAT_LABEL_EN: Record<ExportFormat, string> = {
-  csv: "CSV",
-  xlsx: "Excel (.xlsx)",
-  json: "JSON",
-};
-
-const FORMAT_HINT_FR: Record<ExportFormat, string> = {
-  csv: "Universel — CRM, marketing automation",
-  xlsx: "4 feuilles colorées — équipe marketing",
-  json: "Arborescent — intégration API / Zapier",
-};
-
-const FORMAT_HINT_EN: Record<ExportFormat, string> = {
-  csv: "Universal — CRM, marketing automation",
-  xlsx: "4 styled sheets — marketing team",
-  json: "Tree-shaped — API / Zapier integration",
 };
 
 export function ExportFormatMenu({
@@ -65,9 +47,6 @@ export function ExportFormatMenu({
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
-
-  const labels = uiLocale === "en" ? FORMAT_LABEL_EN : FORMAT_LABEL_FR;
-  const hints = uiLocale === "en" ? FORMAT_HINT_EN : FORMAT_HINT_FR;
 
   const buttonText = compact
     ? uiLocale === "en"
@@ -109,10 +88,9 @@ export function ExportFormatMenu({
                 }
                 setOpen(false);
               }}
-              className="block px-3 py-2 text-sm transition hover:bg-surface-muted"
+              className="block px-3 py-2 text-sm font-medium transition hover:bg-surface-muted"
             >
-              <div className="font-medium">{labels[fmt]}</div>
-              <div className="text-xs text-muted-foreground">{hints[fmt]}</div>
+              {FORMAT_LABEL[fmt]}
             </a>
           ))}
 

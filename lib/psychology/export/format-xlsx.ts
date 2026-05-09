@@ -12,18 +12,8 @@ const BRAND_RED = "FFCC0641";
 const HEADER_TEXT_WHITE = "FFFFFFFF";
 
 const SHEET_LABELS = {
-  fr: {
-    patients: "Patients",
-    sessions: "Sessions",
-    insights: "Insights",
-    timeline: "Timeline",
-  },
-  en: {
-    patients: "Patients",
-    sessions: "Sessions",
-    insights: "Insights",
-    timeline: "Timeline",
-  },
+  fr: { patients: "Patients", sessions: "Séances", insights: "Analyses", timeline: "Parcours" },
+  en: { patients: "Patients", sessions: "Sessions", insights: "Insights", timeline: "Timeline" },
 } as const;
 
 function styleHeaderRow(row: ExcelJS.Row): void {

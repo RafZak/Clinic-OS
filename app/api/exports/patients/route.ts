@@ -21,6 +21,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "no_ids" }, { status: 400 });
   }
 
+  const MAX_IDS = 200;
+  if (ids.length > MAX_IDS) {
+    return NextResponse.json(
+      { error: "too_many_ids", max: MAX_IDS, received: ids.length },
+      { status: 400 }
+    );
+  }
+
   const formatParam = (params.get("format") ?? "csv") as ExportFormat;
   if (!VALID_FORMATS.includes(formatParam)) {
     return NextResponse.json({ error: "invalid_format" }, { status: 400 });
@@ -33,6 +41,12 @@ export async function GET(req: NextRequest) {
 
   const consentMode: ConsentMode =
     params.get("consent") === "all" ? "all" : "active";
+
+  if (consentMode === "all") {
+    console.warn(
+      `[export] consent=all triggered: ids=${ids.length}, format=${formatParam}, locale=${localeParam}`
+    );
+  }
 
   const payload = await buildPatientExportData({
     ids,

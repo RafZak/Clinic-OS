@@ -82,6 +82,8 @@ export function ExportFormatMenu({
         disabled={disabled}
         title={disabled ? disabledTooltip : undefined}
         onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-haspopup="menu"
         className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
       >
         <Download className="h-3.5 w-3.5" />
@@ -90,7 +92,7 @@ export function ExportFormatMenu({
       </button>
 
       {open && !disabled && (
-        <div className="absolute right-0 z-50 mt-1 w-64 rounded-lg border border-border bg-white shadow-lg">
+        <div role="menu" className="absolute right-0 z-50 mt-1 w-64 rounded-lg border border-border bg-white shadow-lg">
           <div className="border-b border-border px-3 py-2 text-[11px] uppercase tracking-wide text-muted-foreground">
             {uiLocale === "en" ? "Format" : "Format"}
           </div>
@@ -99,6 +101,7 @@ export function ExportFormatMenu({
               key={fmt}
               href={buildUrl(fmt, chosenLocale)}
               download
+              role="menuitem"
               onClick={(e) => {
                 if (onBeforeExport && onBeforeExport(fmt, chosenLocale) === false) {
                   e.preventDefault();

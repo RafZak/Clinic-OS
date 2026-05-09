@@ -31,6 +31,31 @@ import type {
 
 const HAIKU_CONCURRENCY = 8;
 
+const VALID_STATUSES: PatientStatus[] = ["prospect", "patient", "lost"];
+const VALID_EVENT_KINDS: PatientEventKind[] = [
+  "phone_call",
+  "appointment_scheduled",
+  "consultation",
+  "trial_start",
+  "delivery",
+  "follow_up",
+];
+const VALID_INSIGHT_SEVERITIES: Array<"info" | "warning" | "critical"> = [
+  "info",
+  "warning",
+  "critical",
+];
+
+function safeEventKind(k: string | null | undefined): PatientEventKind | null {
+  return k && VALID_EVENT_KINDS.includes(k as PatientEventKind) ? (k as PatientEventKind) : null;
+}
+
+function safeSeverity(s: string | null | undefined): "info" | "warning" | "critical" | null {
+  return s && VALID_INSIGHT_SEVERITIES.includes(s as "info" | "warning" | "critical")
+    ? (s as "info" | "warning" | "critical")
+    : null;
+}
+
 export async function buildPatientExportData(opts: {
   ids: string[];
   consentMode: ConsentMode;
@@ -105,10 +130,19 @@ export async function buildPatientExportData(opts: {
 
   // 4. Pré-construire les records SANS la recommandation
   const now = Date.now();
+
+  const snapshotsByPatient = new Map<string, Awaited<ReturnType<typeof getPatientSnapshots>>>();
+  await Promise.all(
+    filtered.map(async (pat) => {
+      const snaps = await getPatientSnapshots(pat.id);
+      snapshotsByPatient.set(pat.id, snaps);
+    })
+  );
+
   const records: Array<Omit<PatientExportRecord, "recommendation">> = [];
 
   for (const pat of filtered) {
-    const snaps = await getPatientSnapshots(pat.id);
+    const snaps = snapshotsByPatient.get(pat.id) ?? [];
     const radar = computeGlobalRadar(snaps);
     const tags = computeGlobalTags(snaps);
     const tagsLabel = tags.map((t) =>
@@ -148,12 +182,16 @@ export async function buildPatientExportData(opts: {
 
     const radarDetail = buildRadarDetail(snaps, radar);
 
+    // Note i18n: les titres d'insights sont stockés tels quels (générés en FR par
+    // l'analyse session). Pour un export EN, le titre reste en FR — accepté comme
+    // fallback dans la spec. Les champs IA (recommended_angle, next_best_action)
+    // sont eux bien localisés via le prompt Haiku.
     const top: TopInsight[] = psInsights.slice(0, 3).map((ins) => {
       const sess = psSessions.find((s) => s.id === ins.sessionId);
       return {
         title: ins.title,
         estimated_impact_eur: ins.estimatedImpactEur,
-        severity: (ins.severity ?? "info") as TopInsight["severity"],
+        severity: safeSeverity(ins.severity) ?? "info",
         session_date: sess?.startedAt
           ? sess.startedAt.toISOString().slice(0, 10)
           : "",
@@ -169,8 +207,8 @@ export async function buildPatientExportData(opts: {
         ? pat.marketingPsyConsentAt.toISOString()
         : null,
 
-      status: pat.status as PatientStatus,
-      current_stage: (lastEvent?.kind ?? null) as PatientEventKind | null,
+      status: (VALID_STATUSES.includes(pat.status as PatientStatus) ? (pat.status as PatientStatus) : "prospect"),
+      current_stage: safeEventKind(lastEvent?.kind ?? null),
       first_contact_at: firstContactAt ? firstContactAt.toISOString() : null,
       last_interaction_at: lastInteractionAt ? lastInteractionAt.toISOString() : null,
       days_in_pipeline: firstContactAt
@@ -246,23 +284,30 @@ export async function buildPatientExportData(opts: {
       summary: s.summary,
     }));
 
-  const exportInsights: ExportInsightRow[] = insightRows.map((ins) => ({
-    insight_id: ins.id,
-    patient_id: sessionToPatient.get(ins.sessionId) ?? "",
-    session_id: ins.sessionId,
-    type: ins.type,
-    severity: ins.severity as ExportInsightRow["severity"],
-    title: ins.title,
-    description: ins.description,
-    estimated_impact_eur: ins.estimatedImpactEur,
-  }));
+  const exportInsights: ExportInsightRow[] = insightRows.flatMap((ins) => {
+    const pid = sessionToPatient.get(ins.sessionId);
+    if (!pid) {
+      console.warn(`[export] insight ${ins.id} has no patient mapping (session ${ins.sessionId})`);
+      return [];
+    }
+    return [{
+      insight_id: ins.id,
+      patient_id: pid,
+      session_id: ins.sessionId,
+      type: ins.type,
+      severity: safeSeverity(ins.severity),
+      title: ins.title,
+      description: ins.description,
+      estimated_impact_eur: ins.estimatedImpactEur,
+    }];
+  });
 
   const exportTimeline: ExportTimelineRow[] = eventRows
     .filter((e) => filteredIds.includes(e.patientId))
     .map((e) => ({
       event_id: e.id,
       patient_id: e.patientId,
-      kind: e.kind as ExportTimelineRow["kind"],
+      kind: safeEventKind(e.kind) ?? "phone_call",
       occurred_at: e.occurredAt.toISOString(),
       summary: e.summary,
     }));

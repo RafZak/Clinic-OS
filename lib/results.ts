@@ -11,6 +11,7 @@ import {
   sessionArtifacts,
   knowledgeChunks,
   vaultPages,
+  sessionPsychologySnapshots,
 } from "@/db/schema";
 import { isMasterFile } from "@/lib/knowledge/master";
 import type {
@@ -146,6 +147,18 @@ export async function loadResultsBundle(sessionId: string): Promise<ResultsBundl
     type: a.type as ArtifactType,
   }));
 
+  // hasPsyProfile : true si le patient a ≥ 1 snapshot psy. Détermine
+  // l'affichage du bouton "Régénérer avec profil psy" dans les livrables.
+  let hasPsyProfile = false;
+  if (patientRow?.id) {
+    const psyCount = await db
+      .select({ id: sessionPsychologySnapshots.id })
+      .from(sessionPsychologySnapshots)
+      .where(eq(sessionPsychologySnapshots.patientId, patientRow.id))
+      .limit(1);
+    hasPsyProfile = psyCount.length > 0;
+  }
+
   return {
     session: sessionRow,
     patient: patientRow,
@@ -155,6 +168,7 @@ export async function loadResultsBundle(sessionId: string): Promise<ResultsBundl
     artifacts,
     practitionerVault: practitionerVault[0] ?? null,
     sessionVault: sessionVault[0] ?? null,
+    hasPsyProfile,
   };
 }
 

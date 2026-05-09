@@ -339,6 +339,8 @@
     "copy": "Copier",
     "copied": "Copié",
     "regenerate": "Régénérer",
+    "regenerateWithPsy": "Avec profil psy",
+    "adaptedToProfile": "Adapté au profil",
     "generating": "Génération en cours…",
     "subjectLabel": "Objet",
     "subjectPrefix": "Objet : ",

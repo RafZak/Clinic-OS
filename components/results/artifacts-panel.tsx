@@ -27,23 +27,26 @@ import type { ArtifactRow, ArtifactType } from "@/lib/types/analysis";
 type ArtifactDef = {
   type: ArtifactType;
   icon: typeof FileText;
+  supportsPsyProfile: boolean;
 };
 
 const ARTIFACT_DEFS: ArtifactDef[] = [
-  { type: "clinical_notes", icon: Stethoscope },
-  { type: "patient_email", icon: Mail },
-  { type: "patient_sms", icon: MessageSquare },
-  { type: "orl_letter", icon: FileText },
+  { type: "clinical_notes", icon: Stethoscope, supportsPsyProfile: false },
+  { type: "patient_email", icon: Mail, supportsPsyProfile: true },
+  { type: "patient_sms", icon: MessageSquare, supportsPsyProfile: true },
+  { type: "orl_letter", icon: FileText, supportsPsyProfile: false },
 ];
 
 export function ArtifactsPanel({
   sessionId,
   artifacts,
   analysisDone,
+  hasPsyProfile = false,
 }: {
   sessionId: string;
   artifacts: ArtifactRow[];
   analysisDone: boolean;
+  hasPsyProfile?: boolean;
 }) {
   const t = useTranslations("artifacts");
   const router = useRouter();
@@ -118,6 +121,7 @@ export function ArtifactsPanel({
             sessionId={sessionId}
             def={def}
             artifact={byType.get(def.type) ?? null}
+            hasPsyProfile={hasPsyProfile}
           />
         ))}
       </div>
@@ -129,16 +133,25 @@ function ArtifactCard({
   sessionId,
   def,
   artifact,
+  hasPsyProfile,
 }: {
   sessionId: string;
   def: ArtifactDef;
   artifact: ArtifactRow | null;
+  hasPsyProfile: boolean;
 }) {
   const t = useTranslations("artifacts");
   const Icon = def.icon;
   const router = useRouter();
   const [isRegenerating, startRegenerate] = useTransition();
+  const [isRegeneratingPsy, startRegeneratePsy] = useTransition();
   const [copied, setCopied] = useState(false);
+
+  const usedPsyProfile = useMemo(() => {
+    if (!artifact?.metadata) return false;
+    const meta = artifact.metadata as Record<string, unknown>;
+    return meta.usedPsyProfile === true;
+  }, [artifact]);
 
   const onCopy = async () => {
     if (!artifact) return;
@@ -158,19 +171,35 @@ function ArtifactCard({
       setTimeout(() => router.refresh(), 1500);
     });
 
+  const onRegenerateWithPsy = () =>
+    startRegeneratePsy(async () => {
+      await regenerateArtifact(sessionId, def.type, { usePsyProfile: true });
+      setTimeout(() => router.refresh(), 1500);
+    });
+
+  const showPsyButton = def.supportsPsyProfile && hasPsyProfile;
+
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface px-4 py-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
           <Icon className="size-4 text-brand" aria-hidden />
           <div>
-            <h4 className="text-sm font-semibold text-ink">{t(def.type)}</h4>
+            <div className="flex items-center gap-2">
+              <h4 className="text-sm font-semibold text-ink">{t(def.type)}</h4>
+              {usedPsyProfile && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-brand/30 bg-brand/[0.05] px-2 py-0.5 text-[10px] font-medium text-brand">
+                  <Sparkles className="size-3" aria-hidden />
+                  {t("adaptedToProfile")}
+                </span>
+              )}
+            </div>
             <p className="text-[11px] text-muted-foreground">
               {t("destination", { destination: t(`destinations.${def.type}`) })}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center justify-end gap-1">
           <Button
             variant="ghost"
             size="sm"
@@ -189,7 +218,7 @@ function ArtifactCard({
             variant="ghost"
             size="sm"
             onClick={onRegenerate}
-            disabled={isRegenerating}
+            disabled={isRegenerating || isRegeneratingPsy}
             className="h-7 px-2 text-xs"
           >
             {isRegenerating ? (
@@ -199,6 +228,22 @@ function ArtifactCard({
             )}
             {t("regenerate")}
           </Button>
+          {showPsyButton && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onRegenerateWithPsy}
+              disabled={isRegenerating || isRegeneratingPsy}
+              className="h-7 border-brand/40 px-2 text-xs text-brand hover:bg-brand/[0.05]"
+            >
+              {isRegeneratingPsy ? (
+                <Loader2 className="size-3.5 animate-spin" aria-hidden />
+              ) : (
+                <Sparkles className="size-3.5" aria-hidden />
+              )}
+              {t("regenerateWithPsy")}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -239,7 +284,24 @@ function ArtifactContent({ type, content }: { type: ArtifactType; content: strin
         <p className="text-xs text-muted-foreground">
           {t("smsCharacters", { count: content.length })}
         </p>
-        <p className="text-sm text-ink">{content}</p>
+        <p className="whitespace-pre-wrap break-words text-sm text-ink">{content}</p>
+      </div>
+    );
+  }
+  if (type === "clinical_notes") {
+    return (
+      <div
+        className={cn(
+          "prose prose-sm max-w-none text-ink",
+          "prose-headings:mt-5 prose-headings:mb-2 prose-headings:text-ink prose-headings:font-semibold",
+          "prose-h2:mt-5 prose-h2:pt-3 prose-h2:text-[13px] prose-h2:uppercase prose-h2:tracking-wide prose-h2:text-brand prose-h2:border-t prose-h2:border-brand/20 first-of-type:[&_h2]:mt-0 first-of-type:[&_h2]:border-t-0 first-of-type:[&_h2]:pt-0",
+          "prose-h3:text-xs prose-h3:uppercase prose-h3:tracking-wide prose-h3:text-muted-foreground",
+          "prose-p:my-1.5 prose-p:text-sm prose-p:leading-relaxed",
+          "prose-ul:my-2 prose-li:my-0.5 prose-li:text-sm prose-li:leading-relaxed",
+          "prose-strong:text-ink"
+        )}
+      >
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
       </div>
     );
   }

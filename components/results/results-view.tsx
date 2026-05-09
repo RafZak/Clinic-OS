@@ -293,6 +293,7 @@ export function ResultsView({ bundle }: { bundle: Bundle }) {
           sessionId={session.id}
           artifacts={bundle.artifacts}
           analysisDone={session.analysisStatus === "done"}
+          hasPsyProfile={bundle.hasPsyProfile}
         />
       </TabsContent>
 

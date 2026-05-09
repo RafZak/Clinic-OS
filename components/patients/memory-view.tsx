@@ -18,20 +18,28 @@ export function MemoryView({
   const t = useTranslations("patients.memoryView");
   const parsed = useMemo(() => parseMemoryMarkdown(raw), [raw]);
 
-  const synthesisSection = parsed.sections.find((s) =>
-    /synth[èe]se|synthesis/i.test(s.heading)
-  );
+  const highlightSection =
+    parsed.sections.find((s) => /synth[èe]se|synthesis/i.test(s.heading)) ??
+    parsed.sections[0];
+
+  if (!highlightSection && !parsed.intro) {
+    return (
+      <div className="rounded-md border border-dashed border-border bg-surface px-4 py-6 text-center text-xs text-muted-foreground">
+        {t("noEnrichment")}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4">
-      {synthesisSection ? (
-        <SectionCard heading={synthesisSection.heading} highlight>
-          <VaultMarkdown raw={synthesisSection.body} pageIndex={pageIndex} />
+      {highlightSection ? (
+        <SectionCard heading={highlightSection.heading} highlight>
+          <VaultMarkdown raw={highlightSection.body} pageIndex={pageIndex} />
         </SectionCard>
       ) : (
-        <div className="rounded-md border border-dashed border-border bg-surface px-4 py-6 text-center text-xs text-muted-foreground">
-          {t("noEnrichment")}
-        </div>
+        <SectionCard heading={t("overview")} highlight>
+          <VaultMarkdown raw={parsed.intro} pageIndex={pageIndex} />
+        </SectionCard>
       )}
     </div>
   );

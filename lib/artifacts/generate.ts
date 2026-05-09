@@ -17,6 +17,17 @@ import { readSessionLocale } from "@/lib/sessions";
 import type { Locale } from "@/lib/locale";
 import { getLocaleInstruction, getSpeakerLabels } from "@/lib/i18n/llm";
 import { isStepScorable, type FrameworkKind } from "@/lib/frameworks";
+import { getPatientSnapshots } from "@/lib/psychology/queries";
+import { computeGlobalRadar, computeGlobalTags } from "@/lib/psychology/aggregate";
+import {
+  PSY_AXES,
+  PSY_AXIS_LABEL,
+  PSY_AXIS_LABEL_EN,
+  PSY_AXIS_POLARITY,
+  interpretAxis,
+  type PsyRadar,
+} from "@/lib/psychology/axes";
+import { PSY_TAG_LABEL, PSY_TAG_LABEL_EN, type PsyTag } from "@/lib/psychology/tags";
 
 export type ArtifactType =
   | "clinical_notes"
@@ -41,6 +52,7 @@ type Context = {
   locale: Locale;
   startedAt: Date | null;
   durationSeconds: number | null;
+  patientId: string | null;
   patientLabel: string | null;
   patientAge: number | null;
   practitionerName: string | null;
@@ -59,9 +71,21 @@ type Context = {
   practitionerVaultMd: string | null;
   globalScore: number | null;
   summary: string | null;
+  psyProfile: {
+    radar: PsyRadar;
+    tags: PsyTag[];
+    snapshotsCount: number;
+  } | null;
 };
 
-async function loadContext(sessionId: string): Promise<Context | null> {
+export type ArtifactGenerationOptions = {
+  usePsyProfile?: boolean;
+};
+
+async function loadContext(
+  sessionId: string,
+  options: ArtifactGenerationOptions = {}
+): Promise<Context | null> {
   const rows = await db
     .select()
     .from(sessions)
@@ -101,12 +125,25 @@ async function loadContext(sessionId: string): Promise<Context | null> {
   const kind = (s.kind === "phone_call" ? "phone_call" : "consultation") as FrameworkKind;
   const labels = getSpeakerLabels(kind, locale);
 
+  let psyProfile: Context["psyProfile"] = null;
+  if (options.usePsyProfile && p?.id) {
+    const snapshots = await getPatientSnapshots(p.id);
+    if (snapshots.length > 0) {
+      psyProfile = {
+        radar: computeGlobalRadar(snapshots),
+        tags: computeGlobalTags(snapshots),
+        snapshotsCount: snapshots.length,
+      };
+    }
+  }
+
   return {
     sessionId,
     sessionKind: s.kind,
     locale,
     startedAt: s.startedAt ?? null,
     durationSeconds: s.durationSeconds ?? null,
+    patientId: p?.id ?? null,
     patientLabel: p?.label ?? null,
     patientAge: p?.age ?? null,
     practitionerName: pr?.fullName ?? null,
@@ -136,7 +173,42 @@ async function loadContext(sessionId: string): Promise<Context | null> {
     practitionerVaultMd: vaultRaw[0]?.contentMd ?? null,
     globalScore: s.globalScore,
     summary: s.summary,
+    psyProfile,
   };
+}
+
+function psyProfileBlock(ctx: Context): string {
+  if (!ctx.psyProfile) return "";
+  const { radar, tags, snapshotsCount } = ctx.psyProfile;
+  const isEn = ctx.locale === "en";
+  const labels = isEn ? PSY_AXIS_LABEL_EN : PSY_AXIS_LABEL;
+
+  const axisLines: string[] = [];
+  for (const axis of PSY_AXES) {
+    const score = radar[axis];
+    if (score == null) continue;
+    const polarity = PSY_AXIS_POLARITY[axis] === "negative" ? "−" : "+";
+    const interp = interpretAxis(axis, score, isEn ? "en" : "fr");
+    axisLines.push(`- ${labels[axis]} ${polarity} : ${score}/10 — ${interp}`);
+  }
+
+  const tagLabels = tags.map((tag) =>
+    isEn ? PSY_TAG_LABEL_EN[tag] : PSY_TAG_LABEL[tag]
+  );
+
+  if (isEn) {
+    return `Patient psychological profile (aggregated over ${snapshotsCount} session${snapshotsCount > 1 ? "s" : ""}):
+${axisLines.join("\n") || "- (no scored axis)"}
+Active tags: ${tagLabels.join(", ") || "none"}
+
+Adapt tone and angle to this profile (e.g. price-sensitive → emphasise financial aids; in denial → factual and firm; entourage-driven → suggest including a relative at the next visit). Do NOT mention the profile or scores explicitly to the patient — they shape your phrasing only.`;
+  }
+
+  return `Profil psychologique patient (agrégé sur ${snapshotsCount} session${snapshotsCount > 1 ? "s" : ""}) :
+${axisLines.join("\n") || "- (aucun axe scoré)"}
+Tags actifs : ${tagLabels.join(", ") || "aucun"}
+
+Adapte le ton et l'angle à ce profil (ex: réfractaire prix → mets en avant les aides financières et le reste à charge ; en déni → factuel et ferme ; entourage décisif → propose d'associer un proche au prochain RDV). NE MENTIONNE PAS explicitement le profil ou les scores au patient — ils orientent ta formulation, c'est tout.`;
 }
 
 function formatTs(ms: number): string {
@@ -352,7 +424,7 @@ RULES:
 - End with ONE single contextual CTA (confirm a trial, finalise a quote, book a follow-up).
 - No invention: do not mention any product, price or date that is not in the transcript.
 - Signature: "Kind regards,<br/><strong>{practitioner}</strong><br/>{center}". Use "—" if any info is missing.
-- 100-200 words in the body. No emojis.`
+- 100-200 words in the body. No emojis.${ctx.psyProfile ? "\n- A psychological profile of the patient is provided below — calibrate tone and angle accordingly without ever quoting it." : ""}`
       : `${getLocaleInstruction(ctx.locale)}
 
 Tu rédiges un email de suivi à envoyer au patient après sa session.
@@ -365,8 +437,9 @@ RÈGLES :
 - Termine par UN CTA contextuel unique (confirmer un essai, finaliser un devis, prendre RDV de suivi).
 - Pas d'invention : ne mentionne aucun produit, prix ou date qui n'est pas dans le transcript.
 - Signature : "Bien cordialement,<br/><strong>{practitioner}</strong><br/>{center}". Utiliser "—" si une info manque.
-- 100-200 mots dans le corps. Pas d'emojis.`;
+- 100-200 mots dans le corps. Pas d'emojis.${ctx.psyProfile ? "\n- Un profil psychologique du patient est fourni plus bas — calibre le ton et l'angle en conséquence, sans jamais le citer." : ""}`;
 
+  const psyBlock = psyProfileBlock(ctx);
   const user =
     ctx.locale === "en"
       ? `${patientHeader(ctx)}
@@ -378,7 +451,7 @@ ${formatTranscript(ctx)}
 
 Analyst summary: ${ctx.summary ?? "—"}
 
-${vaultBlock(ctx)}
+${vaultBlock(ctx)}${psyBlock ? `\n\n${psyBlock}` : ""}
 
 Generate the patient email by calling the submit_patient_email tool.`
       : `${patientHeader(ctx)}
@@ -390,7 +463,7 @@ ${formatTranscript(ctx)}
 
 Synthèse analyste : ${ctx.summary ?? "—"}
 
-${vaultBlock(ctx)}
+${vaultBlock(ctx)}${psyBlock ? `\n\n${psyBlock}` : ""}
 
 Rédige l'email patient en appelant l'outil submit_patient_email.`;
 
@@ -431,6 +504,7 @@ Rédige l'email patient en appelant l'outil submit_patient_email.`;
     durationMs: Date.now() - t0,
     inputTokens: response.usage.input_tokens,
     outputTokens: response.usage.output_tokens,
+    usedPsyProfile: ctx.psyProfile != null,
   });
 
   return { ok: true, durationMs: Date.now() - t0 };
@@ -449,12 +523,12 @@ export async function generatePatientSms(
 You write a short reminder or confirmation SMS to send to the patient after their session.
 
 STRICT RULES:
-- 140 characters MAXIMUM, including spaces.
+- HARD LIMIT 140 characters, including spaces, INCLUDING the final centre name. Count before submitting. If you cannot fit the centre full name, shorten it (e.g. "London Bridge" instead of "London Bridge Hearing Centre") — never truncate mid-word.
 - Direct, factual, polite tone.
 - One main piece of information (appointment, action to take, confirmation).
 - No emoji, no link, no aggressive abbreviations ("appt" is fine, "thx" is not).
 - Address: "Mrs. <Name>" or "Mr. <Name>".
-- End with the centre name or city.
+- End with the centre name or city — and the closing must be a complete word, never "..." nor a cut sentence.${ctx.psyProfile ? "\n- A psychological profile is provided — calibrate the wording without ever referring to it." : ""}
 
 Target example (do not copy verbatim):
 "Hello Mrs. Davis, your fitting appointment is set for 28/03 at 2pm at our London Bridge centre. See you soon. London Bridge Hearing."`
@@ -463,16 +537,17 @@ Target example (do not copy verbatim):
 Tu rédiges un SMS court de rappel ou de confirmation à envoyer au patient après sa session.
 
 RÈGLES STRICTES :
-- 140 caractères MAXIMUM, espaces inclus.
+- LIMITE DURE 140 caractères, espaces inclus, EN INCLUANT le nom du centre final. Compte avant de soumettre. Si tu ne peux pas faire tenir le nom complet du centre, raccourcis-le (ex: "Centre Lyon 3" au lieu de "Centre Audioprothèse Lyon 3 Bellecour") — jamais de troncation au milieu d'un mot.
 - Direct, factuel, vouvoiement.
 - Une seule info principale (RDV, action à faire, confirmation).
 - Pas d'emoji, pas de lien, pas d'abréviations agressives ("rdv" OK, "à+" non).
 - Adresse : "Mme <Nom>" ou "M. <Nom>".
-- Termine par "Centre <ville>" ou nom du centre.
+- Termine par "Centre <ville>" ou nom du centre — et la dernière phrase doit être un mot complet, jamais "..." ni une phrase coupée.${ctx.psyProfile ? "\n- Un profil psychologique du patient est fourni plus bas — calibre la formulation en conséquence, sans jamais le citer." : ""}
 
 Exemple cible (ne pas copier littéralement) :
 "Bonjour Mme Durand, votre essai d'appareillage est prévu le 28/03 à 14h au centre Lyon 3. À très vite. Centre Audio Lyon 3."`;
 
+  const psyBlock = psyProfileBlock(ctx);
   const user =
     ctx.locale === "en"
       ? `${patientHeader(ctx)}
@@ -484,7 +559,7 @@ Key insights (to identify the next action):
 ${formatInsights(ctx).slice(0, 600) || "No insight."}
 
 Verbatim transcript (excerpts):
-${formatTranscript(ctx).slice(0, 3000)}
+${formatTranscript(ctx).slice(0, 3000)}${psyBlock ? `\n\n${psyBlock}` : ""}
 
 Generate the SMS by calling the submit_patient_sms tool.`
       : `${patientHeader(ctx)}
@@ -496,44 +571,81 @@ Insights principaux (pour identifier la prochaine action) :
 ${formatInsights(ctx).slice(0, 600) || "Aucun insight."}
 
 Transcript verbatim (extraits) :
-${formatTranscript(ctx).slice(0, 3000)}
+${formatTranscript(ctx).slice(0, 3000)}${psyBlock ? `\n\n${psyBlock}` : ""}
 
 Rédige le SMS en appelant l'outil submit_patient_sms.`;
 
-  const response = await anthropic.messages.create({
-    model: CLAUDE_MODELS.haiku,
-    max_tokens: 400,
-    system,
-    tools: [
-      {
-        name: "submit_patient_sms",
-        description: "Soumet le SMS patient.",
-        input_schema: {
-          type: "object",
-          properties: {
-            text: { type: "string", maxLength: 160 },
-          },
-          required: ["text"],
-        },
-      },
-    ],
-    tool_choice: { type: "tool", name: "submit_patient_sms" },
-    messages: [{ role: "user", content: user }],
-  });
+  const messages: Parameters<typeof anthropic.messages.create>[0]["messages"] = [
+    { role: "user", content: user },
+  ];
 
-  const toolUse = response.content.find((b) => b.type === "tool_use");
-  if (!toolUse || toolUse.type !== "tool_use") {
-    throw new Error("Claude n'a pas invoqué submit_patient_sms");
+  let raw = "";
+  let totalInputTokens = 0;
+  let totalOutputTokens = 0;
+  let attempts = 0;
+  while (attempts < 2) {
+    attempts += 1;
+    const response = await anthropic.messages.create({
+      model: CLAUDE_MODELS.haiku,
+      max_tokens: 400,
+      system,
+      tools: [
+        {
+          name: "submit_patient_sms",
+          description: "Soumet le SMS patient.",
+          input_schema: {
+            type: "object",
+            properties: {
+              text: { type: "string", maxLength: 140 },
+            },
+            required: ["text"],
+          },
+        },
+      ],
+      tool_choice: { type: "tool", name: "submit_patient_sms" },
+      messages,
+    });
+
+    totalInputTokens += response.usage.input_tokens;
+    totalOutputTokens += response.usage.output_tokens;
+
+    const toolUse = response.content.find((b) => b.type === "tool_use");
+    if (!toolUse || toolUse.type !== "tool_use") {
+      throw new Error("Claude n'a pas invoqué submit_patient_sms");
+    }
+    raw = String((toolUse.input as { text: string }).text ?? "").trim();
+    if (raw.length <= 140) break;
+
+    // Retry une fois en réinjectant la longueur observée
+    messages.push(
+      { role: "assistant", content: response.content },
+      {
+        role: "user",
+        content:
+          ctx.locale === "en"
+            ? `Your draft is ${raw.length} characters — over the 140 limit. Rewrite it under 140 characters total, ending on a complete word.`
+            : `Ton brouillon fait ${raw.length} caractères — au-delà des 140. Réécris-le en moins de 140 caractères au total, en terminant sur un mot complet.`,
+      }
+    );
   }
-  const raw = String((toolUse.input as { text: string }).text ?? "").trim();
-  const text = raw.length > 140 ? raw.slice(0, 137) + "..." : raw;
+
+  // Si Claude n'a toujours pas respecté la limite après retry, on coupe au
+  // dernier espace pour ne jamais sortir un mot tronqué.
+  let text = raw;
+  if (text.length > 140) {
+    const cutoff = text.slice(0, 140);
+    const lastSpace = cutoff.lastIndexOf(" ");
+    text = lastSpace > 100 ? cutoff.slice(0, lastSpace) : cutoff;
+  }
 
   await persistArtifact(ctx.sessionId, "patient_sms", text, {
     model: CLAUDE_MODELS.haiku,
     durationMs: Date.now() - t0,
-    inputTokens: response.usage.input_tokens,
-    outputTokens: response.usage.output_tokens,
-    truncated: raw.length > 140,
+    inputTokens: totalInputTokens,
+    outputTokens: totalOutputTokens,
+    attempts,
+    softTruncated: raw.length > 140,
+    usedPsyProfile: ctx.psyProfile != null,
   });
 
   return { ok: true, durationMs: Date.now() - t0 };
@@ -653,10 +765,15 @@ const GENERATORS: Record<ArtifactType, (ctx: Context) => Promise<{ ok: true; dur
 
 export async function generateOneArtifact(
   sessionId: string,
-  type: ArtifactType
+  type: ArtifactType,
+  options: ArtifactGenerationOptions = {}
 ): Promise<ArtifactGenerationResult> {
   const t0 = Date.now();
-  const ctx = await loadContext(sessionId);
+  // Le profil psy n'a de sens que pour l'email et le SMS, qui sont les
+  // seuls livrables où le ton/angle relationnel s'adapte au patient.
+  const usePsy =
+    !!options.usePsyProfile && (type === "patient_email" || type === "patient_sms");
+  const ctx = await loadContext(sessionId, { usePsyProfile: usePsy });
   if (!ctx) {
     return { ok: false, type, error: "session introuvable", durationMs: Date.now() - t0 };
   }

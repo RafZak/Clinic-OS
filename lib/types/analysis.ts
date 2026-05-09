@@ -50,4 +50,5 @@ export type ResultsBundle = {
   artifacts: ArtifactRow[];
   practitionerVault: VaultLink | null;
   sessionVault: VaultLink | null;
+  hasPsyProfile: boolean;
 };

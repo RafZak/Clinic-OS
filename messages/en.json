@@ -339,6 +339,8 @@
     "copy": "Copy",
     "copied": "Copied",
     "regenerate": "Regenerate",
+    "regenerateWithPsy": "With psy profile",
+    "adaptedToProfile": "Tailored to profile",
     "generating": "Generating…",
     "subjectLabel": "Subject",
     "subjectPrefix": "Subject: ",

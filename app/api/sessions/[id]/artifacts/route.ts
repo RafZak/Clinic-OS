@@ -25,18 +25,23 @@ export async function POST(
   const { id } = await params;
 
   let type: ArtifactType | null = null;
+  let usePsyProfile = false;
   try {
-    const body = (await req.json().catch(() => ({}))) as { type?: string };
+    const body = (await req.json().catch(() => ({}))) as {
+      type?: string;
+      usePsyProfile?: boolean;
+    };
     if (body.type && VALID_TYPES.has(body.type as ArtifactType)) {
       type = body.type as ArtifactType;
     }
+    usePsyProfile = body.usePsyProfile === true;
   } catch {
     // body vide → regenerate all
   }
 
   try {
     if (type) {
-      const result = await generateOneArtifact(id, type);
+      const result = await generateOneArtifact(id, type, { usePsyProfile });
       return NextResponse.json(
         { ok: true, sessionId: id, results: [result] },
         { status: result.ok ? 200 : 500 }

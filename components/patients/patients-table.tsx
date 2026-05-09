@@ -213,7 +213,7 @@ export function PatientsTable({
       <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-3">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {locale === "en" ? "Tags" : "Tags"}
+            Tags
           </span>
           {PSY_TAGS.map((tag) => {
             const active = selectedTags.includes(tag);
@@ -315,9 +315,7 @@ export function PatientsTable({
               </th>
               <th className="px-4 py-3 text-left font-medium">{t("tableLabel")}</th>
               <th className="px-4 py-3 text-left font-medium">{t("tableStatus")}</th>
-              <th className="px-4 py-3 text-left font-medium">
-                {locale === "en" ? "Psy tags" : "Tags psy"}
-              </th>
+              <th className="px-4 py-3 text-left font-medium">Tags</th>
               <th className="px-4 py-3 text-left font-medium">
                 {locale === "en" ? "Temperature" : "Température"}
               </th>

@@ -15,6 +15,8 @@ type Props = {
   disabledTooltip?: string;
   /** Variante compacte (sans le compte) pour la fiche patient. */
   compact?: boolean;
+  /** Called before navigation. Return false to cancel the export. */
+  onBeforeExport?: (format: ExportFormat, locale: ExportLocale) => boolean | void;
 };
 
 const FORMAT_LABEL_FR: Record<ExportFormat, string> = {
@@ -47,6 +49,7 @@ export function ExportFormatMenu({
   disabled,
   disabledTooltip,
   compact,
+  onBeforeExport,
 }: Props) {
   const uiLocale = useLocale();
   const defaultLocale: ExportLocale = uiLocale === "en" ? "en" : "fr";
@@ -96,7 +99,13 @@ export function ExportFormatMenu({
               key={fmt}
               href={buildUrl(fmt, chosenLocale)}
               download
-              onClick={() => setOpen(false)}
+              onClick={(e) => {
+                if (onBeforeExport && onBeforeExport(fmt, chosenLocale) === false) {
+                  e.preventDefault();
+                  return;
+                }
+                setOpen(false);
+              }}
               className="block px-3 py-2 text-sm transition hover:bg-surface-muted"
             >
               <div className="font-medium">{labels[fmt]}</div>

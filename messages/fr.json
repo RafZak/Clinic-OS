@@ -630,5 +630,26 @@
         "partial": "Partiel"
       }
     }
+  },
+  "psychology": {
+    "cardTitle": "Profil psychologique",
+    "showHistory": "Afficher l'évolution",
+    "hideHistory": "Masquer l'évolution",
+    "globalLabel": "Global synthétisé",
+    "profileReading": "Lecture du profil",
+    "notObserved": "non observé",
+    "consentEnabled": "Consent. marketing : activé",
+    "consentDisabled": "Consent. marketing : désactivé",
+    "consentEnabledTooltip": "Consentement actif depuis le {date}. Le profil psychologique de ce patient peut être inclus dans les exports CSV et les segments de campagne marketing.",
+    "consentRevokedTooltip": "Consentement révoqué le {date}. Profil exclu des exports.",
+    "consentMissingTooltip": "Consentement non recueilli. Profil exclu des exports marketing tant que le patient n'a pas opt-in.",
+    "exportProfile": "Exporter ce profil",
+    "exportProfileTooltip": "Télécharger le profil psychologique de ce patient au format CSV (1 ligne)",
+    "ariaLabel": "Profil psychologique patient",
+    "polarityFavorable": "haut = favorable",
+    "polarityFriction": "haut = point de friction",
+    "sessionsHidden": "{count, plural, one {# session plus ancienne non affichée} other {# sessions plus anciennes non affichées}}",
+    "sessionKindConsultation": "Consultation",
+    "sessionKindPhone": "Appel entrant"
   }
 }

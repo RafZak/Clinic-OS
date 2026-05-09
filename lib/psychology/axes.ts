@@ -34,6 +34,15 @@ export const PSY_AXIS_SHORT_LABEL: Record<PsyAxis, string> = {
   decisionStage: "Décision",
 };
 
+export const PSY_AXIS_SHORT_LABEL_EN: Record<PsyAxis, string> = {
+  acceptance: "Acceptance",
+  motivation: "Motivation",
+  trust: "Trust",
+  priceSensitivity: "Price",
+  externalInfluence: "Influence",
+  decisionStage: "Decision",
+};
+
 /**
  * Polarité de chaque axe pour la lecture du radar :
  *  - "positive" → haut sur le radar = signal FAVORABLE pour la vente
@@ -102,8 +111,46 @@ export const PSY_AXIS_INTERPRETATION: Record<PsyAxis, Record<Tier, string>> = {
   },
 };
 
-export function interpretAxis(axis: PsyAxis, score: number): string {
-  return PSY_AXIS_INTERPRETATION[axis][tierFor(score)];
+export const PSY_AXIS_INTERPRETATION_EN: Record<PsyAxis, Record<Tier, string>> = {
+  acceptance: {
+    low: "in denial / refuses the deficit",
+    mid: "ambivalent",
+    high: "accepts hearing loss",
+  },
+  motivation: {
+    low: "uninvested / passive",
+    mid: "moderately motivated",
+    high: "highly motivated / driving force",
+  },
+  trust: {
+    low: "distrustful of the practitioner",
+    mid: "neutral",
+    high: "highly trusts the practitioner",
+  },
+  priceSensitivity: {
+    low: "not price-sensitive",
+    mid: "moderate price sensitivity",
+    high: "highly price-sensitive / financial barrier",
+  },
+  externalInfluence: {
+    low: "decides autonomously",
+    mid: "considers their entourage",
+    high: "decision strongly depends on entourage",
+  },
+  decisionStage: {
+    low: "exploration phase / not ready",
+    mid: "considering, hesitating",
+    high: "ready to decide / signature near",
+  },
+};
+
+export function interpretAxis(
+  axis: PsyAxis,
+  score: number,
+  locale: "fr" | "en" = "fr"
+): string {
+  const map = locale === "en" ? PSY_AXIS_INTERPRETATION_EN : PSY_AXIS_INTERPRETATION;
+  return map[axis][tierFor(score)];
 }
 
 export const PSY_AXIS_LABEL_EN: Record<PsyAxis, string> = {

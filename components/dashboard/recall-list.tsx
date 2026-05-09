@@ -2,7 +2,7 @@ import { Phone, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { searchPatientsByTags } from "@/lib/psychology/queries";
 import { ACTIONABLE_TAGS, PSY_TAG_ACTIONS } from "@/lib/psychology/actions";
-import { PSY_TAG_LABEL, type PsyTag } from "@/lib/psychology/tags";
+import { getTagLabel, type PsyTag } from "@/lib/psychology/tags";
 
 type RecallEntry = {
   patientId: string;
@@ -79,7 +79,7 @@ export async function RecallList({ centerId = null, locale = "fr" }: Props) {
               <div>
                 <p className="text-sm font-medium">{e.patientLabel}</p>
                 <p className="text-xs text-muted-foreground">
-                  {e.topTags.map((t) => PSY_TAG_LABEL[t]).join(" · ")}
+                  {e.topTags.map((t) => getTagLabel(t, locale)).join(" · ")}
                   {" · "}
                   <span className="italic">
                     {locale === "en"

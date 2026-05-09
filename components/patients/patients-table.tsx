@@ -28,7 +28,7 @@ import {
 } from "@/lib/phone-tags";
 import {
   PSY_TAGS,
-  PSY_TAG_LABEL,
+  getTagLabel,
   type PsyTag,
 } from "@/lib/psychology/tags";
 import { cn } from "@/lib/utils";
@@ -126,6 +126,7 @@ export function PatientsTable({
 
   const statusMap = locale === "en" ? STATUS_LABEL_EN : STATUS_LABEL;
   const tempMap = locale === "en" ? LEAD_TEMPERATURE_LABEL_EN : LEAD_TEMPERATURE_LABEL;
+  const isEn = locale === "en";
 
   function formatRelative(date: Date | null): string {
     if (!date) return "—";
@@ -228,7 +229,7 @@ export function PatientsTable({
                     : "border-border bg-surface-muted text-foreground hover:border-brand/40"
                 )}
               >
-                {PSY_TAG_LABEL[tag]}
+                {getTagLabel(tag, isEn ? "en" : "fr")}
               </button>
             );
           })}
@@ -384,15 +385,15 @@ export function PatientsTable({
                           <span
                             key={tag}
                             className="rounded-full bg-brand/10 px-2 py-0.5 text-[10px] font-medium text-brand"
-                            title={PSY_TAG_LABEL[tag as PsyTag]}
+                            title={getTagLabel(tag as PsyTag, isEn ? "en" : "fr")}
                           >
-                            {PSY_TAG_LABEL[tag as PsyTag]}
+                            {getTagLabel(tag as PsyTag, isEn ? "en" : "fr")}
                           </span>
                         ))}
                         {p.psyTags.length > 3 && (
                           <span
                             className="text-[10px] text-muted-foreground"
-                            title={p.psyTags.slice(3).map((t) => PSY_TAG_LABEL[t as PsyTag]).join(", ")}
+                            title={p.psyTags.slice(3).map((t) => getTagLabel(t as PsyTag, isEn ? "en" : "fr")).join(", ")}
                           >
                             +{p.psyTags.length - 3}
                           </span>

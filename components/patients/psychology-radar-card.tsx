@@ -2,25 +2,22 @@
 
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import {
   PSY_AXES,
   PSY_AXIS_POLARITY,
   PSY_AXIS_SHORT_LABEL,
+  PSY_AXIS_SHORT_LABEL_EN,
   interpretAxis,
   type PsyAxis,
   type PsyRadar,
   type PsySnapshot,
 } from "@/lib/psychology/axes";
-import { PSY_TAG_LABEL, type PsyTag } from "@/lib/psychology/tags";
+import { getTagLabel, type PsyTag } from "@/lib/psychology/tags";
 import { PsychologyRadar } from "./psychology-radar";
 import { cn } from "@/lib/utils";
 
 type SessionKind = "consultation" | "phone_call";
-
-const SESSION_KIND_LABEL: Record<SessionKind, string> = {
-  consultation: "Consultation",
-  phone_call: "Appel entrant",
-};
 
 const SESSION_COLORS = [
   { color: "#9CA3AF", fillOpacity: 0.1, dasharray: "4 3" },
@@ -50,8 +47,11 @@ type LegendEntry = {
   dasharray?: string;
 };
 
-function formatSessionDate(d: Date): string {
-  return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
+function formatSessionDate(d: Date, locale: string): string {
+  return d.toLocaleDateString(locale === "en" ? "en-GB" : "fr-FR", {
+    day: "2-digit",
+    month: "short",
+  });
 }
 
 export function PsychologyRadarCard({
@@ -60,6 +60,14 @@ export function PsychologyRadarCard({
   snapshots,
 }: PsychologyRadarCardProps) {
   const [showHistory, setShowHistory] = useState(false);
+  const t = useTranslations("psychology");
+  const locale = useLocale();
+  const isEn = locale === "en";
+  const shortMap = isEn ? PSY_AXIS_SHORT_LABEL_EN : PSY_AXIS_SHORT_LABEL;
+  const sessionKindLabel: Record<SessionKind, string> = {
+    consultation: t("sessionKindConsultation"),
+    phone_call: t("sessionKindPhone"),
+  };
 
   // snapshots input is DESC (most recent first). Take 3 most recent, then
   // reverse → oldest first for paint order.
@@ -99,7 +107,7 @@ export function PsychologyRadarCard({
   const legendEntries: LegendEntry[] = [
     {
       key: "global",
-      label: "Global synthétisé",
+      label: t("globalLabel"),
       color: GLOBAL_COLOR,
       fillOpacity: 0.3,
       strokeWidth: 2.5,
@@ -110,8 +118,9 @@ export function PsychologyRadarCard({
             const palette = paletteFor(i);
             return {
               key: snap.id,
-              label: `${SESSION_KIND_LABEL[snap.sessionKind]} · ${formatSessionDate(
-                snap.sessionStartedAt
+              label: `${sessionKindLabel[snap.sessionKind]} · ${formatSessionDate(
+                snap.sessionStartedAt,
+                locale
               )}`,
               color: palette.color,
               fillOpacity: palette.fillOpacity,
@@ -127,7 +136,7 @@ export function PsychologyRadarCard({
     <section className="rounded-lg border border-border bg-surface p-5">
       <header className="mb-4 flex items-center justify-between gap-3">
         <h3 className="text-sm font-semibold text-foreground">
-          Profil psychologique
+          {t("cardTitle")}
         </h3>
         <button
           type="button"
@@ -145,7 +154,7 @@ export function PsychologyRadarCard({
           ) : (
             <Eye className="h-3.5 w-3.5" />
           )}
-          {showHistory ? "Masquer l'évolution" : "Afficher l'évolution"}
+          {showHistory ? t("hideHistory") : t("showHistory")}
         </button>
       </header>
 
@@ -173,9 +182,7 @@ export function PsychologyRadarCard({
           </ul>
           {showHistory && hiddenCount > 0 ? (
             <p className="mt-1 text-[11px] italic text-muted-foreground">
-              {hiddenCount} session{hiddenCount > 1 ? "s" : ""} plus ancienne
-              {hiddenCount > 1 ? "s" : ""} non affichée
-              {hiddenCount > 1 ? "s" : ""}
+              {t("sessionsHidden", { count: hiddenCount })}
             </p>
           ) : null}
         </div>
@@ -185,7 +192,7 @@ export function PsychologyRadarCard({
           Clarifie d'un coup d'œil ce que chaque score veut dire pour le patient. */}
       <div className="mt-5 rounded-md border border-border bg-light/40 p-3">
         <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-          Lecture du profil
+          {t("profileReading")}
         </p>
         <ul className="grid grid-cols-1 gap-1.5 text-xs sm:grid-cols-2">
           {PSY_AXES.map((axis) => {
@@ -214,15 +221,15 @@ export function PsychologyRadarCard({
                   )}
                 />
                 <span className="text-foreground">
-                  <span className="font-medium">{PSY_AXIS_SHORT_LABEL[axis]}</span>
+                  <span className="font-medium">{shortMap[axis]}</span>
                   {score === null ? (
-                    <span className="text-muted-foreground italic"> — non observé</span>
+                    <span className="text-muted-foreground italic"> — {t("notObserved")}</span>
                   ) : (
                     <>
                       {" "}
                       <span className="text-muted-foreground">{score}/10</span>
                       <span className="text-muted-foreground">
-                        {" "}— {interpretAxis(axis as PsyAxis, score)}
+                        {" "}— {interpretAxis(axis as PsyAxis, score, isEn ? "en" : "fr")}
                       </span>
                     </>
                   )}
@@ -240,7 +247,7 @@ export function PsychologyRadarCard({
               key={tag}
               className="inline-flex items-center rounded-full border border-brand/20 bg-brand/10 px-2.5 py-0.5 text-[11px] font-medium text-brand"
             >
-              {PSY_TAG_LABEL[tag]}
+              {getTagLabel(tag, isEn ? "en" : "fr")}
             </span>
           ))}
         </div>

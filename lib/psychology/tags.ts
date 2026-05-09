@@ -35,6 +35,23 @@ export const PSY_TAG_LABEL: Record<PsyTag, string> = {
   "prêt-conversion": "Prêt conversion",
 };
 
+export const PSY_TAG_LABEL_EN: Record<PsyTag, string> = {
+  "prospect-chaud": "Hot prospect",
+  "prospect-froid": "Cold prospect",
+  "réfractaire-prix": "Price-resistant",
+  "en-déni": "In denial",
+  "entourage-décisif": "Influencer-driven",
+  "méfiant": "Distrustful",
+  "décisionnaire-éclairé": "Informed decision-maker",
+  "à-rassurer": "Needs reassurance",
+  "à-éduquer": "Needs education",
+  "prêt-conversion": "Ready to convert",
+};
+
+export function getTagLabel(tag: PsyTag, locale: "fr" | "en" = "fr"): string {
+  return locale === "en" ? PSY_TAG_LABEL_EN[tag] : PSY_TAG_LABEL[tag];
+}
+
 type Rule = {
   tag: PsyTag;
   test: (r: PsyRadar) => boolean;

@@ -630,5 +630,26 @@
         "partial": "Partial"
       }
     }
+  },
+  "psychology": {
+    "cardTitle": "Psychological profile",
+    "showHistory": "Show timeline",
+    "hideHistory": "Hide timeline",
+    "globalLabel": "Synthesized global",
+    "profileReading": "Profile reading",
+    "notObserved": "not observed",
+    "consentEnabled": "Marketing consent: enabled",
+    "consentDisabled": "Marketing consent: disabled",
+    "consentEnabledTooltip": "Consent active since {date}. This patient's psychological profile can be included in CSV exports and marketing campaign segments.",
+    "consentRevokedTooltip": "Consent revoked on {date}. Profile excluded from exports.",
+    "consentMissingTooltip": "No consent recorded. Profile excluded from marketing exports until the patient opts in.",
+    "exportProfile": "Export this profile",
+    "exportProfileTooltip": "Download this patient's psychological profile as CSV (1 row)",
+    "ariaLabel": "Patient psychological profile",
+    "polarityFavorable": "high = favorable",
+    "polarityFriction": "high = friction point",
+    "sessionsHidden": "{count, plural, one {# older session hidden} other {# older sessions hidden}}",
+    "sessionKindConsultation": "Consultation",
+    "sessionKindPhone": "Inbound call"
   }
 }

@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { Download, Shield, ShieldOff } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import {
   grantConsentAction,
   revokeConsentAction,
@@ -26,6 +27,9 @@ export function MarketingConsentToggle({
 }: Props) {
   const [isPending, startTransition] = useTransition();
   const active = isActive(consentAt, revokedAt);
+  const t = useTranslations("psychology");
+  const locale = useLocale();
+  const dateLocale = locale === "en" ? "en-GB" : "fr-FR";
 
   const handleClick = () => {
     startTransition(async () => {
@@ -35,10 +39,10 @@ export function MarketingConsentToggle({
   };
 
   const tooltip = active
-    ? `Consentement actif depuis le ${consentAt!.toLocaleDateString("fr-FR")}. Le profil psychologique de ce patient peut être inclus dans les exports CSV et les segments de campagne marketing.`
+    ? t("consentEnabledTooltip", { date: consentAt!.toLocaleDateString(dateLocale) })
     : revokedAt
-      ? `Consentement révoqué le ${revokedAt.toLocaleDateString("fr-FR")}. Profil exclu des exports.`
-      : "Consentement non recueilli. Profil exclu des exports marketing tant que le patient n'a pas opt-in.";
+      ? t("consentRevokedTooltip", { date: revokedAt.toLocaleDateString(dateLocale) })
+      : t("consentMissingTooltip");
 
   return (
     <div className="inline-flex items-center gap-2">
@@ -59,17 +63,17 @@ export function MarketingConsentToggle({
         ) : (
           <ShieldOff className="h-3.5 w-3.5" />
         )}
-        Consent. marketing : {active ? "activé" : "désactivé"}
+        {active ? t("consentEnabled") : t("consentDisabled")}
       </button>
       {active && (
         <a
           href={`/admin/psychology/export?ids=${patientId}&consent=active`}
           download
-          title="Télécharger le profil psychologique de ce patient au format CSV (1 ligne)"
+          title={t("exportProfileTooltip")}
           className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-surface-muted"
         >
           <Download className="h-3.5 w-3.5" />
-          Exporter ce profil
+          {t("exportProfile")}
         </a>
       )}
     </div>

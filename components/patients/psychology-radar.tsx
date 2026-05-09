@@ -1,10 +1,13 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import {
   PSY_AXES,
   PSY_AXIS_LABEL,
+  PSY_AXIS_LABEL_EN,
   PSY_AXIS_POLARITY,
   PSY_AXIS_SHORT_LABEL,
+  PSY_AXIS_SHORT_LABEL_EN,
   type PsyAxis,
   type PsyRadar,
 } from "@/lib/psychology/axes";
@@ -113,6 +116,11 @@ export function PsychologyRadar({
   className,
   showLabels = true,
 }: PsychologyRadarProps) {
+  const t = useTranslations("psychology");
+  const locale = useLocale();
+  const isEn = locale === "en";
+  const labelMap = isEn ? PSY_AXIS_LABEL_EN : PSY_AXIS_LABEL;
+  const shortMap = isEn ? PSY_AXIS_SHORT_LABEL_EN : PSY_AXIS_SHORT_LABEL;
   const gridScales = [0.25, 0.5, 0.75, 1];
 
   // Détecter les axes au moins partiellement scorés sur l'union des layers
@@ -133,7 +141,7 @@ export function PsychologyRadar({
   return (
     <svg
       role="img"
-      aria-label="Profil psychologique patient"
+      aria-label={t("ariaLabel")}
       viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
       width={size}
       height={size * (VIEW_H / VIEW_W)}
@@ -283,13 +291,13 @@ export function PsychologyRadar({
             const polaritySymbol = polarity === "positive" ? "+" : "−";
             const polarityHint =
               polarity === "positive"
-                ? "haut = favorable"
-                : "haut = point de friction";
+                ? t("polarityFavorable")
+                : t("polarityFriction");
             return (
               <g key={`label-${axis}`}>
                 <title>
-                  {PSY_AXIS_LABEL[axis]} ({polarityHint})
-                  {observed ? "" : " — non observé"}
+                  {labelMap[axis]} ({polarityHint})
+                  {observed ? "" : ` — ${t("notObserved")}`}
                 </title>
                 <text
                   x={x}
@@ -301,7 +309,7 @@ export function PsychologyRadar({
                   fill={observed ? "#374151" : "#9CA3AF"}
                   fontStyle={observed ? "normal" : "italic"}
                 >
-                  {PSY_AXIS_SHORT_LABEL[axis]}{" "}
+                  {shortMap[axis]}{" "}
                   <tspan
                     fontSize={9}
                     fontWeight={600}

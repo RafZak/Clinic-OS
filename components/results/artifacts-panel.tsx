@@ -290,18 +290,50 @@ function ArtifactContent({ type, content }: { type: ArtifactType; content: strin
   }
   if (type === "clinical_notes") {
     return (
-      <div
-        className={cn(
-          "prose prose-sm max-w-none text-ink",
-          "prose-headings:mt-5 prose-headings:mb-2 prose-headings:text-ink prose-headings:font-semibold",
-          "prose-h2:mt-5 prose-h2:pt-3 prose-h2:text-[13px] prose-h2:uppercase prose-h2:tracking-wide prose-h2:text-brand prose-h2:border-t prose-h2:border-brand/20 first-of-type:[&_h2]:mt-0 first-of-type:[&_h2]:border-t-0 first-of-type:[&_h2]:pt-0",
-          "prose-h3:text-xs prose-h3:uppercase prose-h3:tracking-wide prose-h3:text-muted-foreground",
-          "prose-p:my-1.5 prose-p:text-sm prose-p:leading-relaxed",
-          "prose-ul:my-2 prose-li:my-0.5 prose-li:text-sm prose-li:leading-relaxed",
-          "prose-strong:text-ink"
-        )}
-      >
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+      <div className="text-sm text-ink">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+            h2: ({ children, ...props }) => (
+              <h2
+                {...props}
+                className="mt-5 border-t border-brand/20 pt-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-brand first:mt-0 first:border-t-0 first:pt-0"
+              >
+                {children}
+              </h2>
+            ),
+            h3: ({ children, ...props }) => (
+              <h3
+                {...props}
+                className="mt-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
+              >
+                {children}
+              </h3>
+            ),
+            p: ({ children, ...props }) => (
+              <p {...props} className="my-1.5 leading-relaxed text-ink">
+                {children}
+              </p>
+            ),
+            ul: ({ children, ...props }) => (
+              <ul {...props} className="my-2 ml-5 list-disc space-y-0.5">
+                {children}
+              </ul>
+            ),
+            li: ({ children, ...props }) => (
+              <li {...props} className="leading-relaxed">
+                {children}
+              </li>
+            ),
+            strong: ({ children, ...props }) => (
+              <strong {...props} className="font-semibold text-ink">
+                {children}
+              </strong>
+            ),
+          }}
+        >
+          {content}
+        </ReactMarkdown>
       </div>
     );
   }

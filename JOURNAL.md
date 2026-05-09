@@ -748,3 +748,53 @@ Exactement la philosophie validée par Jonathan : pas de jugement sur la standar
 - Polish + répétition Jonathan complète bout-en-bout
 - Décision déploiement Vercel ou pas (durées Sonnet > 60 s à régler)
 
+## Enrichissement exports patients — 9 mai 2026
+
+**Pourquoi** — l'export marketing patients existait depuis le merge `d271d33` mais n'exposait que 6 axes psy + tags + identité. Pour Amplifon, on veut un export **exhaustif et plug-and-play** dans n'importe quelle stack : CRM, Excel, API. Argument démo : "Clinic OS s'intègre partout, et chaque ligne contient une recommandation marketing prête à exécuter."
+
+**Spec & plan** :
+- Spec : [docs/superpowers/specs/2026-05-09-enrich-patient-exports-design.md](docs/superpowers/specs/2026-05-09-enrich-patient-exports-design.md)
+- Plan : [docs/superpowers/plans/2026-05-09-enrich-patient-exports.md](docs/superpowers/plans/2026-05-09-enrich-patient-exports.md)
+
+**Ce qui a été livré (14 tâches)** :
+
+1. **Route unifiée** `/api/exports/patients?ids=…&format=…&locale=…&consent=…` (csv | xlsx | json × fr | en × active | all). L'ancienne route `/admin/psychology/export` devient un **alias 307**.
+2. **Schema enrichi `PatientExportRecord`** — 7 sections :
+   - Identité (déjà OK)
+   - Statut funnel (status, étape actuelle calculée depuis `patient_events`, days_in_pipeline, days_in_current_stage)
+   - Engagement (nb sessions, score moyen, durée totale, last_score)
+   - Profil psy global (radar + tags + tags_label localisés)
+   - Profil psy enrichi par axe (rationale + verbatim + trend up/down/stable)
+   - Opportunité commerciale (€ total, top 3 insights, missed_objections, upsell_missed)
+   - **Recommandation marketing IA** (priority_segment, urgency_score 0-100, channel, angle, next_best_action) — appel Haiku 1-par-patient avec p-limit 8 concurrents et fallback silencieux
+3. **3 formats** :
+   - CSV (~50 colonnes, snake_case international)
+   - XLSX 4 feuilles stylées (Patients / Sessions / Insights / Timeline) avec couleurs charte, freeze panes, headers gras rouge brand — via `exceljs`
+   - JSON arborescent indenté
+4. **Composant UI `<ExportFormatMenu>`** — dropdown réutilisable qui expose les 3 formats + sélecteur FR/EN, avec callback `onBeforeExport` pour préserver le warning RGPD bulk
+5. **Bulk** depuis `/patients` (sélection ou tous filtrés)
+6. **Single** depuis la fiche patient (toggle marketing-consent, mode `compact`)
+7. **`urgency_score`** = formule déterministe 70/30 (`computeUrgencyBase` 0-85 + boost LLM ±15) — documentable pour Amplifon
+8. **Smoke script `pnpm smoke:export`** : génère 6 fichiers (csv/json/xlsx × fr/en) dans `/tmp/`
+
+**Validation E2E** (smoke run) :
+- 3 patients × 2 locales × 3 formats = 18 fichiers OK
+- Sessions: 7, insights: 21, timeline: 11 par locale
+- Recommandations : **3/3 non-null**, Anthropic Haiku stable
+- XLSX détecté `Microsoft Excel 2007+`
+- Phrases `next_best_action` FR validées (spécifiques, timeboxées, canaux concrets) :
+  - *"Envoyez guide audioprothèse pour seniors avec témoignages, relancez par téléphone dans 5 jours."*
+  - *"Rappelez avec prescripteur ou proche de confiance pour co-valider la solution proposée."*
+  - *"Appelez pour confirmer réception ordonnance ORL et fixer essai auditif dans 7 jours."*
+
+**Hors scope (assumés)** :
+- PDF "fiche patient" — droppé pendant le brainstorming (n'intègre rien, dilue le pitch ; cas d'usage interne déjà couvert par la fiche digitale Clinic OS)
+- Audit log avec actor_id (TODO existante reste, débloquée par auth réelle)
+- Cache cross-requête de la recommandation IA (in-memory dans la requête seulement ; nightly cron à concevoir en prod)
+
+**Argumentaire démo** :
+- 3 boutons d'export (CSV / XLSX / JSON) qui s'allument dans `/patients` → "votre stack quel qu'il soit"
+- XLSX ouvert devant Amplifon : 4 feuilles colorées qu'ils peuvent trier/filtrer en live
+- JSON ouvert dans VSCode : "vos devs branchent ça à n'importe quoi en 5 lignes"
+- Punchline : la colonne `reco_next_best_action` a déjà la phrase prête à exécuter pour chaque patient
+

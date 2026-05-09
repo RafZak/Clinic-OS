@@ -1,12 +1,13 @@
 "use client";
 
 import { useTransition } from "react";
-import { Download, Shield, ShieldOff } from "lucide-react";
+import { Shield, ShieldOff } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import {
   grantConsentAction,
   revokeConsentAction,
 } from "@/app/actions/psychology";
+import { ExportFormatMenu } from "@/components/exports/export-format-menu";
 
 type Props = {
   patientId: string;
@@ -66,15 +67,18 @@ export function MarketingConsentToggle({
         {active ? t("consentEnabled") : t("consentDisabled")}
       </button>
       {active && (
-        <a
-          href={`/admin/psychology/export?ids=${patientId}&consent=active`}
-          download
-          title={t("exportProfileTooltip")}
-          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-surface-muted"
-        >
-          <Download className="h-3.5 w-3.5" />
-          {t("exportProfile")}
-        </a>
+        <ExportFormatMenu
+          exportableCount={1}
+          compact
+          buildUrl={(format, exportLocale) => {
+            const url = new URL("/api/exports/patients", window.location.origin);
+            url.searchParams.set("ids", patientId);
+            url.searchParams.set("consent", "active");
+            url.searchParams.set("format", format);
+            url.searchParams.set("locale", exportLocale);
+            return url.toString();
+          }}
+        />
       )}
     </div>
   );

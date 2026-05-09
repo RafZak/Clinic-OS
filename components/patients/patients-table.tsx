@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
   ArrowUpRight,
-  Download,
   Phone,
   Stethoscope,
   Trash2,
@@ -15,6 +14,8 @@ import {
 import { useTranslations, useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { DeletePatientsDialog } from "@/components/patients/delete-patients-dialog";
+import { ExportFormatMenu } from "@/components/exports/export-format-menu";
+import type { ExportFormat, ExportLocale } from "@/lib/psychology/export/types";
 import {
   STATUS_LABEL,
   STATUS_LABEL_EN,
@@ -183,12 +184,25 @@ export function PatientsTable({
     );
   }
 
-  function exportCsv() {
-    // Si une sélection existe → exporter les lignes sélectionnées.
-    // Sinon → exporter toutes les lignes filtrées affichées.
+  // Build the download URL for a given format + locale.
+  // Returns "#" if no exportable ids — onBeforeExport will block navigation.
+  function buildExportUrl(format: ExportFormat, exportLocale: ExportLocale): string {
     const ids = selected.size > 0 ? selectedIds : rows.map((r) => r.id);
-    if (ids.length === 0) return;
+    if (ids.length === 0) return "#";
+    const exportConsent: "active" | "all" = consentMode === "missing" ? "all" : "active";
+    const url = new URL("/api/exports/patients", window.location.origin);
+    url.searchParams.set("ids", ids.join(","));
+    url.searchParams.set("consent", exportConsent);
+    url.searchParams.set("format", format);
+    url.searchParams.set("locale", exportLocale);
+    return url.toString();
+  }
 
+  // Called by ExportFormatMenu before navigation. Returns false to cancel
+  // (used to enforce a GDPR confirmation when consent=all).
+  function confirmExport(): boolean {
+    const ids = selected.size > 0 ? selectedIds : rows.map((r) => r.id);
+    if (ids.length === 0) return false;
     const exportConsent: "active" | "all" = consentMode === "missing" ? "all" : "active";
     if (exportConsent === "all") {
       const ok = window.confirm(
@@ -196,12 +210,9 @@ export function PatientsTable({
           ? "You are including patients without active marketing consent. This file MUST NOT be used for direct marketing campaigns. Continue?"
           : "Vous incluez des patients sans consentement marketing actif. Ce fichier ne peut PAS être utilisé en marketing direct (sanctions RGPD). Confirmer ?"
       );
-      if (!ok) return;
+      if (!ok) return false;
     }
-    const url = new URL("/admin/psychology/export", window.location.origin);
-    url.searchParams.set("ids", ids.join(","));
-    url.searchParams.set("consent", exportConsent);
-    window.location.href = url.toString();
+    return true;
   }
 
   const filterBarActive = selectedTags.length > 0 || consentMode !== "any";
@@ -266,20 +277,17 @@ export function PatientsTable({
                 {locale === "en" ? "Clear filters" : "Réinitialiser"}
               </Link>
             )}
-            <button
-              type="button"
-              onClick={exportCsv}
+            <ExportFormatMenu
+              exportableCount={exportableCount}
+              buildUrl={buildExportUrl}
+              onBeforeExport={() => confirmExport()}
               disabled={exportableCount === 0}
-              className="inline-flex items-center gap-1.5 rounded-md bg-brand px-2.5 py-1 text-[11px] font-medium text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
-              title={
+              disabledTooltip={
                 locale === "en"
-                  ? "Export selected patients (or all filtered if no selection) as CSV"
-                  : "Exporter les patients sélectionnés (ou tous les filtrés si aucune sélection) en CSV"
+                  ? "No selected/filtered patients to export"
+                  : "Aucun patient sélectionné/filtré à exporter"
               }
-            >
-              <Download className="h-3 w-3" />
-              {locale === "en" ? "Export CSV" : "Exporter CSV"} ({exportableCount})
-            </button>
+            />
           </span>
         </div>
         {consentMode === "missing" && (

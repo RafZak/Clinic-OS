@@ -240,7 +240,7 @@ export function ResultsView({ bundle }: { bundle: Bundle }) {
                     </span>
                     <span
                       className={cn(
-                        "mt-0.5 inline-flex h-5 w-16 shrink-0 items-center justify-center self-start rounded-full text-[10px] font-medium uppercase tracking-wide",
+                        "mt-0.5 inline-flex h-5 shrink-0 items-center justify-center self-start rounded-full px-2 text-[10px] font-medium uppercase tracking-wide",
                         l.speaker === "practitioner"
                           ? "bg-brand/10 text-brand"
                           : "bg-surface-muted text-muted-foreground"

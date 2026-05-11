@@ -3,6 +3,8 @@ import { and, eq, or } from "drizzle-orm";
 import { db } from "@/db/client";
 import { sessions, transcriptLines } from "@/db/schema";
 import { createSignedAudioUrl } from "@/lib/supabase/storage";
+import { readSessionLocale } from "@/lib/sessions";
+import type { Locale } from "@/lib/locale";
 
 type DGUtterance = {
   start: number;
@@ -42,13 +44,18 @@ export async function retranscribeSession(sessionId: string): Promise<Retranscri
         or(eq(sessions.analysisStatus, "pending"), eq(sessions.analysisStatus, "failed"))
       )
     )
-    .returning({ id: sessions.id, audioUrl: sessions.audioUrl });
+    .returning({
+      id: sessions.id,
+      audioUrl: sessions.audioUrl,
+      metadata: sessions.metadata,
+    });
 
   if (locked.length === 0) {
     return { skipped: "not-pending" };
   }
 
   const { audioUrl } = locked[0];
+  const locale = readSessionLocale(locked[0].metadata);
 
   try {
     if (!audioUrl) {
@@ -61,7 +68,7 @@ export async function retranscribeSession(sessionId: string): Promise<Retranscri
     }
 
     const signedUrl = await createSignedAudioUrl(audioUrl);
-    const dg = await callDeepgramPrerecorded(signedUrl);
+    const dg = await callDeepgramPrerecorded(signedUrl, locale);
     const utterances = dg.results?.utterances ?? [];
 
     const speakerMap = buildSpeakerMap(utterances);
@@ -81,21 +88,41 @@ export async function retranscribeSession(sessionId: string): Promise<Retranscri
             : null,
       }));
 
+    // Filet de sécurité : si le batch ne renvoie aucune utterance (audio
+    // illisible, langue mal détectée, etc.) on PRÉSERVE les lignes captées
+    // par le live et on marque la session 'transcribed' pour laisser analyze
+    // tenter sa chance dessus. Si live=0 aussi, analyze détectera le vide
+    // proprement avec un message clair en aval.
+    if (lines.length === 0) {
+      const existing = await db
+        .select({ id: transcriptLines.id })
+        .from(transcriptLines)
+        .where(eq(transcriptLines.sessionId, sessionId))
+        .limit(1);
+      await db
+        .update(sessions)
+        .set({ analysisStatus: "transcribed" })
+        .where(eq(sessions.id, sessionId));
+      log(sessionId, "retranscribe", "ok-empty-batch", Date.now() - t0, {
+        liveLinesPreserved: existing.length,
+        locale,
+      });
+      return { ok: true, lines: existing.length };
+    }
+
     await db.transaction(async (tx) => {
       await tx.delete(transcriptLines).where(eq(transcriptLines.sessionId, sessionId));
-      if (lines.length > 0) {
-        const chunkSize = 200;
-        for (let i = 0; i < lines.length; i += chunkSize) {
-          const slice = lines.slice(i, i + chunkSize).map((l) => ({
-            sessionId,
-            speaker: l.speaker,
-            startMs: l.startMs,
-            endMs: l.endMs,
-            text: l.text,
-            confidence: l.confidence,
-          }));
-          await tx.insert(transcriptLines).values(slice);
-        }
+      const chunkSize = 200;
+      for (let i = 0; i < lines.length; i += chunkSize) {
+        const slice = lines.slice(i, i + chunkSize).map((l) => ({
+          sessionId,
+          speaker: l.speaker,
+          startMs: l.startMs,
+          endMs: l.endMs,
+          text: l.text,
+          confidence: l.confidence,
+        }));
+        await tx.insert(transcriptLines).values(slice);
       }
       await tx
         .update(sessions)
@@ -103,7 +130,10 @@ export async function retranscribeSession(sessionId: string): Promise<Retranscri
         .where(eq(sessions.id, sessionId));
     });
 
-    log(sessionId, "retranscribe", "ok", Date.now() - t0, { lines: lines.length });
+    log(sessionId, "retranscribe", "ok", Date.now() - t0, {
+      lines: lines.length,
+      locale,
+    });
     return { ok: true, lines: lines.length };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -116,13 +146,16 @@ export async function retranscribeSession(sessionId: string): Promise<Retranscri
   }
 }
 
-async function callDeepgramPrerecorded(url: string): Promise<DGResponse> {
+async function callDeepgramPrerecorded(
+  url: string,
+  locale: Locale
+): Promise<DGResponse> {
   const apiKey = process.env.DEEPGRAM_API_KEY;
   if (!apiKey) throw new Error("DEEPGRAM_API_KEY manquant");
 
   const params = new URLSearchParams({
     model: "nova-3-general",
-    language: "fr",
+    language: locale,
     punctuate: "true",
     smart_format: "true",
     diarize: "true",

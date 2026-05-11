@@ -32,7 +32,7 @@ export function ScoreRadar({ points }: { points: RadarPoint[] }) {
 
   return (
     <div className="h-[360px] w-full">
-      <ResponsiveContainer>
+      <ResponsiveContainer width="100%" height="100%">
         <RadarChart data={data} cx="50%" cy="50%" outerRadius="72%">
           <PolarGrid stroke="rgba(0,0,0,0.08)" />
           <PolarAngleAxis

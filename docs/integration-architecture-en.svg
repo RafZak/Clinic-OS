@@ -1,0 +1,171 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" font-family="Inter, -apple-system, sans-serif">
+  <defs>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#CC0641"/>
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#6B7280"/>
+    </marker>
+    <marker id="arrow-back" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M10,0 L0,5 L10,10 z" fill="#CC0641"/>
+    </marker>
+    <marker id="arrow-back-gray" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M10,0 L0,5 L10,10 z" fill="#6B7280"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1920" height="1080" fill="#FFFFFF"/>
+
+  <!-- Header -->
+  <text x="80" y="80" font-size="36" font-weight="700" fill="#1A1A1A">Clinic OS plugs into your tools — nothing gets replaced</text>
+  <text x="80" y="118" font-size="20" font-weight="400" fill="#6B7280">An intelligence layer that connects to what your teams already use every day</text>
+  <line x1="80" y1="148" x2="1840" y2="148" stroke="#E5E7EB" stroke-width="1"/>
+
+  <!-- ============ LEFT COLUMN — AMPLIFON STACK ============ -->
+  <text x="80" y="200" font-size="14" font-weight="600" fill="#6B7280" letter-spacing="2">YOUR CURRENT TOOLS</text>
+  <rect x="80" y="220" width="520" height="720" fill="#F5F7F8" rx="12"/>
+
+  <!-- Salesforce Service Cloud -->
+  <rect x="110" y="250" width="460" height="100" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" rx="8"/>
+  <image x="128" y="278" width="44" height="44" preserveAspectRatio="xMidYMid meet" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACU0lEQVRYhe3XP4hUVxTH8c95DIOFhEVEREQWZ5EgEoJYiJWlhYhYWsloISFlCrGykCBWKSwsZIoUQcRKxEJEQpAUFiIiIsuOyBLCEiQsiywyDHss7tt1V/cfjs40/uBV9973+57z7r3nvMjMMEJVozT/BgCNtQaiM1URW9DEAnpkL9sTC18SID7ehNHpVthKjhM/Ym8ByBfES0xnuzX3YZ6xOpAeOStjPs+2Ng25AqBEbQ9xEuex78PU7NcAN3CvNj5aP7swjQd4hMlst+Y/A6C7A5dq87X0P/mcGMMPq4w/xq81zGKWYB5vs70yO0sA0ek2yRP4vf72g+iv8h5N7CMRr/EEk+Sbxb20HGCsXnR8QPP1NIVbtc9UtlsLy49hE0e+ojlM4CIuYDef3gODpn6zOoPT0ek2lgP0MTkkAFIb2yuWjt82ZacOR2ECB+sMxHb8jANDAyj6vlFutDxFnFc24jDVr9Agzo3AHJ5WqOTQUw+vpRcVSYwk+uvCbEUs4N/heudN/JHtVr9Sav3tIRm/whXisixBR2ZGdLr7lTJ7+Mv65V0Rc+T8smL0BG8Wq+JiR/QSv5A/EceUS2lAc3dFXCVniD7mMLtOOZ6qiHGMK4ViN07i0AZWM3imHONttdF93FEak3frLV69JUtNYStO4Jr1i9RN/FYbN5WaMrNatJsC+AhmJ84pHdKuFYOpJzzEFfyd7VZ/I7PVtGZXXJv8R14T8UjJxgGlxZoWHuBP/PO55myQgaVJnW4D32GLVAk9vMW7zaR5YICvqZH/GX0DeA+7dNwMD/MVCgAAAABJRU5ErkJggg=="/>
+  <text x="190" y="290" font-size="18" font-weight="600" fill="#1A1A1A">Salesforce Service Cloud</text>
+  <text x="190" y="315" font-size="14" fill="#6B7280">Every patient's record</text>
+  <text x="190" y="335" font-size="12" fill="#9CA3AF">Appointments, history, contacts, follow-ups</text>
+
+  <!-- Salesforce Agentforce -->
+  <rect x="110" y="370" width="460" height="100" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" rx="8"/>
+  <image x="128" y="398" width="44" height="44" preserveAspectRatio="xMidYMid meet" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAACU0lEQVRYhe3XP4hUVxTH8c95DIOFhEVEREQWZ5EgEoJYiJWlhYhYWsloISFlCrGykCBWKSwsZIoUQcRKxEJEQpAUFiIiIsuOyBLCEiQsiywyDHss7tt1V/cfjs40/uBV9973+57z7r3nvMjMMEJVozT/BgCNtQaiM1URW9DEAnpkL9sTC18SID7ehNHpVthKjhM/Ym8ByBfES0xnuzX3YZ6xOpAeOStjPs+2Ng25AqBEbQ9xEuex78PU7NcAN3CvNj5aP7swjQd4hMlst+Y/A6C7A5dq87X0P/mcGMMPq4w/xq81zGKWYB5vs70yO0sA0ek2yRP4vf72g+iv8h5N7CMRr/EEk+Sbxb20HGCsXnR8QPP1NIVbtc9UtlsLy49hE0e+ojlM4CIuYDef3gODpn6zOoPT0ek2lgP0MTkkAFIb2yuWjt82ZacOR2ECB+sMxHb8jANDAyj6vlFutDxFnFc24jDVr9Agzo3AHJ5WqOTQUw+vpRcVSYwk+uvCbEUs4N/heudN/JHtVr9Sav3tIRm/whXisixBR2ZGdLr7lTJ7+Mv65V0Rc+T8smL0BG8Wq+JiR/QSv5A/EceUS2lAc3dFXCVniD7mMLtOOZ6qiHGMK4ViN07i0AZWM3imHONttdF93FEak3frLV69JUtNYStO4Jr1i9RN/FYbN5WaMrNatJsC+AhmJ84pHdKuFYOpJzzEFfyd7VZ/I7PVtGZXXJv8R14T8UjJxgGlxZoWHuBP/PO55myQgaVJnW4D32GLVAk9vMW7zaR5YICvqZH/GX0DeA+7dNwMD/MVCgAAAABJRU5ErkJggg=="/>
+  <text x="190" y="410" font-size="18" font-weight="600" fill="#1A1A1A">Salesforce Agentforce</text>
+  <text x="190" y="435" font-size="14" fill="#6B7280">The AI agent that books appointments</text>
+  <text x="190" y="455" font-size="12" fill="#9CA3AF">Patient reminders, recommendations</text>
+
+  <!-- Amplifon 360 / Field Service (rolling out) -->
+  <g opacity="0.25">
+  <rect x="110" y="490" width="460" height="100" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" rx="8"/>
+  <image x="128" y="518" width="44" height="44" preserveAspectRatio="xMidYMid meet" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAIRUlEQVRYheWXeWxUxx3HvzPv7b69vGt7D68PvOALDOYyJAGa0MSiCFHUEkIpIm2FKoQCLahCTYSiqKmiKKoSq6kqWiUoRaiqUJMilKAmniEnMEAXGMAwbb2Gu8xuyud73e972375jpHwnEgA+Sf/uT5o/3NDPfz/y+cwL/7yF8hwYUAFkFkPLGZaQ8kSZR6ISAEA7wiXXpFGViiA8q7PF4sLxQQ9dU5elHUQMhi+5yeQNusah/bHGwWmu2Psxej32K0cQNlv66zWs+H53ncsEQv5EhyODdmIJD2Sz76nuGqACw3NdA5zgtmGVzLGkigZ3Dktmm5mTf6rzz+dHGUGss3peo91Wv+O/AhTeSkfHuK5UCClzHloqlm8zRbNM9iUGfUDj9eSTedlIfZNNm4CFCqMfhpI1299qWhct9fZe6qrwZdYdUUz7WaQwOKopWaSlkF0UtOFf/xdAzjyxdoZ529Z9YZaPIXA+fVEbTTSvT0ot3yTOYVp+ltcc93obk/ZbciXleL93/5JbiZ2vX/HlrvvRYXNTlukB5AwB0FmJxaqGlBIDVZst5DIiMcEGIJSocHmdw3Q3h+M82bt2pSGSQAeBkYuECn5D3SQG8sNMNtQ+XVoXJoZKh7C4acF//NHy1KxBXWyBSI++ydix2+pYQQszP8/GuygKtIyCmqzEUNZMZt8FMe+Zi9yIYkKc3eBKAYrudbm1YJD4lF/2VhEc3EBDzhCX1ylpfzSYjq1aQYmd3f3Z0pCiutFBJzHwxFj0X4M4WEAgf9l/uqJE888BhOv3141yA417/ZwTYvGgRlqnYKw4nN3FA0Of4jlk9RV013cl9BED/Qn/rct25zZQ1v1wqnVjrLCo1k7kmKllSfVztmKOKq0Eg/OvGyQE3kWbPNM/vAljocNANrmDNYt37HCMQuNPS/1ry0gtzbyqvmormt88Pnf5P75cd31NdO6hIC2ek7BsVqnMnNznUEvvFZY0LbEYqN58ItJBw0MsrPZXN38qCxmAQPGb+2lBUvygI+YFVob1Ply/Y5E8Za6lFzB7M9Oz/uWP2fjOnBKWHGo7WrXus25SNXq3SceSMJXXA3xffxkxmEVy2kSwxh9jI6HKQ6S24swxLAWxxzAmExvlmA8S8UiG+3HbmlLFHr3qBAUjXB/8QzEYC7lu5x6/PLX7m9LWz//yivUctIbNe9sRlzK1dCcnrqBKGlXShWGxr5LYantfKQaa34A7AwiI/7dXZqlCuEEh4LcffSw8e30eqjxu65pRL7Z++Ges8+qLYcOQ90r2971Kw/YQxgKghM6AHJQCOXIngx3rDwQ3VtXKCq0Pfp1WbTcTxwHMgZxdQK7lXWSpKuv8d5PuetdQfEPNarcUmJd/3ynt3WEP7h13kY8EonP67+gmiRprdbpsCYAD4KBJhkpT5x7WR7suuhLJ+qtFP/HsHYJZIMc/hLu2ss+/caqneSxO51ZQK+pmA8Zw5kmoOJLWNOd15+Hh0iDGATdIvsorC/hIeYB5vRYWRlaumGvXEWXEHIMo52istB7ySa769a3A3AKHHpb/ToSTPbTODrzJJVMMlsaHr4qTad+LMrVtsJNKXEAU6Pm3FewG0eBydnZ002D7wqsmZRFy2vk8c+Zf2SHV/YgXdzwFNYZxNP6cBK6zwOVwMU2QJmMKCplAIvyqau48VdL8Iovc8GnruMdG7yRhO/oBwYKzGf/CzjJimGsa0AI+7a2ho/sPVhslKp6ozqQWXh1XE3XSEAOYtn3tsZiE/snRM+C0jgG1W4MrR/OA7u0JNv1xXNaW1ECHiMbsPy5LaNm4yaVrSewFskonOTOysYJeivfN8v2u5mm3VZNUrcJgf6cOvbLQHtlV+Nty6sWrJ6j3WxdRPrdQxob1TFOmLSj+lDo/UUjQib+czbEDfQH8dZ7Mx9qRzwbnRFVXP0xtDjyKqrwI4hIrSDtkMd5T1Z1t1Q/c8EhEPZZqLVz9zc9H4DTImJ+QMpS4XvLzMas1r65/IuA9oul5EZtiA7gMAgEOXLkQ3V4+feMqsaS+QlEBBzbf1yB83zHtku3GqpxyEYNxBB8a4VPwTm/edgaI5neZockxeM/+wfPbqhhUx+opmavYHFQfuOQuypgFdUawsp7gBgJY6B3x1leccF8M7QACBATfE8bfWK/btejy9ctbA2K464vrF+e5wpjkr7dYZ+1bi9wEMKwoz7HSkr1L8PWXE7HeToyWj6npT1rwAQJ3WWK7Ef96ZZhtBAXDgZgneLU6lm8WcNvvbSU8CAABvXe3G+S/bDw+VCYevivkT82XpR/xrsVsuerI/frPBzCrVAEAEYl7g6Q+WGI6NjHPLd9C/H2Ccc/a+kjL+Fj2/WypyXbOlCks4vto8rgly29Pl9S3c/EpMcEojo17ntXrNuuauY5cDAog+021oUgAAuAawz5ScIYe7xsNe8obVIqYFkELWXtpdiGWbby8x3e3uDSiCy8wVZgMEHByEAxaPva+31vkbQRALMyFMeStO6TprDQ8Z0cGulz8MiesttYHjbcMX48hrQc4JOOPmkJboFayoIzqDwAGr1ZJOVNlef5uE1+ZHew6ysrKPKQfIxALclaxp3wUydLYnF8G6K+XnTs0a21Ys6CwWsL7lK5Yaik0xKNj07iaPV4yVRI5mg0Vt5/PJD/h4/8hZVUUkUYviBZGXHE6hExPv4SDIgrTTfBmA3plfRrejBkAOwOO+alr+wyfgvZmw5pIpFGqqtIpTJ9HpcuHKQB5diLHbqf2pJFHV57uvL7sQwLGhq0yF+uAAE6MsEKAOTYOSz0MVRdgpZbfy+e/SFf4HT/K/6UXIvp4AAAAASUVORK5CYII="/>
+  <text x="190" y="530" font-size="18" font-weight="600" fill="#1A1A1A">Amplifon 360</text>
+  <text x="190" y="555" font-size="14" fill="#6B7280">The mobile app for hearing care professionals</text>
+  <text x="190" y="575" font-size="12" fill="#9CA3AF">Appointment prep and follow-up</text>
+  </g>
+
+  <!-- NOAH 4 -->
+  <rect x="110" y="610" width="460" height="100" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" rx="8"/>
+  <rect x="130" y="620" width="40" height="80" fill="#1A1A1A" rx="6"/>
+  <text x="150" y="666" font-size="13" font-weight="700" fill="#FFFFFF" text-anchor="middle">N4</text>
+  <text x="190" y="650" font-size="18" font-weight="600" fill="#1A1A1A">NOAH 4</text>
+  <text x="190" y="675" font-size="14" fill="#6B7280">The software that fits hearing aids</text>
+  <text x="190" y="695" font-size="12" fill="#9CA3AF">Measurements, audiograms, adjustments</text>
+
+  <!-- IDM Audio -->
+  <rect x="110" y="730" width="460" height="100" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" rx="8"/>
+  <rect x="130" y="740" width="40" height="80" fill="#0066CC" rx="6"/>
+  <text x="150" y="786" font-size="11" font-weight="700" fill="#FFFFFF" text-anchor="middle">IDM</text>
+  <text x="190" y="770" font-size="18" font-weight="600" fill="#1A1A1A">IDM Audio</text>
+  <text x="190" y="795" font-size="14" fill="#6B7280">Day-to-day store management</text>
+  <text x="190" y="815" font-size="12" fill="#9CA3AF">Quotes, invoicing, inventory</text>
+
+  <!-- ToolsGroup SO99+ -->
+  <rect x="110" y="850" width="460" height="70" fill="#FFFFFF" stroke="#E5E7EB" stroke-width="1" rx="8"/>
+  <text x="130" y="880" font-size="14" font-weight="600" fill="#1A1A1A">ToolsGroup SO99+</text>
+  <text x="130" y="902" font-size="12" fill="#9CA3AF">Per-store stock forecasting — not part of the integration</text>
+
+  <!-- ============ MIDDLE COLUMN — INTEGRATION FLOWS ============ -->
+  <text x="700" y="200" font-size="14" font-weight="600" fill="#CC0641" letter-spacing="2">WHAT FLOWS BETWEEN THEM</text>
+
+  <!-- Flow 1 : Service Cloud bidirectional -->
+  <line x1="600" y1="300" x2="1320" y2="300" stroke="#CC0641" stroke-width="2.5" marker-end="url(#arrow-red)" marker-start="url(#arrow-back)"/>
+  <rect x="700" y="270" width="520" height="22" fill="#FFFFFF" stroke="#CC0641" stroke-width="1" rx="11"/>
+  <text x="960" y="285" font-size="12" font-weight="600" fill="#CC0641" text-anchor="middle">Consultation reports land directly in the patient record</text>
+
+  <!-- Flow 2 : Agentforce bidirectional (signal handoff) -->
+  <line x1="600" y1="420" x2="1320" y2="420" stroke="#6B7280" stroke-width="1.5" stroke-dasharray="6,4" marker-start="url(#arrow-back-gray)" marker-end="url(#arrow-gray)"/>
+  <text x="960" y="412" font-size="11" font-style="italic" fill="#6B7280" text-anchor="middle">When an appointment is booked, Clinic OS surfaces the history, past notes and follow-up points</text>
+
+  <!-- Flow 3 : Amplifon 360 embed (rolling out) -->
+  <g opacity="0.25">
+  <line x1="600" y1="540" x2="1320" y2="540" stroke="#6B7280" stroke-width="1.5" stroke-dasharray="6,4" marker-start="url(#arrow-back-gray)" marker-end="url(#arrow-gray)"/>
+  <text x="960" y="532" font-size="11" font-style="italic" fill="#6B7280" text-anchor="middle">Coaching will appear inside the Amplifon 360 app (no screen switching)</text>
+  </g>
+
+  <!-- Flow 4 : NOAH session linkage -->
+  <line x1="600" y1="660" x2="1320" y2="660" stroke="#6B7280" stroke-width="1.5" stroke-dasharray="6,4" marker-start="url(#arrow-back-gray)" marker-end="url(#arrow-gray)"/>
+  <text x="960" y="652" font-size="11" font-style="italic" fill="#6B7280" text-anchor="middle">Audio measurements stay inside NOAH — we don't touch a thing</text>
+
+  <!-- Flow 5 : IDM Audio (read-only) -->
+  <line x1="600" y1="780" x2="1320" y2="780" stroke="#6B7280" stroke-width="1.5" stroke-dasharray="6,4" marker-start="url(#arrow-back-gray)" marker-end="url(#arrow-gray)"/>
+  <text x="960" y="772" font-size="11" font-style="italic" fill="#6B7280" text-anchor="middle">Read-only access to figures that feed your dashboards</text>
+
+  <!-- ============ RIGHT COLUMN — CLINIC OS ============ -->
+  <text x="1320" y="200" font-size="14" font-weight="600" fill="#CC0641" letter-spacing="2">CLINIC OS</text>
+  <rect x="1320" y="220" width="520" height="720" fill="#CC0641" rx="12"/>
+
+  <text x="1580" y="270" font-size="28" font-weight="800" fill="#FFFFFF" text-anchor="middle">Clinic OS</text>
+  <text x="1580" y="298" font-size="14" font-weight="400" fill="#FFFFFF" opacity="0.85" text-anchor="middle">The AI that lifts your entire network</text>
+
+  <line x1="1360" y1="320" x2="1800" y2="320" stroke="#FFFFFF" stroke-width="1" opacity="0.3"/>
+
+  <!-- Module 1 : Pillar 2 Coaching -->
+  <rect x="1350" y="345" width="460" height="100" fill="#FFFFFF" rx="8"/>
+  <rect x="1370" y="365" width="6" height="60" fill="#CC0641" rx="3"/>
+  <text x="1390" y="380" font-size="11" font-weight="700" fill="#CC0641" letter-spacing="1.5">COACHING</text>
+  <text x="1390" y="403" font-size="17" font-weight="600" fill="#1A1A1A">Supports consultations and calls</text>
+  <text x="1390" y="425" font-size="13" fill="#6B7280">Listens, scores the key steps, spots what works</text>
+  <text x="1390" y="442" font-size="13" fill="#6B7280">and what's lost — quantified in euros</text>
+
+  <!-- Module 2 : Pillar 1 Knowledge -->
+  <rect x="1350" y="465" width="460" height="100" fill="#FFFFFF" rx="8"/>
+  <rect x="1370" y="485" width="6" height="60" fill="#CC0641" rx="3"/>
+  <text x="1390" y="500" font-size="11" font-weight="700" fill="#CC0641" letter-spacing="1.5">KNOWLEDGE</text>
+  <text x="1390" y="523" font-size="17" font-weight="600" fill="#1A1A1A">Search across all your training content</text>
+  <text x="1390" y="545" font-size="13" fill="#6B7280">Ask your question in plain English, get the answer</text>
+  <text x="1390" y="562" font-size="13" fill="#6B7280">+ the training video at the exact timestamp</text>
+
+  <!-- Module 3 : Organizational Vault -->
+  <rect x="1350" y="585" width="460" height="100" fill="#FFFFFF" rx="8"/>
+  <rect x="1370" y="605" width="6" height="60" fill="#CC0641" rx="3"/>
+  <text x="1390" y="620" font-size="11" font-weight="700" fill="#CC0641" letter-spacing="1.5">MEMORY</text>
+  <text x="1390" y="643" font-size="17" font-weight="600" fill="#1A1A1A">A living memory of your network</text>
+  <text x="1390" y="665" font-size="13" fill="#6B7280">Every consultation enriches the collective knowledge</text>
+  <text x="1390" y="682" font-size="13" fill="#6B7280">Exportable, readable, never a black box</text>
+
+  <!-- Module 4 : Artifacts -->
+  <rect x="1350" y="705" width="460" height="100" fill="#FFFFFF" rx="8"/>
+  <rect x="1370" y="725" width="6" height="60" fill="#CC0641" rx="3"/>
+  <text x="1390" y="740" font-size="11" font-weight="700" fill="#CC0641" letter-spacing="1.5">DELIVERABLES</text>
+  <text x="1390" y="763" font-size="17" font-weight="600" fill="#1A1A1A">4 documents ready after every consultation</text>
+  <text x="1390" y="785" font-size="13" fill="#6B7280">Clinical notes, patient email, SMS, ENT letter</text>
+  <text x="1390" y="802" font-size="13" fill="#6B7280">→ pushed automatically into the Salesforce record</text>
+
+  <!-- Hosting badge -->
+  <rect x="1350" y="825" width="460" height="95" fill="#FFFFFF" opacity="0.15" rx="8"/>
+  <text x="1370" y="853" font-size="12" font-weight="700" fill="#FFFFFF" letter-spacing="1.5">HOSTING</text>
+  <text x="1370" y="877" font-size="14" font-weight="500" fill="#FFFFFF">European servers, GDPR-compliant</text>
+  <text x="1370" y="897" font-size="13" fill="#FFFFFF" opacity="0.85">Patient data stays inside your Salesforce</text>
+  <text x="1370" y="914" font-size="13" fill="#FFFFFF" opacity="0.85">Health-data certified hosting planned for production</text>
+
+  <!-- ============ FOOTER — TRUST CAPSULES ============ -->
+  <line x1="80" y1="975" x2="1840" y2="975" stroke="#E5E7EB" stroke-width="1"/>
+
+  <!-- Capsule 1 -->
+  <rect x="80" y="1000" width="560" height="60" fill="#F5F7F8" rx="30"/>
+  <circle cx="120" cy="1030" r="16" fill="#CC0641"/>
+  <text x="120" y="1036" font-size="14" font-weight="700" fill="#FFFFFF" text-anchor="middle">1</text>
+  <text x="155" y="1024" font-size="14" font-weight="600" fill="#1A1A1A">Your IT stays in control</text>
+  <text x="155" y="1045" font-size="12" fill="#6B7280">Login via your existing Amplifon credentials</text>
+
+  <!-- Capsule 2 -->
+  <rect x="680" y="1000" width="560" height="60" fill="#F5F7F8" rx="30"/>
+  <circle cx="720" cy="1030" r="16" fill="#CC0641"/>
+  <text x="720" y="1036" font-size="14" font-weight="700" fill="#FFFFFF" text-anchor="middle">2</text>
+  <text x="755" y="1024" font-size="14" font-weight="600" fill="#1A1A1A">Your patient data stays with you</text>
+  <text x="755" y="1045" font-size="12" fill="#6B7280">No sensitive data ever leaves your servers</text>
+
+  <!-- Capsule 3 -->
+  <rect x="1280" y="1000" width="560" height="60" fill="#F5F7F8" rx="30"/>
+  <circle cx="1320" cy="1030" r="16" fill="#CC0641"/>
+  <text x="1320" y="1036" font-size="14" font-weight="700" fill="#FFFFFF" text-anchor="middle">3</text>
+  <text x="1355" y="1024" font-size="14" font-weight="600" fill="#1A1A1A">Switch on and off with one click</text>
+  <text x="1355" y="1045" font-size="12" fill="#6B7280">You decide when to start, you decide when to stop</text>
+
+</svg>

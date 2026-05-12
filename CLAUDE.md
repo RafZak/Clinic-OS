@@ -522,15 +522,67 @@ Auth + rôles + permissions, app mobile / PWA, multilingue (FR only), intégrati
 
 ## 22. Roadmap post-démo (à mentionner à Amplifon)
 
-1. Auth + rôles (audioprothésiste / manager centre / direction réseau)
+1. Auth + rôles (audioprothésiste / manager centre / direction réseau) — via IdP Amplifon (probable Azure AD), OAuth2 / SAML
 2. Multilingue — 26 marchés Amplifon
 3. Intégrations téléphonie (Ring Over, Aircall, Avaya, propriétaire Amplifon)
-4. Intégration logiciels métier (Cosium, Otoaccess, Noah)
+4. **Intégration stack Amplifon réelle** — cf. §23 ci-dessous
 5. App mobile audioprothésiste
 6. Lint automatique du vault + détection contradictions
 7. Features Beyond (orientation intelligente appels, doc auto en logiciel métier, relance IA, compte-rendu ORL auto, marketing intelligence)
 8. Analytics multi-pays + benchmarks anonymisés
 9. Programme certifiant (badges, diplômes)
+
+---
+
+## 23. Stratégie d'intégration Amplifon
+
+### Stack Amplifon réel (avril 2026)
+
+| Couche | Outil | Rôle |
+|---|---|---|
+| CRM patient | **Salesforce Service Cloud** | Source de vérité dossier patient |
+| Engagement | **Salesforce Marketing Cloud** | Confirmations, rappels, follow-ups WhatsApp/SMS |
+| Mobilité audio | **Amplifon 360** (Salesforce Field Service) | Appli mobile audioprothésistes |
+| IA agent | **Salesforce Agentforce** | Scheduling auto, recommandation device, feedback post-vente |
+| Supply chain | **ToolsGroup SO99+** | Prévision stock par centre |
+| Fit audio | **NOAH 4** (HIMSA) | Programmation appareils, standard métier |
+| Gestion centre (France) | **IDM Audio** (Axess) | Devis, facturation, stock — interfacé NOAH |
+
+### Positionnement vs Agentforce
+
+Agentforce optimise **autour** du RDV (scheduling, rappels, recommandation device pré-RDV, feedback post-vente). Clinic OS opère **pendant** la consultation et l'appel — territoire qu'Agentforce ne touche pas. Les deux additionnent leur ROI, ne se cannibalisent pas.
+
+### Architecture d'intégration — 3 niveaux progressifs
+
+**Niveau 1 — Outbound only (semaine 1 post-pilote)**
+Clinic OS pousse vers Salesforce Service Cloud via REST API les artefacts post-consultation : notes cliniques, score, insights chiffrés €. Custom object `Clinic_OS_Session__c`. Aucun changement côté Amplifon.
+
+**Niveau 2 — Bidirectionnel (mois 1-2)**
+Webhook Salesforce → Clinic OS sur création RDV (pré-charge fiche patient + Karpathy de l'audioprothésiste). NOAH session ID rattaché à la session Clinic OS pour traçabilité audio fit. Audio fit reste dans NOAH.
+
+**Niveau 3 — Native (mois 3-6)**
+Composant Lightning embarqué dans Service Cloud (vue session Clinic OS dans la fiche patient Salesforce). Déploiement via **AppExchange** ou managed package privé. L'audioprothésiste ne change jamais d'onglet.
+
+### Standards respectés
+
+- **HIMSA NOAH 4** : compatibilité native (lien par patient ID), n'interfère pas avec les chaînes de mesure
+- **HL7 / FHIR** : sortie courrier ORL en `DiagnosticReport` si demandé
+- **OAuth2 / SAML** : auth via IdP Amplifon (probablement Azure AD)
+- **Hébergement EU** : Supabase Frankfurt, RGPD compliant — migration HDS-compliant à valider pour la prod santé
+- **Export Obsidian** du vault → argument transparence/auditabilité unique sur le marché
+
+### Easy wins phase pilote (3 centres, 8 semaines)
+
+1. **S1-S2** : connecteur Salesforce read-only (lire planning RDV)
+2. **S3-S4** : push artefacts post-consultation dans `Notes` du patient Salesforce
+3. **S5-S6** : dashboard Clinic OS embarqué via iframe dans Salesforce Lightning
+4. **S7-S8** : mesure du delta taux d'appareillage vs centres témoins
+
+→ Amplifon n'écrit pas une ligne de code. Notre équipe livre les connecteurs, ils valident la sécurité.
+
+### Impact démo (slide §21 étape 8)
+
+Ajouter une slide « Architecture d'intégration Salesforce » montrant les 3 niveaux ci-dessus avec logos Salesforce + Agentforce + NOAH. Cible : CIO d'Amplifon dans la salle.
 
 ---
 

@@ -163,6 +163,7 @@ export default async function PatientDetailPage({
         abstract={
           <RelationshipAbstractView
             abstractMd={synthesis?.abstractMd ?? ""}
+            abstractMdEn={synthesis?.abstractMdEn ?? null}
             updatedAt={synthesis?.updatedAt ?? null}
           />
         }

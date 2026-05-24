@@ -38,6 +38,7 @@ export type Priorities = { lead: PriorityKey | null; relevant: PriorityKey[] };
 
 export type RelationshipSynthesis = {
   abstractMd: string;
+  abstractMdEn: string | null;
   communicationStyle: CommunicationStyle;
   setbacks: Setbacks;
   priorities: Priorities;

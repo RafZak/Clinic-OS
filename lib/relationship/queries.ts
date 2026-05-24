@@ -15,6 +15,7 @@ export async function getRelationshipSynthesis(
   if (!row) return null;
   return {
     abstractMd: row.abstractMd,
+    abstractMdEn: row.abstractMdEn,
     communicationStyle:
       row.communicationStyle as RelationshipSynthesis["communicationStyle"],
     setbacks: row.setbacks as RelationshipSynthesis["setbacks"],

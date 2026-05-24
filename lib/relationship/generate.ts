@@ -1,4 +1,5 @@
 import "server-only";
+import type Anthropic from "@anthropic-ai/sdk";
 import { asc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db/client";
 import {
@@ -20,16 +21,69 @@ export type GenerateRelOutcome =
   | { ok: true; patientId: string; sessionsCount: number }
   | { skipped: "no-patient" | "no-transcript" };
 
-function stripFence(text: string): string {
-  const t = text.trim();
-  if (t.startsWith("```")) {
-    return t
-      .replace(/^```[a-zA-Z0-9]*\n?/, "")
-      .replace(/\n?```\s*$/, "")
-      .trim();
-  }
-  return t;
-}
+/**
+ * Sortie structurée via tool_use : l'API garantit un JSON valide, ce qui évite
+ * les casses de parsing sur les longues synthèses markdown (guillemets, retours
+ * ligne) qu'on avait avec une demande de JSON en texte brut.
+ */
+const SYNTHESIS_TOOL: Anthropic.Tool = {
+  name: "record_synthesis",
+  description:
+    "Enregistre la synthèse relationnelle bilingue et les tags structurés du patient.",
+  input_schema: {
+    type: "object",
+    properties: {
+      abstract_md_fr: {
+        type: "string",
+        description: "Synthèse contextuelle en français, markdown léger.",
+      },
+      abstract_md_en: {
+        type: "string",
+        description:
+          "Faithful professional English translation of the French synthesis, markdown.",
+      },
+      communication_style: {
+        type: "object",
+        properties: {
+          lead: { type: "string", enum: COMMUNICATION_KEYS },
+          relevant: {
+            type: "array",
+            items: { type: "string", enum: COMMUNICATION_KEYS },
+          },
+        },
+        required: ["relevant"],
+      },
+      setbacks: {
+        type: "object",
+        properties: {
+          present: {
+            type: "array",
+            items: { type: "string", enum: SETBACK_KEYS },
+          },
+        },
+        required: ["present"],
+      },
+      priorities: {
+        type: "object",
+        properties: {
+          lead: { type: "string", enum: PRIORITY_KEYS },
+          relevant: {
+            type: "array",
+            items: { type: "string", enum: PRIORITY_KEYS },
+          },
+        },
+        required: ["relevant"],
+      },
+    },
+    required: [
+      "abstract_md_fr",
+      "abstract_md_en",
+      "communication_style",
+      "setbacks",
+      "priorities",
+    ],
+  },
+};
 
 function keepKnown<T extends string>(arr: unknown, allowed: readonly T[]): T[] {
   if (!Array.isArray(arr)) return [];
@@ -112,23 +166,17 @@ export async function generateRelationshipSynthesis(
   const anthropic = getAnthropic();
   const response = await anthropic.messages.create({
     model: REL_MODEL,
-    max_tokens: 4096,
+    max_tokens: 8192,
+    tools: [SYNTHESIS_TOOL],
+    tool_choice: { type: "tool", name: SYNTHESIS_TOOL.name },
     messages: [{ role: "user", content: prompt }],
   });
 
-  const block = response.content.find((b) => b.type === "text");
-  if (!block || block.type !== "text") {
-    throw new Error("Claude n'a pas retourné de texte");
+  const block = response.content.find((b) => b.type === "tool_use");
+  if (!block || block.type !== "tool_use") {
+    throw new Error("Claude n'a pas appelé l'outil record_synthesis");
   }
-
-  let parsed: Record<string, unknown>;
-  try {
-    parsed = JSON.parse(stripFence(block.text)) as Record<string, unknown>;
-  } catch (err) {
-    throw new Error(
-      `Parsing JSON échoué: ${err instanceof Error ? err.message : String(err)} — texte: ${block.text.slice(0, 500)}`
-    );
-  }
+  const parsed = block.input as Record<string, unknown>;
 
   const comm = (parsed.communication_style ?? {}) as Record<string, unknown>;
   const setb = (parsed.setbacks ?? {}) as Record<string, unknown>;
@@ -137,7 +185,13 @@ export async function generateRelationshipSynthesis(
   const values = {
     patientId,
     abstractMd:
-      typeof parsed.abstract_md === "string" ? parsed.abstract_md : "",
+      typeof parsed.abstract_md_fr === "string"
+        ? parsed.abstract_md_fr
+        : typeof parsed.abstract_md === "string"
+          ? parsed.abstract_md
+          : "",
+    abstractMdEn:
+      typeof parsed.abstract_md_en === "string" ? parsed.abstract_md_en : null,
     communicationStyle: {
       lead: keepOne<CommunicationStyleKey>(comm.lead, COMMUNICATION_KEYS),
       relevant: keepKnown<CommunicationStyleKey>(

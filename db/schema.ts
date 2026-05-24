@@ -513,6 +513,7 @@ export const patientRelationshipSynthesis = pgTable(
       .notNull()
       .references(() => patients.id, { onDelete: "cascade" }),
     abstractMd: text("abstract_md").notNull(),
+    abstractMdEn: text("abstract_md_en"),
     // {lead: string|null, relevant: string[]}
     communicationStyle: jsonb("communication_style").notNull(),
     // {present: string[]}

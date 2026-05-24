@@ -534,6 +534,40 @@ export const patientRelationshipSynthesis = pgTable(
 );
 
 // ==================================================================
+// 15sexies. Snapshot care-quality praticien (1 par praticien, additif)
+// Clinician Insight (IA) + Manager Dashboard (agrégat). N'affecte rien d'existant.
+// ==================================================================
+export const practitionerCareSnapshots = pgTable(
+  "practitioner_care_snapshots",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    practitionerId: uuid("practitioner_id")
+      .notNull()
+      .references(() => practitioners.id, { onDelete: "cascade" }),
+    rapportScore: smallint("rapport_score"),
+    pedagogyScore: smallint("pedagogy_score"),
+    structureScore: smallint("structure_score"),
+    guidanceScore: smallint("guidance_score"),
+    followThroughScore: smallint("follow_through_score"),
+    adaptabilityScore: smallint("adaptability_score"),
+    rationale: jsonb("rationale"),
+    source: text("source").notNull(),
+    sessionsCount: smallint("sessions_count").notNull().default(0),
+    model: text("model"),
+    promptVersion: text("prompt_version"),
+    rawOutput: jsonb("raw_output"),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    unique("practitioner_care_snapshots_practitioner_unique").on(
+      t.practitionerId
+    ),
+  ]
+);
+
+// ==================================================================
 // 17. Consent audit log (RGPD)
 // ==================================================================
 export const consentAuditLog = pgTable(

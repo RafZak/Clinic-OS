@@ -14,7 +14,7 @@ Deux écrans qui montrent la valeur « enablement réseau » côté professionne
 ## Décisions de cadrage (validées)
 
 - **Clinician = réel** : 6 axes générés par IA depuis les vraies consultations de Jonathan.
-- **Manager = seedé** : on n'a pas 9 cliniciens réels → on seed ~8 praticiens fictifs avec des snapshots care, puis le dashboard **agrège** (moyenne + distribution). Effet « agrégation réelle » sans fabriquer des transcripts.
+- **Manager = seedé** : équipe de **4 cliniciens** = Jonathan (réel/IA) + **3 praticiens fictifs** seedés. Le dashboard **agrège** sur ces 4 (moyenne + distribution). Effet « agrégation réelle » sans fabriquer des transcripts. (La maquette mentionne 9 cliniciens — on affiche 4, taille réaliste d'un centre.)
 - **Accès** : Clinician Insight = section du dashboard (`/`) ; Manager Dashboard = page Admin (`/admin/manager`). Pas de nouveau rôle « manager », pas de 3e persona.
 - **Bilingue FR/EN** : libellés via i18n ; rationales par axe générées en FR **et** EN (démo anglophone).
 
@@ -75,9 +75,9 @@ N'affecte aucune table existante. Appliquée via migration relue (Supabase MCP `
 - **Radar agrégé** : moyenne d'équipe par axe (même composant radar).
 - **Distribution par dimension** : barres empilées montrant combien de cliniciens par palier — paliers `signature` (force) / `solid` / `developing` — « combien, jamais qui ».
 - **Bandeaux** : « Toujours agrégé » (thèmes, pas d'individus) / « Jamais visible » (pas de radar nominatif, pas de scores individuels, pas de classement — la vue individuelle appartient au clinicien).
-- **Données** : agrégation calculée sur tous les `practitioner_care_snapshots` du centre (Jonathan IA + ~8 fictifs seedés). Aucune donnée nominative affichée.
+- **Données** : agrégation calculée sur les `practitioner_care_snapshots` du centre — **4 cliniciens** (Jonathan IA + 3 fictifs seedés). En-tête « 4 cliniciens · fusionné, anonyme ». Aucune donnée nominative affichée.
 
-**Seed** : `scripts/seed-care-team.ts` — insère ~8 praticiens fictifs (centre Lyon 3) + leurs snapshots care (6 scores plausibles, `source='seed'`, pas de rationale requise). Idempotent.
+**Seed** : `scripts/seed-care-team.ts` — insère **3 praticiens fictifs** (centre Lyon 3) + leurs snapshots care (6 scores plausibles, `source='seed'`, pas de rationale requise). Idempotent.
 
 ## i18n
 

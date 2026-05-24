@@ -80,6 +80,27 @@ export const CARE_CAPTURES_EN: Record<CareAxis, string> = {
   adaptability: "The range of relational styles the clinician can mobilise.",
 };
 
+export const CARE_USED_FR: Record<CareAxis, string> = {
+  rapport: "Repérer qui crée naturellement le lien, et qui pourrait progresser.",
+  pedagogy: "Repérer qui a besoin d'aide pour vulgariser le technique.",
+  structure:
+    "Voir qui mène une consultation complète et qui saute des étapes sous la pression du temps.",
+  guidance:
+    "Aider les cliniciens à accompagner le patient vers une décision éclairée et sereine.",
+  followThrough: "Reconnaître ceux qui entretiennent la relation dans la durée.",
+  adaptability: "Repérer qui gagnerait à élargir son répertoire relationnel.",
+};
+export const CARE_USED_EN: Record<CareAxis, string> = {
+  rapport: "Identify who naturally builds connection, and who could grow there.",
+  pedagogy: "Spot who needs support turning technical detail into plain language.",
+  structure:
+    "See who runs a complete consultation and who skips steps under time pressure.",
+  guidance:
+    "Support clinicians in helping patients reach an informed decision calmly.",
+  followThrough: "Recognise those who sustain the relationship over time.",
+  adaptability: "Identify who would benefit from widening their relational repertoire.",
+};
+
 export const CARE_NOT_FR: Record<CareAxis, string> = {
   rapport: "Une force de développement — jamais une note de personnalité.",
   pedagogy: "Mesure la clarté du soin — pas la force de persuasion.",

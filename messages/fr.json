@@ -340,7 +340,7 @@
     "copy": "Copier",
     "copied": "Copié",
     "regenerate": "Régénérer",
-    "regenerateWithPsy": "Avec profil psy",
+    "regenerateWithPsy": "Avec contexte patient",
     "adaptedToProfile": "Adapté au profil",
     "generating": "Génération en cours…",
     "subjectLabel": "Objet",

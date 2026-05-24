@@ -11,6 +11,10 @@ import { buildNudges } from "@/lib/nudges";
 import { getRole } from "@/lib/role";
 import { getLocale } from "@/lib/locale";
 import { getCurrentUser } from "@/lib/auth";
+import { getCurrentQuizPractitioner } from "@/lib/quiz-identity";
+import { getPractitionerCareSnapshot } from "@/lib/care-quality/queries";
+import { ClinicianInsight } from "@/components/care/clinician-insight";
+import type { CareSnapshot } from "@/lib/care-quality/types";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +37,17 @@ export default async function DashboardPage() {
   const tRoles = await getTranslations("roles");
 
   const isPractitioner = role === "audioprothesiste";
+
+  // Clinician Insight (vue perso) — table additive : on dégrade proprement si absente.
+  let care: CareSnapshot | null = null;
+  if (isPractitioner) {
+    try {
+      const me = await getCurrentQuizPractitioner("audioprothesiste");
+      care = me ? await getPractitionerCareSnapshot(me.id) : null;
+    } catch {
+      care = null;
+    }
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -63,6 +78,14 @@ export default async function DashboardPage() {
           />
         ))}
       </section>
+
+      {care && (
+        <ClinicianInsight
+          radar={care.radar}
+          rationale={care.rationale}
+          sessionsCount={care.sessionsCount}
+        />
+      )}
 
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <div className="flex flex-col rounded-lg border border-border bg-surface p-5 lg:col-span-7">

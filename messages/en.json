@@ -43,6 +43,7 @@
     "catalogue": "Catalogue",
     "knowledge": "Knowledge base",
     "memory": "Memory",
+    "manager": "Manager",
     "admin": "Admin",
     "consultations": "Consultations",
     "calls": "Calls",
@@ -632,6 +633,32 @@
         "partial": "Partial"
       }
     }
+  },
+  "clinicianInsight": {
+    "eyebrow": "Clinician Insight",
+    "title": "A development mirror, owned by the clinician",
+    "synthesizedAcross": "Synthesized across {count} consultation(s)",
+    "privacy": "Private to clinician — the manager sees levels and growth zones, never your sales, conversions or patient data, and nothing usable to rank or sanction.",
+    "careDimension": "Care dimension",
+    "captures": "Captures",
+    "usedTo": "Used to",
+    "notThis": "Not this",
+    "notObserved": "not observed",
+    "valueChain": "Better understanding → better care → better patient satisfaction. Satisfaction is the outcome of good care — never a target imposed on the clinician."
+  },
+  "managerDashboard": {
+    "eyebrow": "Manager Dashboard",
+    "title": "The team, understood as an asset",
+    "teamMeta": "{count} clinicians · merged, anonymous",
+    "distributionTitle": "Distribution per dimension",
+    "distributionSub": "How many clinicians sit at each level — never who.",
+    "tier_signature": "Signature strength",
+    "tier_solid": "Solid",
+    "tier_developing": "Developing",
+    "alwaysAggregatedTitle": "Always aggregated",
+    "alwaysAggregatedBody": "Team strengths, growth zones and an anonymous distribution. The manager sees themes, not individuals.",
+    "neverVisibleTitle": "Never visible",
+    "neverVisibleBody": "No named individual radar, no individual scores, no ranking. The individual view belongs to the clinician, shared only by their choice."
   },
   "patientTabs": {
     "journey": "Journey",

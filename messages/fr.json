@@ -43,6 +43,7 @@
     "catalogue": "Catalogue",
     "knowledge": "Base formation",
     "memory": "Mémoire",
+    "manager": "Manager",
     "admin": "Admin",
     "consultations": "Consultations",
     "calls": "Appels",
@@ -632,6 +633,32 @@
         "partial": "Partiel"
       }
     }
+  },
+  "clinicianInsight": {
+    "eyebrow": "Clinician Insight",
+    "title": "Un miroir de développement, possédé par le clinicien",
+    "synthesizedAcross": "Synthétisé sur {count} consultation(s)",
+    "privacy": "Privé au clinicien — le manager voit des niveaux et des zones de progression, jamais vos ventes, conversions ou données patient, et rien qui serve à classer ou sanctionner.",
+    "careDimension": "Dimension de soin",
+    "captures": "Capte",
+    "usedTo": "Sert à",
+    "notThis": "Pas ça",
+    "notObserved": "non observé",
+    "valueChain": "Meilleure compréhension → meilleur soin → meilleure satisfaction patient. La satisfaction est le résultat d'un bon soin — jamais une cible imposée au clinicien."
+  },
+  "managerDashboard": {
+    "eyebrow": "Manager Dashboard",
+    "title": "L'équipe, comprise comme un actif",
+    "teamMeta": "{count} cliniciens · fusionné, anonyme",
+    "distributionTitle": "Distribution par dimension",
+    "distributionSub": "Combien de cliniciens à chaque niveau — jamais qui.",
+    "tier_signature": "Force de signature",
+    "tier_solid": "Solide",
+    "tier_developing": "En progression",
+    "alwaysAggregatedTitle": "Toujours agrégé",
+    "alwaysAggregatedBody": "Forces d'équipe, zones de progression et distribution anonyme. Le manager voit des thèmes, pas des individus.",
+    "neverVisibleTitle": "Jamais visible",
+    "neverVisibleBody": "Aucun radar nominatif, aucun score individuel, aucun classement. La vue individuelle appartient au clinicien, partagée uniquement par son choix."
   },
   "patientTabs": {
     "journey": "Parcours",

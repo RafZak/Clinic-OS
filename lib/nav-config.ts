@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   BookOpen,
   Database,
   LayoutDashboard,
@@ -13,7 +14,8 @@ export type NavKey =
   | "patients"
   | "catalogue"
   | "knowledge"
-  | "memory";
+  | "memory"
+  | "manager";
 
 export type NavItem = {
   key: NavKey;
@@ -46,6 +48,12 @@ export const PRIMARY_NAV: NavItem[] = [
 ];
 
 export const ADMIN_NAV: NavItem[] = [
+  {
+    key: "manager",
+    href: "/admin/manager",
+    icon: BarChart3,
+    roles: ["audioprothesiste", "assistant"],
+  },
   {
     key: "knowledge",
     href: "/admin/knowledge",

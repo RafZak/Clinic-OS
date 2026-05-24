@@ -501,6 +501,38 @@ export const sessionPsychologySnapshots = pgTable(
 );
 
 // ==================================================================
+// 15quinquies. Synthèse relationnelle patient (1 par patient, IA, additive)
+// Ne remplace PAS session_psychology_snapshots : sert la page patient
+// (onglets Patient Insights tags + Relationship Abstract).
+// ==================================================================
+export const patientRelationshipSynthesis = pgTable(
+  "patient_relationship_synthesis",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    patientId: uuid("patient_id")
+      .notNull()
+      .references(() => patients.id, { onDelete: "cascade" }),
+    abstractMd: text("abstract_md").notNull(),
+    // {lead: string|null, relevant: string[]}
+    communicationStyle: jsonb("communication_style").notNull(),
+    // {present: string[]}
+    setbacks: jsonb("setbacks").notNull(),
+    // {lead: string|null, relevant: string[]}
+    priorities: jsonb("priorities").notNull(),
+    sessionsCount: smallint("sessions_count").notNull().default(0),
+    model: text("model").notNull(),
+    promptVersion: text("prompt_version").notNull(),
+    rawOutput: jsonb("raw_output").notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    unique("patient_relationship_synthesis_patient_unique").on(t.patientId),
+  ]
+);
+
+// ==================================================================
 // 17. Consent audit log (RGPD)
 // ==================================================================
 export const consentAuditLog = pgTable(

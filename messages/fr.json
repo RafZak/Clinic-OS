@@ -633,8 +633,34 @@
       }
     }
   },
+  "patientTabs": {
+    "journey": "Parcours",
+    "insights": "Patient Insights",
+    "abstract": "Synthèse relationnelle",
+    "detail": "Détail relationnel"
+  },
+  "careInsights": {
+    "heading": "Compréhension du patient",
+    "subheading": "Dimensions du soin",
+    "notObserved": "non observé",
+    "captures": "Capte",
+    "usedTo": "Sert à",
+    "commHeading": "Style de communication",
+    "commSub": "Comment le patient préfère être informé et accompagné.",
+    "setbacksHeading": "Freins — ce qui retient le soin",
+    "setbacksSub": "Les raisons principales pour lesquelles ce patient n'est pas encore aidé — pour y répondre, pas pour pousser.",
+    "prioritiesHeading": "Priorités — ce qui compte le plus",
+    "prioritiesSub": "Exprimé par le patient. Jamais noté.",
+    "legendTop": "Principal",
+    "legendRelevant": "Aussi pertinent",
+    "legendOff": "Non pertinent"
+  },
+  "relationship": {
+    "abstractEmpty": "Synthèse non encore générée pour ce patient.",
+    "updatedAt": "Mis à jour le {date}"
+  },
   "psychology": {
-    "cardTitle": "Profil psychologique",
+    "cardTitle": "Patient Insights",
     "showHistory": "Afficher l'évolution",
     "hideHistory": "Masquer l'évolution",
     "globalLabel": "Global synthétisé",
@@ -642,12 +668,12 @@
     "notObserved": "non observé",
     "consentEnabled": "Consent. marketing : activé",
     "consentDisabled": "Consent. marketing : désactivé",
-    "consentEnabledTooltip": "Consentement actif depuis le {date}. Le profil psychologique de ce patient peut être inclus dans les exports CSV et les segments de campagne marketing.",
-    "consentRevokedTooltip": "Consentement révoqué le {date}. Profil exclu des exports.",
-    "consentMissingTooltip": "Consentement non recueilli. Profil exclu des exports marketing tant que le patient n'a pas opt-in.",
-    "exportProfile": "Exporter ce profil",
-    "exportProfileTooltip": "Télécharger le profil psychologique de ce patient au format CSV (1 ligne)",
-    "ariaLabel": "Profil psychologique patient",
+    "consentEnabledTooltip": "Consentement actif depuis le {date}. La synthèse relationnelle de ce patient peut être incluse dans les exports CSV et les segments de campagne marketing.",
+    "consentRevokedTooltip": "Consentement révoqué le {date}. Synthèse exclue des exports.",
+    "consentMissingTooltip": "Consentement non recueilli. Synthèse exclue des exports marketing tant que le patient n'a pas opt-in.",
+    "exportProfile": "Exporter la synthèse",
+    "exportProfileTooltip": "Télécharger la synthèse relationnelle de ce patient au format CSV (1 ligne)",
+    "ariaLabel": "Patient Insights",
     "polarityFavorable": "haut = favorable",
     "polarityFriction": "haut = point de friction",
     "sessionsHidden": "{count, plural, one {# session plus ancienne non affichée} other {# sessions plus anciennes non affichées}}",

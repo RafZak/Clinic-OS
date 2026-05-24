@@ -23,6 +23,7 @@
     "psy:score-session": "tsx --conditions react-server scripts/psy-score-session.ts",
     "psy:rescore-all": "tsx --conditions react-server scripts/psy-rescore-all.ts",
     "psy:backdate-snapshots": "tsx --conditions react-server scripts/psy-backdate-snapshots.ts",
+    "relationship:generate": "tsx --conditions react-server scripts/relationship-generate.ts",
     "test:j8": "tsx --conditions react-server scripts/test-j8-pipeline.ts",
     "smoke:export": "tsx --conditions react-server scripts/smoke-export.ts",
     "ingest": "tsx scripts/ingest.ts",

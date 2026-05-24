@@ -1,7 +1,7 @@
 "use client";
 
 import { useLocale } from "next-intl";
-import { CARE_AXES, type CareAxis, type CareRadar } from "@/lib/care-quality/types";
+import { CARE_AXES, type CareRadar } from "@/lib/care-quality/types";
 import { CARE_SHORT_FR, CARE_SHORT_EN } from "@/lib/care-quality/axes";
 import { cn } from "@/lib/utils";
 
